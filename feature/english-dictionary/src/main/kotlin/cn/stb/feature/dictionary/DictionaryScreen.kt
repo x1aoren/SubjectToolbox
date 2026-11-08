@@ -22,15 +22,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.stb.core.designsystem.EmptyState
+import cn.stb.core.designsystem.SearchField
 import cn.stb.core.model.SubjectId
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
@@ -143,23 +141,12 @@ fun DictionaryScreen(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                OutlinedTextField(
+                SearchField(
                     value = query,
                     onValueChange = { query = it },
+                    placeholder = "输入英文单词或中文释义",
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("输入英文单词或中文释义") },
-                    leadingIcon = {
-                        Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(20.dp))
-                    },
-                    trailingIcon = {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Filled.Close, contentDescription = "清空", modifier = Modifier.size(18.dp))
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    showClearButton = true,
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,8 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -62,6 +59,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.stb.core.data.AssetReader
+import cn.stb.core.designsystem.SearchField
 import cn.stb.core.model.SubjectId
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
@@ -176,23 +174,12 @@ private fun LibraryTab(
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-            OutlinedTextField(
+            SearchField(
                 value = query,
                 onValueChange = onQueryChange,
+                placeholder = "搜反应物、生成物或条件，如 Fe、点燃",
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("搜反应物、生成物或条件，如 Fe、点燃") },
-                leadingIcon = {
-                    Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(20.dp))
-                },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) {
-                            Icon(Icons.Filled.Close, contentDescription = "清空", modifier = Modifier.size(18.dp))
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
+                showClearButton = true,
             )
             Spacer(Modifier.height(10.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

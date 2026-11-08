@@ -12,19 +12,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -50,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import cn.stb.core.data.AssetReader
+import cn.stb.core.designsystem.SearchField
 import cn.stb.core.model.SubjectId
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
@@ -126,31 +122,12 @@ fun FormulaScreen(onBack: () -> Unit) {
         ) {
             Column(modifier = Modifier.widthIn(max = 1060.dp).fillMaxHeight()) {
                 Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                    OutlinedTextField(
+                    SearchField(
                         value = query,
                         onValueChange = { query = it },
+                        placeholder = "搜索数学、物理、化学公式，如「勾股」「sin」",
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("搜索数学、物理、化学公式，如「勾股」「sin」") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.Search,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
-                        trailingIcon = {
-                            if (query.isNotEmpty()) {
-                                IconButton(onClick = { query = "" }) {
-                                    Icon(
-                                        Icons.Filled.Close,
-                                        contentDescription = "清空",
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
+                        showClearButton = true,
                     )
 
                     if (searching) {

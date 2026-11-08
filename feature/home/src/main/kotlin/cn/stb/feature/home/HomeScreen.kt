@@ -9,18 +9,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.stb.core.designsystem.EmptyState
+import cn.stb.core.designsystem.SearchField
 import cn.stb.core.designsystem.SectionHeader
 import cn.stb.core.designsystem.ToolCard
 import cn.stb.core.model.AppGraph
@@ -92,16 +89,11 @@ fun HomeScreen(
         }
 
         Spacer(Modifier.height(14.dp))
-        OutlinedTextField(
+        SearchField(
             value = query,
             onValueChange = { query = it },
+            placeholder = "搜索工具，如「函数」「词」",
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("搜索工具，如「函数」「词」") },
-            leadingIcon = {
-                Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(20.dp))
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
         )
 
         Spacer(Modifier.height(22.dp))

@@ -25,12 +25,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -128,20 +126,11 @@ fun DiagramGalleryScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 28.dp, vertical = 18.dp),
         ) {
-            OutlinedTextField(
+            SearchField(
                 value = query,
                 onValueChange = { query = it },
+                placeholder = searchHint,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(searchHint) },
-                leadingIcon = {
-                    Icon(
-                        Icons.Filled.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                    )
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
             )
 
             Spacer(Modifier.height(20.dp))
