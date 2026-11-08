@@ -2,8 +2,8 @@
 
 > 作者：2025届2班 胡城玮
 
-面向高中校园的安卓平板应用，把语文、数学、英语、化学、生物等学科的工具收进一个 App。
-除「电子教材」需联网访问人教社官网外，**其余功能完全离线可用**。
+面向高中校园的安卓平板应用，把语文、数学、英语、化学、生物、地理和通用工具收进一个 App。
+只有「电子教材」需联网访问人教社官网，**其余功能完全离线可用**。
 
 ![platform](https://img.shields.io/badge/Android-8.0%2B-3DDC84)
 ![kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF)
@@ -21,6 +21,8 @@
 | 化学 | 化学方程式 | **165 条方程式**、类型筛选检索、化学式下标排版、**自动配平**（高斯消元）+ 一键复制、**118 元素周期表**（可点查详情）                       |
 | 生物 | 交互示意图 | 索引页可搜索，**细胞分裂交互图**：有丝分裂 / 减数分裂对照、动物 / 植物细胞切换、阶段讲解、染色体与 DNA 数目统计、交叉互换                    |
 | 地理 | 交互示意图 | 索引页可搜索，**地球自转交互图**：自转方向与地轴倾角、昼夜半球与太阳光线、角速度 / 线速度随纬度变化、标准 / 俯视 / 侧视切换                        |
+| 通用 | 公式大全 | **116 条数理化公式**（数学 56 · 物理 40 · 化学 20）、按学科分栏并分初中 / 高中、**KaTeX 排版**、名称与公式符号搜索、变量说明 / 适用条件 / 备注          |
+| 通用 | 电子教材 | 内嵌人教社电子课本官网、**60%–300% 页面缩放**、网页历史返回，**需联网**                                            |
 
 **个性化**：深浅色、三档字号、工具置顶、学科与工具显隐管理、最近使用（默认关闭）。
 设置页首屏即「关于」：软件名称、简介、作者署名与版本信息一眼可见。
@@ -38,7 +40,7 @@
 | 架构   | 多模块 + 单向数据流（MVVM）+ 工具注册表（Tool Registry）                 |
 | 配置   | Preferences DataStore                                   |
 | 用户数据 | SQLite（`usage.db`）+ 预置词库（`dict.db`，ECDICT 派生）           |
-| 内容   | `assets/content/*.json`                                 |
+| 内容   | `assets/content/`（JSON / SQLite 词库 / 交互页）                |
 | 构建   | Gradle 8.9 + AGP 8.7.3 + JDK 17                         |
 | 版本   | compileSdk 35 / targetSdk 34 / **minSdk 26**            |
 
@@ -52,18 +54,20 @@
 sdk.dir=你的SDK路径
 ```
 
-```bash
-./gradlew assembleDebug
-# 产物：app/build/outputs/apk/debug/app-debug.apk（56MB，含调试符号与压缩后约 40MB 的词库）
+仓库没有提交 Gradle Wrapper（`gradlew`），用本机安装的 Gradle 8.9 或 IDE 自带版本执行：
 
-./gradlew assembleRelease
+```bash
+gradle assembleDebug
+# 产物：app/build/outputs/apk/debug/app-debug.apk（约 50MB，含调试符号与压缩后约 40MB 的词库）
+
+gradle assembleRelease
 # 产物：app/build/outputs/apk/release/app-release.apk（约 40MB，已签名）
 ```
 
 release 已开启 R8 代码压缩 + 资源收缩；当前包体积主体是词库（86.1MB SQLite，压缩后约 38MB）。
 签名信息放在 `local.properties`（`stb.storeFile` / `stb.storePassword` / `stb.keyAlias` / `stb.keyPassword`），
 密钥文件为 `keystore/subjecttoolbox-release.jks`；两者都已 gitignore，换机器时必须一起搬走，
-否则新包无法覆盖安装。`dist/` 同目录保留可安装的 debug 包与已签名 release 包。
+否则新包无法覆盖安装。`dist/` 里保留可直接安装的 debug 包，release 包构建后同样归档到这里。
 
 `minSdk 26` 是权衡结果：覆盖校园在役设备，同时避开 Android 7 的存储与后台限制差异。
 注意它**和全文检索无关**——Android 系统 SQLite 只编译了 FTS3/FTS4，没有 FTS5，换版本号也换不来（在 API 35 上实测 `CREATE VIRTUAL TABLE ... USING fts5` 直接报 `no such module: fts5`）。词典因此干脆不用全文索引：`word` 列声明 `COLLATE NOCASE`，精确/前缀查询走 `idx_entry_word` 索引，中文反查走 LIKE 全表扫描（放在 IO 线程 + 300ms 输入防抖）。不做 FTS4 是因为全量 77 万条下它会让词库体积再涨近一倍。
@@ -89,6 +93,8 @@ feature/english-dictionary/ 英语·词典
 feature/chemistry-equation/ 化学·方程式
 feature/biology-diagram/  生物·交互示意图
 feature/geography-diagram/ 地理·交互示意图
+feature/electronic-textbook/ 通用·电子教材
+feature/formula/          通用·公式大全
 ```
 
 依赖规则：`feature → core`，**feature 之间零依赖**。跨工具复用必须下沉到 core。
@@ -119,10 +125,11 @@ app/src/main/assets/content/
 ├── chemistry/equations.json 方程式（165 条，构建期逐条校验配平）
 ├── chemistry/elements.json  118 元素数据
 ├── biology/cell-division.html 细胞分裂交互图
-└── geography/earth-rotation.html 地球自转交互图
+├── geography/earth-rotation.html 地球自转交互图
+└── formula/                  公式库（formulas.json 116 条 + KaTeX 渲染页与本地字体）
 ```
 
-当前内置：**61 篇古诗文**（新课标必背 60 篇全部收录 + 沁园春·长沙，按统编版六册归类，含注释与赏析）、**ECDICT 77 万词条（含 36.6 万条短语，86.1MB SQLite，APK 内压缩约 40MB）**、**165 条方程式**（构建期逐条校验配平）、**118 元素周期表**；「电子教材」在线访问人教社官网查看各科电子课本。
+当前内置：**61 篇古诗文**（新课标必背 60 篇全部收录 + 沁园春·长沙，按统编版六册归类，含注释与赏析）、**ECDICT 77 万词条（含 36.6 万条短语，86.1MB SQLite，APK 内压缩约 40MB）**、**165 条方程式**（构建期逐条校验配平）、**118 元素周期表**、**116 条初高中数理化公式**（逐条含变量说明与适用条件，数据整理自 HuiTurn/Formula，MIT License）；「电子教材」在线访问人教社官网查看各科电子课本。
 正式部署时替换为教研组校对/授权的内容即可，接口不变。
 
 词库由脚本生成，不要手改 assets：
@@ -143,15 +150,17 @@ python tools/dictionary/verify_dict_db.py
 
 ## 两个刻意的取舍
 
-**不申请** **`INTERNET`** **权限。** 这是「离线」唯一可验证的兑现方式——比在隐私政策里写一句承诺有用得多。代价是任何需要联网的 SDK 都进不来，包括崩溃上报。
+**只申请一个** **`INTERNET`** **权限，且只为电子教材。** 打开电子教材时用 WebView 访问人教社官网，其余工具全程不发起网络请求——这是「离线」可验证的兑现方式，比在隐私政策里写一句承诺有用得多。代价是任何需要联网的第三方 SDK 都进不来，包括崩溃上报和统计。
 
-**地理模块不画地图，只做示意交互图。** 完全离线意味着腾讯/高德/百度/天地图的在线底图全部不可用；离线底图只能取自然资源部标准地图的静态成果并标注审图号，OSM/Mapbox/Google 等无资质数据源不得使用。目前地理只提供不涉及边界数据的地球自转示意图，底图接入位留空，等校方确定合规底图后再填。
+**地理模块不画地图，只做示意交互图。** 离线意味着腾讯/高德/百度/天地图的在线底图全部不可用；离线底图只能取自然资源部标准地图的静态成果并标注审图号，OSM/Mapbox/Google 等无资质数据源不得使用。目前地理只提供不涉及边界数据的地球自转示意图，底图接入位留空，等校方确定合规底图后再填。
 
 ***
 
 ## 已知限制
 
 - 数据为示例规模，未做教材全量校对；
+- 公式库 116 条，覆盖初高中主干，不是完整公式手册；
+- 电子教材是内嵌网页，无网络或人教社改版时不可用，页面行为不受本应用控制；
 - 化学配平只处理分子方程式，不含离子方程式与氧化还原半反应；
 - 未接入音频朗读、云同步、账号体系（设计上的非目标）；
 - release 已开 R8 + 资源收缩，使用项目内自签名密钥（`keystore/`）；上架前需补 Baseline Profile 并做一次真机回归；
