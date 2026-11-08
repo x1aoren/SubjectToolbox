@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -58,7 +59,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
@@ -78,10 +78,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.BaselineShift
@@ -548,7 +549,13 @@ private fun ExpressionField(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .drawBehind { drawSuperscriptSlots(textLayout, slotColor) },
+                    .drawBehind {
+                        drawSuperscriptSlot(
+                            layout = textLayout,
+                            color = slotColor,
+                            spanIndex = transformation.activeRunIndex(value.selection.end),
+                        )
+                    },
             ) {
                 BasicTextField(
                     value = value,
@@ -585,62 +592,40 @@ private fun ExpressionField(
     }
 }
 
-/** 只读的表达式文字：和输入框一样给上标画虚线框，学生看到的记号始终一致。 */
-@Composable
-private fun SuperscriptText(
-    text: AnnotatedString,
-    style: TextStyle,
+/**
+ * 只给光标所在的那个上标槽描虚线框。
+ * 光标不在指数里时不画——输入完 x^2 继续往后打，表达式就恢复成普通上标小字。
+ */
+private fun DrawScope.drawSuperscriptSlot(
+    layout: TextLayoutResult?,
     color: Color,
-    modifier: Modifier = Modifier,
-    maxLines: Int = 1,
-    overflow: TextOverflow = TextOverflow.Clip,
+    spanIndex: Int?,
 ) {
-    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    val slotColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
-    Box(
-        modifier = modifier
-            .clipToBounds()
-            .drawBehind { drawSuperscriptSlots(layout, slotColor) },
-    ) {
-        Text(
-            text = text,
-            style = style,
-            color = color,
-            maxLines = maxLines,
-            overflow = overflow,
-            onTextLayout = { layout = it },
-        )
-    }
-}
-
-/** 顺着上标 span 的位置画虚线方框：学生看到框就知道那个小字是写在右上角的指数。 */
-private fun DrawScope.drawSuperscriptSlots(layout: TextLayoutResult?, color: Color) {
-    layout ?: return
+    if (layout == null || spanIndex == null) return
     val text = layout.layoutInput.text
-    val dash = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()))
+    val span = text.spanStyles
+        .filter { it.item.baselineShift == BaselineShift.Superscript }
+        .getOrNull(spanIndex) ?: return
+    if (span.end <= span.start) return
 
-    text.spanStyles.forEach { span ->
-        if (span.item.baselineShift != BaselineShift.Superscript) return@forEach
-        val start = span.start.coerceIn(0, text.length)
-        val end = span.end.coerceIn(start, text.length)
-        if (end <= start) return@forEach
+    val line = layout.getLineForOffset(span.start)
+    val lineTop = layout.getLineTop(line)
+    val lineBottom = layout.getLineBottom(line)
 
-        val line = layout.getLineForOffset(start)
-        val lineTop = layout.getLineTop(line)
-        val lineBottom = layout.getLineBottom(line)
+    val left = (layout.getHorizontalPosition(span.start, true) - 2.dp.toPx()).coerceAtLeast(0f)
+    val right = layout.getHorizontalPosition(span.end, true) + 2.dp.toPx()
+    val width = (right - left).coerceAtLeast(14.dp.toPx())
 
-        val left = (layout.getHorizontalPosition(start, true) - 2.dp.toPx()).coerceAtLeast(0f)
-        val right = layout.getHorizontalPosition(end, true) + 2.dp.toPx()
-        val width = (right - left).coerceAtLeast(14.dp.toPx())
-
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(left, lineTop + 1.dp.toPx()),
-            size = Size(width, (lineBottom - lineTop) * 0.62f),
-            cornerRadius = CornerRadius(3.dp.toPx()),
-            style = Stroke(width = 1.dp.toPx(), pathEffect = dash),
-        )
-    }
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(left, lineTop + 1.dp.toPx()),
+        size = Size(width, (lineBottom - lineTop) * 0.62f),
+        cornerRadius = CornerRadius(3.dp.toPx()),
+        style = Stroke(
+            width = 1.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())),
+        ),
+    )
 }
 
 @Composable
@@ -679,7 +664,7 @@ private fun FunctionRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(20.dp),
             )
-            SuperscriptText(
+            Text(
                 text = if (fn.expr.isBlank()) AnnotatedString("（空表达式）") else superscriptAnnotated(fn.expr),
                 style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                 color = if (fn.visible) {
@@ -779,6 +764,7 @@ private fun Keypad(
                         label = key,
                         modifier = Modifier.weight(1f),
                         accent = true,
+                        slot = key == "^",
                         onClick = {
                             when (key) {
                                 "√" -> onKey("sqrt(")
@@ -798,8 +784,14 @@ private fun KeyButton(
     label: String,
     modifier: Modifier = Modifier,
     accent: Boolean = false,
+    slot: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val contentColor = if (accent) {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
     Surface(
         onClick = onClick,
         modifier = modifier.height(40.dp),
@@ -811,16 +803,48 @@ private fun KeyButton(
         },
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (accent) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            )
+            if (slot) {
+                SuperscriptSlotIcon(color = contentColor)
+            } else {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = contentColor,
+                )
+            }
         }
+    }
+}
+
+/** ^ 键的图标：x 右上角一个空的上标槽，和输入框里按 ^ 之后长出来的框是同一个形象。 */
+@Composable
+private fun SuperscriptSlotIcon(color: Color) {
+    Row(
+        modifier = Modifier.semantics { contentDescription = "上标" },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "x",
+            style = MaterialTheme.typography.bodyLarge,
+            color = color,
+        )
+        Box(
+            modifier = Modifier
+                .offset(y = (-6).dp)
+                .size(11.dp)
+                .drawBehind {
+                    drawRoundRect(
+                        color = color.copy(alpha = 0.75f),
+                        cornerRadius = CornerRadius(2.dp.toPx()),
+                        style = Stroke(
+                            width = 1.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(2.dp.toPx(), 1.5.dp.toPx()),
+                            ),
+                        ),
+                    )
+                },
+        )
     }
 }
 
@@ -885,7 +909,7 @@ private fun PlotPane(
                                     .background(Color(item.colorArgb)),
                             )
                             Spacer(Modifier.width(6.dp))
-                            SuperscriptText(
+                            Text(
                                 text = superscriptAnnotated("f${item.number} = ${item.expr.ifBlank { "—" }}"),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontFamily = FontFamily.Monospace,

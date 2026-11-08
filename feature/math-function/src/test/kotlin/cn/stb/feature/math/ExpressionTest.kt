@@ -4,6 +4,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.BaselineShift
 import cn.stb.core.model.niceStep
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -136,5 +137,29 @@ class ExpressionTest {
     fun `无法识别的指数保持原样`() {
         assertEquals("x^(a", transform("x^(a").text.text)
         assertEquals("x^)", transform("x^)").text.text)
+    }
+
+    @Test
+    fun `光标在上标里才算正在输入`() {
+        val t = SuperscriptTransformation()
+        t.filter(AnnotatedString("x^2+1"))
+        assertEquals(0, t.activeRunIndex(2)!!)
+        assertEquals(0, t.activeRunIndex(3)!!)
+        assertNull(t.activeRunIndex(0))
+        assertNull(t.activeRunIndex(4))
+
+        // 刚按下 ^、指数还空着时，虚线框也要留在槽里
+        t.filter(AnnotatedString("x^"))
+        assertEquals(0, t.activeRunIndex(2)!!)
+        assertNull(t.activeRunIndex(1))
+    }
+
+    @Test
+    fun `多个上标各自判断`() {
+        val t = SuperscriptTransformation()
+        t.filter(AnnotatedString("x^2+y^3"))
+        assertEquals(0, t.activeRunIndex(2)!!)
+        assertEquals(1, t.activeRunIndex(6)!!)
+        assertNull(t.activeRunIndex(4))
     }
 }

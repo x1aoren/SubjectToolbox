@@ -12,11 +12,11 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 
 /**
- * 把表达式里的 `x^2` 显示成「x 右上角虚线框里的 2」。
+ * 把表达式里的 `x^2` 显示成「x 右上角带框的小 2」。
  *
  * 存储的仍然是没有排版的 `x^2`——解析器不用懂上标，光标坐标也按原文本算；
- * 渲染时去掉 `^`，把指数内容缩小、抬高，虚线框由输入框按 span 位置自己画。
- * `^` 后面还没输入时留一个空槽，学生一看就知道下一个字符会写进右上角。
+ * 渲染时去掉 `^`，把指数内容缩小、抬高。虚线框不在这里画：输入框只在光标真的
+ * 落在某个上标槽里时才描框，平时就是普通的上标小字。
  *
  * 只处理一眼能看懂的指数：数字、字母、带正负号的数字、括号组。
  * `^` 后面跟别的东西（比如括号还没闭合）时保持原样，免得显示和解析对不上。
@@ -31,8 +31,19 @@ internal class SuperscriptTransformation(
         fontSize = superscriptSize,
     )
 
+    /** 每个上标槽在原始文本里的光标位置范围，和渲染出的上标 span 一一对应。 */
+    private val slotRanges = mutableListOf<IntRange>()
+
+    /**
+     * 光标落在哪个上标槽里就返回哪个序号，否则 null。
+     * 空槽（刚按下 ^、指数还没打）也算——那正是虚线框最该出现的时候。
+     */
+    fun activeRunIndex(caret: Int): Int? =
+        slotRanges.indexOfFirst { caret in it }.takeIf { it >= 0 }
+
     override fun filter(text: AnnotatedString): TransformedText {
         val src = text.text
+        slotRanges.clear()
 
         // 原始光标位置 -> 转换后位置
         val originalToTransformed = IntArray(src.length + 1)
@@ -51,6 +62,7 @@ internal class SuperscriptTransformation(
 
                     // 光标落在 ^ 之后时，视觉上应该停在上标槽里
                     originalToTransformed[i + 1] = start
+                    slotRanges += (i + 1)..end
 
                     val count = end - i - 1
                     if (count > 0) {
