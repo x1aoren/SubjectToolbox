@@ -108,13 +108,7 @@ fun SettingsScreen(
                     InfoRow("学科 / 工具", "${catalog.subjects.size} / ${catalog.allTools.size}")
                     HorizontalDivider(Modifier.padding(vertical = 12.dp))
                     Text(
-                        text = "本应用不申请网络权限，所有功能在飞行模式下可用，也不收集任何个人数据。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = "地图类内容须使用自然资源部标准地图并标注审图号，演示版本仅提供统计数据图表。",
+                        text = "特别鸣谢：陈子怡老师 郑晓宇老师",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

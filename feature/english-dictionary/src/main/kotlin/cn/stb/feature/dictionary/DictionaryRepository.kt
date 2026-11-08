@@ -175,7 +175,8 @@ class DictionaryRepository(private val context: Context) {
             ).use { c ->
                 while (c.moveToNext()) {
                     val entry = c.entry()
-                    out[entry.headword] = entry
+                    // 键统一转小写去重：Minecraft 这类大写词在精确和前缀两步会各命中一次
+                    out[entry.headword.lowercase()] = entry
                 }
             }
         }
