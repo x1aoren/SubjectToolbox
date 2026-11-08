@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="katex.min.css">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --surface-variant: #f2f1ea;
+    --on-surface: #1b1c19;
+    --on-surface-variant: #5d5e57;
+    --outline: #dfded6;
+    --primary: #2f6b4f;
+    --scale: 1;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { font-size: calc(16px * var(--scale)); }
+
+  body {
+    margin: 0;
+    padding: 4px 20px 44px;
+    background: var(--bg);
+    color: var(--on-surface);
+    font-family: system-ui, "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .wrap { max-width: 1060px; margin: 0 auto; }
+
+  .section {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 2px 10px;
+    background: var(--bg);
+  }
+
+  .section .bar {
+    width: 3px;
+    height: 15px;
+    border-radius: 2px;
+    background: var(--primary);
+  }
+
+  .section .title { font-size: 1rem; font-weight: 600; }
+  .section .count { font-size: 0.75rem; color: var(--on-surface-variant); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--outline);
+    border-radius: 16px;
+    padding: 14px 16px 15px;
+    margin-bottom: 10px;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .name { font-size: 1rem; font-weight: 600; }
+
+  .chip {
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: var(--surface-variant);
+    color: var(--on-surface-variant);
+    font-size: 0.69rem;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+
+  .chip.subject {
+    background: transparent;
+    border: 1px solid currentColor;
+    font-weight: 500;
+  }
+
+  .formula {
+    margin: 2px 0 0;
+    padding: 12px 2px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    text-align: center;
+    font-size: 1.3rem;
+    color: var(--on-surface);
+  }
+
+  .formula .katex-display { margin: 0; }
+  .formula .katex { font-size: 1.05em; }
+
+  .formula.plain {
+    font-family: "Times New Roman", "Noto Serif", serif;
+    font-size: 1.2rem;
+    white-space: pre-wrap;
+  }
+
+  .block { margin-top: 10px; }
+
+  .block-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--on-surface-variant);
+    margin-bottom: 5px;
+  }
+
+  .vars {
+    border-top: 1px dashed var(--outline);
+    padding-top: 9px;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 5px 14px;
+  }
+
+  .var-name {
+    color: var(--primary);
+    font-family: "KaTeX_Main", "Times New Roman", serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .var-desc { color: var(--on-surface-variant); }
+  .var-unit { opacity: 0.78; }
+
+  .text {
+    color: var(--on-surface-variant);
+    white-space: pre-wrap;
+  }
+
+  .text.condition { color: var(--on-surface); }
+
+  .empty {
+    padding: 70px 20px;
+    text-align: center;
+    color: var(--on-surface-variant);
+  }
+
+  .empty .big { font-size: 1.05rem; color: var(--on-surface); margin-bottom: 6px; }
+
+  .source {
+    margin-top: 26px;
+    padding-top: 12px;
+    border-top: 1px solid var(--outline);
+    font-size: 0.68rem;
+    color: var(--on-surface-variant);
+    opacity: 0.7;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="root"></div>
+<script src="katex.min.js"></script>
+<script>
+(function () {
+  var formulas = [];
+  var view = { subject: "数学", query: "" };
+  var accents = {};
+  var root = document.getElementById("root");
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  // 搜索只认公式本身：名称、纯文本公式、LaTeX。变量说明和备注不参与匹配。
+  function haystack(f) {
+    var latex = (f.latex || "");
+    var loose = latex.replace(/\\[a-zA-Z]+/g, "").replace(/[{}^_\s]/g, "");
+    return [
+      f.name || "",
+      f.plain || "",
+      latex.replace(/\\/g, ""),
+      loose,
+    ].join(" ").toLowerCase().replace(/\s+/g, " ");
+  }
+
+  function matches(f, query) {
+    var q = query.trim().toLowerCase();
+    if (!q) return true;
+    var hay = haystack(f);
+    // 逐段匹配，允许用户忽略空格输入
+    if (hay.indexOf(q) >= 0) return true;
+    return hay.replace(/\s+/g, "").indexOf(q.replace(/\s+/g, "")) >= 0;
+  }
+
+  function appendFormula(card, f) {
+    var box = el("div", "formula");
+    try {
+      if (f.latex) {
+        katex.render(f.latex, box, {
+          displayMode: true,
+          throwOnError: true,
+          strict: "ignore",
+          trust: false
+        });
+      } else {
+        box.classList.add("plain");
+        box.textContent = f.plain || "";
+      }
+    } catch (e) {
+      box.className = "formula plain";
+      box.textContent = f.plain || f.latex || "";
+    }
+    card.appendChild(box);
+  }
+
+  function appendVariables(card, f) {
+    if (!f.vars || !f.vars.length) return;
+    var block = el("div", "block");
+    block.appendChild(el("div", "block-title", "变量说明"));
+    var grid = el("div", "vars");
+    f.vars.forEach(function (v) {
+      grid.appendChild(el("div", "var-name", v.n));
+      var desc = el("div", "var-desc", v.d || "");
+      if (v.u) desc.appendChild(el("span", "var-unit", "（" + v.u + "）"));
+      grid.appendChild(desc);
+    });
+    block.appendChild(grid);
+    card.appendChild(block);
+  }
+
+  function appendText(card, label, text, extraClass) {
+    if (!text) return;
+    var block = el("div", "block");
+    block.appendChild(el("div", "block-title", label));
+    block.appendChild(el("div", "text" + (extraClass ? " " + extraClass : ""), text));
+    card.appendChild(block);
+  }
+
+  function buildCard(f, showSubject) {
+    var card = el("article", "card");
+    var head = el("div", "card-head");
+    head.appendChild(el("div", "name", f.name));
+    head.appendChild(el("div", "chip", f.chapter));
+    if (showSubject) {
+      var badge = el("div", "chip subject", f.subject);
+      if (accents[f.subject]) badge.style.color = accents[f.subject];
+      head.appendChild(badge);
+      if (f.grades && f.grades.length) {
+        head.appendChild(el("div", "chip", f.grades.join(" / ")));
+      }
+    }
+    card.appendChild(head);
+    appendFormula(card, f);
+    appendVariables(card, f);
+    appendText(card, "适用条件", f.cond, "condition");
+    appendText(card, "备注", f.note);
+    return card;
+  }
+
+  function sectionHeader(title, count) {
+    var head = el("div", "section");
+    head.appendChild(el("div", "bar"));
+    head.appendChild(el("div", "title", title));
+    head.appendChild(el("div", "count", count + " 条"));
+    return head;
+  }
+
+  function render() {
+    var query = (view.query || "").trim();
+
+    var list = formulas.filter(function (f) {
+      return matches(f, query);
+    });
+
+    root.textContent = "";
+
+    if (query) {
+      if (!list.length) {
+        empty("没有匹配的公式", "换个别名或符号试试，例如「勾股」「sin」「密度」");
+        return;
+      }
+      root.appendChild(sectionHeader("搜索结果", list.length));
+      list.forEach(function (f) {
+        root.appendChild(buildCard(f, true));
+      });
+    } else {
+      var byGrade = {};
+      list.filter(function (f) {
+        return f.subject === view.subject && f.grades.indexOf("初中") >= 0;
+      }).forEach(function (f) { (byGrade["初中"] = byGrade["初中"] || []).push(f); });
+
+      list.filter(function (f) {
+        return f.subject === view.subject && f.grades.indexOf("高中") >= 0;
+      }).forEach(function (f) { (byGrade["高中"] = byGrade["高中"] || []).push(f); });
+
+      ["初中", "高中"].forEach(function (grade) {
+        var items = byGrade[grade] || [];
+        if (!items.length) return;
+        root.appendChild(sectionHeader(grade, items.length));
+        items.forEach(function (f) {
+          root.appendChild(buildCard(f, false));
+        });
+      });
+
+      if (!root.children.length) {
+        empty("这个学科还没有公式", "换一个学科看看");
+        return;
+      }
+    }
+
+    var source = el("div", "source", "公式数据来自 HuiTurn/Formula 开源项目（MIT License）");
+    root.appendChild(source);
+    window.scrollTo(0, 0);
+  }
+
+  function empty(title, desc) {
+    var box = el("div", "empty");
+    box.appendChild(el("div", "big", title));
+    box.appendChild(el("div", null, desc));
+    root.appendChild(box);
+  }
+
+  window.FormulaUI = {
+    setTheme: function (theme) {
+      var style = document.documentElement.style;
+      ["bg", "surface", "surfaceVariant", "onSurface", "onSurfaceVariant", "outline", "primary"].forEach(function (key) {
+        var cssKey = "--" + key.replace(/[A-Z]/g, function (m) { return "-" + m.toLowerCase(); });
+        if (theme[key]) style.setProperty(cssKey, theme[key]);
+      });
+      if (theme.scale) style.setProperty("--scale", theme.scale);
+      if (theme.accents) accents = theme.accents;
+    },
+    setData: function (list) {
+      formulas = list || [];
+    },
+    setView: function (next) {
+      view = { subject: next.subject || "数学", query: next.query || "" };
+      render();
+    }
+  };
+})();
+</script>
+</body>
+</html>

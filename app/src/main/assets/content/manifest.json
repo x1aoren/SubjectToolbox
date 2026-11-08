@@ -1,0 +1,36 @@
+{
+  "contentVersion": 3,
+  "builtAt": "2026-11-08T12:00:00+08:00",
+  "datasets": [
+    {
+      "id": "chinese.poetry",
+      "version": 1,
+      "path": "content/chinese/poems.json",
+      "bytes": 0
+    },
+    {
+      "id": "english.dict",
+      "version": 3,
+      "path": "content/english/dict.db",
+      "bytes": 12902400
+    },
+    {
+      "id": "chemistry.equation",
+      "version": 2,
+      "path": "content/chemistry/equations.json",
+      "bytes": 0
+    },
+    {
+      "id": "chemistry.elements",
+      "version": 1,
+      "path": "content/chemistry/elements.json",
+      "bytes": 0
+    },
+    {
+      "id": "formula.standard",
+      "version": 1,
+      "path": "content/formula/formulas.json",
+      "bytes": 0
+    }
+  ]
+}

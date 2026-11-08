@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>地球自转交互图 · 昼夜交替与线速度</title>
+<style>
+  :root{
+    --gold:#f5c451;
+    --green:#4ade80;
+    --cyan:#3ad4f0;
+    --blue:#4fc3ff;
+    --orange:#ff8a3d;
+    --lav:#b9a7ff;
+    --text:#e7eefc;
+    --muted:#93a6bf;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#050b16}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    color:var(--text);
+    -webkit-text-size-adjust:100%;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  #scene{position:fixed;inset:0;display:block;pointer-events:none}
+
+  .title{
+    position:fixed;top:10px;left:0;right:0;text-align:center;
+    font-size:26px;font-weight:700;letter-spacing:.22em;color:#eef5ff;
+    text-shadow:0 0 20px rgba(95,165,255,.38);pointer-events:none;
+  }
+
+  .views{
+    position:fixed;top:12px;right:16px;display:flex;gap:2px;padding:3px;
+    background:rgba(12,22,38,.78);border:1px solid rgba(90,120,165,.24);
+    border-radius:11px;backdrop-filter:blur(4px);
+  }
+  .views button{
+    border:0;background:transparent;color:#9fb3c8;font:inherit;font-size:12.5px;
+    padding:6px 13px;border-radius:8px;cursor:pointer;touch-action:manipulation;
+  }
+  .views button.on{
+    background:rgba(70,125,200,.30);color:#eef6ff;
+    box-shadow:inset 0 0 0 1px rgba(120,180,255,.35);
+  }
+
+  .rail{position:fixed;top:64px;left:20px;width:252px;pointer-events:none}
+  .legend{font-size:12.5px;line-height:2;color:#a9bad2;text-shadow:0 1px 8px rgba(0,0,0,.55)}
+  .legend h2{margin:0 0 6px;font-size:12.5px;font-weight:600;color:#7f94ae;letter-spacing:.1em}
+  .legend .row{display:flex;align-items:center;white-space:nowrap}
+  .mk{display:inline-block;flex:0 0 auto;margin-right:9px}
+  .mk.dash{width:17px;height:0;border-top:2px dashed var(--gold)}
+  .mk.arrow{width:16px;text-align:center;font-size:16px;line-height:1}
+  .mk.green{color:var(--green)}
+  .mk.cyan{color:var(--cyan)}
+  .mk.ring{width:11px;height:11px;border:2px solid var(--orange);border-radius:50%}
+  .mk.dot{width:8px;height:8px;border-radius:50%;background:#e8eefb;box-shadow:0 0 8px rgba(220,235,255,.8)}
+
+  .stats{margin-top:26px;font-size:13px;line-height:2.05;text-shadow:0 1px 10px rgba(0,0,0,.6)}
+  .stats b{font-weight:600}
+  .cyan{color:var(--cyan)}
+  .green{color:var(--green)}
+  .gold{color:var(--gold)}
+  .orange{color:var(--orange)}
+
+  .dock{
+    position:fixed;left:0;right:0;bottom:0;padding:8px 20px 11px;
+    display:flex;flex-direction:column;align-items:center;gap:7px;
+    background:linear-gradient(to top,rgba(4,9,18,.94),rgba(4,9,18,.62) 55%,rgba(4,9,18,0));
+  }
+  .ctl{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px}
+  .seg{display:inline-flex;background:rgba(14,25,42,.82);border:1px solid rgba(90,120,165,.26);border-radius:999px;padding:2px}
+  .seg button{
+    border:0;background:transparent;color:#a3b6cc;font:inherit;font-size:12px;
+    padding:5px 11px;border-radius:999px;cursor:pointer;touch-action:manipulation;
+  }
+  .seg button.on{background:rgba(80,140,220,.32);color:#f2f8ff;font-weight:600}
+  .chip{
+    border:1px solid rgba(90,120,165,.3);background:rgba(14,25,42,.82);color:#bdcde1;
+    font:inherit;font-size:12px;padding:6px 13px;border-radius:9px;cursor:pointer;
+    touch-action:manipulation;
+  }
+  .chip:hover{border-color:rgba(120,170,235,.5)}
+  .range{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#a9bad2}
+  input[type=range]{width:118px;accent-color:var(--gold);touch-action:manipulation}
+  .status{
+    font-size:12.5px;color:#93a8c0;letter-spacing:.02em;text-align:center;
+    text-shadow:0 1px 8px rgba(0,0,0,.6);
+  }
+
+  @media (max-width:900px){
+    .title{font-size:21px;letter-spacing:.16em;top:8px}
+    .views{top:8px;right:10px}
+    .views button{padding:5px 10px;font-size:12px}
+    .rail{top:54px;left:12px;width:216px}
+    .legend{font-size:11px;line-height:1.9}
+    .stats{margin-top:18px;font-size:11.5px;line-height:1.95}
+    .dock{padding:7px 10px 9px;gap:6px}
+    .ctl{gap:8px}
+    .range input[type=range]{width:96px}
+    .status{font-size:11.5px}
+  }
+  @media (max-width:640px){
+    .title{font-size:18px}
+    .rail{width:190px}
+    .legend{font-size:10px;line-height:1.8}
+    .stats{font-size:10.5px}
+    .legend .mk.dash{width:13px}
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<div class="title">地球自转</div>
+
+<div class="views" id="views">
+  <button data-view="standard" class="on">标准</button>
+  <button data-view="top">俯视</button>
+  <button data-view="side">侧视</button>
+</div>
+
+<div class="rail">
+  <div class="legend">
+    <h2>图例</h2>
+    <div class="row"><span class="mk dash"></span>自转轴 倾斜 23.5°</div>
+    <div class="row"><span class="mk arrow green">→</span>自转方向 西→东</div>
+    <div class="row"><span class="mk arrow cyan">→</span>线速度向量</div>
+    <div class="row"><span class="mk ring"></span>当前纬度标记</div>
+    <div class="row"><span class="mk dot"></span>恒星视运动粒子</div>
+  </div>
+  <div class="stats">
+    <div class="cyan">角速度：<b>15.0°/h</b></div>
+    <div class="green">该纬度线速度：<b id="stSpeed">1446 km/h</b></div>
+    <div class="gold">自转周期：<b>24.0h</b></div>
+    <div class="orange">纬度：<b id="stLat">30°</b> · 昼夜交替中</div>
+  </div>
+</div>
+
+<footer class="dock" id="dock">
+  <div class="ctl">
+    <button class="chip" id="playBtn">暂停</button>
+    <div class="seg" id="speedSeg">
+      <button data-speed="0.5">0.5×</button>
+      <button data-speed="1" class="on">1×</button>
+      <button data-speed="2">2×</button>
+      <button data-speed="3">3×</button>
+    </div>
+    <label class="range">纬度
+      <input type="range" id="latRange" min="0" max="90" step="1" value="30">
+      <span id="latOut">30°</span>
+    </label>
+    <button class="chip" id="vecBtn">向量 开</button>
+  </div>
+  <div class="status" id="status"></div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  var TAU = Math.PI * 2;
+  var DEG = Math.PI / 180;
+  var VMAX = 1670;
+
+  var VIEWS = {
+    standard: { pitch: 10, tilt: 23.5 },
+    top:      { pitch: 80, tilt: 0 },
+    side:     { pitch: 2,  tilt: 48 }
+  };
+
+  var state = {
+    spin: -0.9,
+    speed: 1,
+    lat: 30,
+    showVec: true,
+    paused: false,
+    view: 'standard'
+  };
+
+  var canvas = document.getElementById('scene');
+  var ctx = canvas.getContext('2d');
+  var dockEl = document.getElementById('dock');
+  var statusEl = document.getElementById('status');
+  var stSpeedEl = document.getElementById('stSpeed');
+  var stLatEl = document.getElementById('stLat');
+  var latRange = document.getElementById('latRange');
+  var latOut = document.getElementById('latOut');
+  var playBtn = document.getElementById('playBtn');
+  var vecBtn = document.getElementById('vecBtn');
+  var viewsEl = document.getElementById('views');
+  var speedSeg = document.getElementById('speedSeg');
+
+  var view = { W: 0, H: 0, R: 0, cx: 0, cy: 0, font: 12, stageH: 0, dockH: 86 };
+  var stars = [];
+  var drifters = [];
+
+  var CONTINENTS = [
+    // 亚洲
+    [[26,36],[38,40],[50,44],[62,45],[74,46],[86,48],[98,46],[108,40],[118,36],
+     [124,30],[122,22],[112,20],[104,14],[98,8],[94,10],[88,16],[78,20],[68,24],
+     [58,28],[48,30],[38,32],[28,34]],
+    // 非洲
+    [[33,31],[40,18],[45,10],[44,2],[40,-6],[36,-15],[31,-24],[24,-33],[18,-30],
+     [12,-18],[9,-6],[8,3],[5,8],[10,14],[19,20],[28,26]],
+    // 欧洲
+    [[-9,37],[0,44],[10,48],[20,52],[30,57],[40,60],[30,63],[20,64],[10,61],[0,56],[-5,50]],
+    // 北美洲
+    [[-168,62],[-150,58],[-132,52],[-120,44],[-112,34],[-104,26],[-96,18],[-88,16],
+     [-80,22],[-74,32],[-66,44],[-74,54],[-86,60],[-100,66],[-118,68],[-140,68],[-160,66]],
+    // 南美洲
+    [[-81,8],[-74,10],[-66,8],[-58,3],[-50,-5],[-42,-14],[-45,-24],[-52,-33],
+     [-62,-42],[-70,-50],[-73,-42],[-76,-30],[-78,-18],[-80,-6]],
+    // 澳大利亚
+    [[114,-22],[122,-16],[132,-12],[142,-14],[148,-22],[150,-30],[144,-36],
+     [134,-37],[124,-34],[115,-30],[112,-25]],
+    // 格陵兰
+    [[-58,60],[-44,60],[-30,65],[-24,72],[-32,80],[-46,82],[-58,78],[-66,70]]
+  ];
+
+  function layout(){
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = window.innerWidth;
+    var H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    view.W = W;
+    view.H = H;
+    view.dockH = dockEl ? dockEl.getBoundingClientRect().height : 86;
+    view.stageH = Math.max(320, H - view.dockH);
+    view.R = Math.max(86, Math.min(W * 0.172, view.stageH * 0.295));
+    view.cx = W * (W < 720 ? 0.5 : 0.462);
+    view.cy = view.stageH * 0.52 + 6;
+    view.font = Math.max(11, view.R * 0.061);
+
+    buildStars();
+  }
+
+  function buildStars(){
+    stars = [];
+    drifters = [];
+    var count = Math.round((view.W * view.H) / 7600);
+    for (var i = 0; i < count; i++){
+      stars.push({
+        x: Math.random() * view.W,
+        y: Math.random() * view.H,
+        r: Math.random() * 1.35 + 0.35,
+        a: Math.random() * 0.42 + 0.32,
+        p: Math.random() * TAU
+      });
+    }
+    for (var k = 0; k < 3; k++){
+      drifters.push({
+        ang: Math.random() * TAU,
+        rad: 1.9 + Math.random() * 0.55,
+        sp: 0.35 + Math.random() * 0.3,
+        r: 2.4 + Math.random() * 1.8
+      });
+    }
+  }
+
+  function project(lon, latDeg){
+    var v = VIEWS[state.view];
+    var pitch = v.pitch * DEG;
+    var tilt = v.tilt * DEG;
+    var phi = latDeg * DEG;
+    var lam = lon + state.spin;
+
+    var x = Math.cos(phi) * Math.sin(lam);
+    var y = Math.sin(phi);
+    var z = Math.cos(phi) * Math.cos(lam);
+
+    var cp = Math.cos(pitch), sp = Math.sin(pitch);
+    var y2 = y * cp - z * sp;
+    var z2 = z * cp + y * sp;
+
+    var ct = Math.cos(tilt), st = Math.sin(tilt);
+    var rx = x * ct + y2 * st;
+    var ry = -x * st + y2 * ct;
+
+    return {
+      x: view.cx + rx * view.R,
+      y: view.cy - ry * view.R,
+      z: z2
+    };
+  }
+
+  function axisUnit(north){
+    var v = VIEWS[state.view];
+    var pitch = v.pitch * DEG;
+    var tilt = v.tilt * DEG;
+    var y2 = (north ? 1 : -1) * Math.cos(pitch);
+    var ct = Math.cos(tilt), st = Math.sin(tilt);
+    var rx = y2 * st;
+    var ry = y2 * ct;
+    return { x: rx, y: -ry };
+  }
+
+  function screenFromUnit(ux, uy){
+    // ux 向右，uy 向上，返回相对圆心的屏幕像素偏移
+    var v = VIEWS[state.view];
+    var tilt = v.tilt * DEG;
+    var ct = Math.cos(tilt), st = Math.sin(tilt);
+    return {
+      x: (ux * ct + uy * st) * view.R,
+      y: -( -ux * st + uy * ct) * view.R
+    };
+  }
+
+  function setFont(size, bold){
+    ctx.font = (bold ? '600 ' : '') + size.toFixed(1) + 'px "Microsoft YaHei","PingFang SC",sans-serif';
+  }
+
+  function label(text, x, y, color, size, align, bold){
+    ctx.save();
+    ctx.fillStyle = color;
+    setFont(size || view.font, bold);
+    ctx.textAlign = align || 'left';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,4,12,.65)';
+    ctx.shadowBlur = 7;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function drawArrow(x1, y1, x2, y2, color, width, head){
+    var ang = Math.atan2(y2 - y1, x2 - x1);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - Math.cos(ang - 0.42) * head, y2 - Math.sin(ang - 0.42) * head);
+    ctx.lineTo(x2 - Math.cos(ang + 0.42) * head, y2 - Math.sin(ang + 0.42) * head);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function clipGlobe(){
+    ctx.beginPath();
+    ctx.arc(view.cx, view.cy, view.R, 0, TAU);
+    ctx.clip();
+  }
+
+  function strokeParallel(latDeg, color, width, alpha){
+    ctx.save();
+    clipGlobe();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    var open = false;
+    for (var lon = 0; lon <= 360; lon += 4){
+      var p = project(lon * DEG, latDeg);
+      if (p.z >= 0){
+        if (!open){ ctx.moveTo(p.x, p.y); open = true; }
+        else ctx.lineTo(p.x, p.y);
+      } else {
+        open = false;
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function strokeMeridian(lonDeg, color, width, alpha){
+    ctx.save();
+    clipGlobe();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    var open = false;
+    for (var lat = -90; lat <= 90; lat += 4){
+      var p = project(lonDeg * DEG, lat);
+      if (p.z >= 0){
+        if (!open){ ctx.moveTo(p.x, p.y); open = true; }
+        else ctx.lineTo(p.x, p.y);
+      } else {
+        open = false;
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSky(t){
+    var g = ctx.createRadialGradient(view.W * 0.5, view.H * 0.4, 0, view.W * 0.5, view.H * 0.5, Math.max(view.W, view.H) * 0.85);
+    g.addColorStop(0, '#0a1627');
+    g.addColorStop(0.55, '#071120');
+    g.addColorStop(1, '#040812');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, view.W, view.H);
+
+    for (var i = 0; i < stars.length; i++){
+      var s = stars[i];
+      var tw = 0.62 + 0.38 * Math.sin(t * 0.7 + s.p);
+      ctx.globalAlpha = s.a * tw;
+      ctx.fillStyle = '#dfeaff';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // 恒星视运动粒子：随自转缓慢反向绕行
+    for (var k = 0; k < drifters.length; k++){
+      var d = drifters[k];
+      var a = d.ang - state.spin * d.sp;
+      var dx = view.cx + Math.cos(a) * view.R * d.rad;
+      var dy = view.cy + Math.sin(a) * view.R * 1.35;
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#eef4ff';
+      ctx.shadowColor = 'rgba(210,230,255,.75)';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(dx, dy, d.r, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawVelocityCurve(){
+    if (state.view === 'top') return;
+    var pts = [];
+    for (var lat = 88; lat >= -88; lat -= 3){
+      var c = Math.cos(lat * DEG);
+      var off = screenFromUnit(1.03 + 0.58 * c, -0.92 * Math.sin(lat * DEG));
+      pts.push({ x: view.cx + off.x, y: view.cy + off.y });
+    }
+    if (!pts.length) return;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(74,222,128,.78)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.restore();
+
+    label('v = ωRcosφ', pts[0].x + 6, pts[0].y - 8, 'rgba(110,235,165,.9)', view.font * 0.9, 'left');
+  }
+
+  function drawAxisBack(){
+    if (state.view === 'top') return;
+    var n = axisUnit(true);
+    var s = axisUnit(false);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(245,196,81,.85)';
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([5, 8]);
+    ctx.shadowColor = 'rgba(245,196,81,.55)';
+    ctx.shadowBlur = 7;
+    ctx.beginPath();
+    ctx.moveTo(view.cx + n.x * 1.16 * view.R, view.cy + n.y * 1.16 * view.R);
+    ctx.lineTo(view.cx + s.x * 1.16 * view.R, view.cy + s.y * 1.16 * view.R);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawAtmosphere(){
+    var outer = ctx.createRadialGradient(view.cx, view.cy, view.R * 0.92, view.cx, view.cy, view.R * 1.28);
+    outer.addColorStop(0, 'rgba(78,148,228,.20)');
+    outer.addColorStop(0.5, 'rgba(60,120,200,.07)');
+    outer.addColorStop(1, 'rgba(60,120,200,0)');
+    ctx.fillStyle = outer;
+    ctx.beginPath();
+    ctx.arc(view.cx, view.cy, view.R * 1.28, 0, TAU);
+    ctx.fill();
+  }
+
+  function drawGlobeBase(){
+    var g = ctx.createRadialGradient(
+      view.cx + view.R * 0.42, view.cy - view.R * 0.36, view.R * 0.08,
+      view.cx, view.cy, view.R * 1.08
+    );
+    g.addColorStop(0, '#1e4f6d');
+    g.addColorStop(0.42, '#123049');
+    g.addColorStop(0.78, '#0c2036');
+    g.addColorStop(1, '#071425');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(view.cx, view.cy, view.R, 0, TAU);
+    ctx.fill();
+  }
+
+  function drawContinents(){
+    for (var i = 0; i < CONTINENTS.length; i++){
+      var poly = CONTINENTS[i];
+      var pts = [];
+      var front = 0;
+      for (var j = 0; j < poly.length; j++){
+        var p = project(poly[j][0] * DEG, poly[j][1]);
+        pts.push(p);
+        if (p.z > 0) front++;
+      }
+      if (front < 3) continue;
+      if (pts.length !== poly.length) continue;
+
+      ctx.save();
+      ctx.beginPath();
+      var started = false;
+      for (var k = 0; k < pts.length; k++){
+        var pt = pts[k];
+        if (pt.z > 0){
+          if (!started){ ctx.moveTo(pt.x, pt.y); started = true; }
+          else ctx.lineTo(pt.x, pt.y);
+        } else {
+          started = false;
+        }
+      }
+      for (var m = pts.length - 1; m >= 0; m--){
+        var pt2 = pts[m];
+        if (pt2.z > 0){
+          if (m === pts.length - 1) ctx.moveTo(pt2.x, pt2.y);
+          else ctx.lineTo(pt2.x, pt2.y);
+        }
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(63,104,62,.92)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(24,48,34,.55)';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawGraticule(){
+    for (var lat = -60; lat <= 60; lat += 30){
+      if (lat === 0) continue;
+      strokeParallel(lat, 'rgba(102,170,236,.58)', 0.9, 0.36);
+    }
+    for (var lon = 0; lon < 360; lon += 30){
+      strokeMeridian(lon, 'rgba(102,170,236,.58)', 0.9, 0.30);
+    }
+    strokeParallel(0, 'rgba(90,214,244,.8)', 1.2, 0.55);
+
+    // 60°、30° 纬线略微提亮，方便读标注
+    strokeParallel(60, 'rgba(185,167,255,.55)', 1.1, 0.55);
+    strokeParallel(30, 'rgba(79,195,255,.55)', 1.1, 0.5);
+  }
+
+  function drawSelectedRing(){
+    if (state.lat > 88) return;
+    var pts = [];
+    for (var lon = 0; lon <= 360; lon += 4){
+      pts.push(project(lon * DEG, state.lat));
+    }
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,122,69,.92)';
+    ctx.lineWidth = 2.1;
+    ctx.shadowColor = 'rgba(255,122,69,.6)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    for (var i = 0; i < pts.length; i++){
+      if (i === 0) ctx.moveTo(pts[i].x, pts[i].y);
+      else ctx.lineTo(pts[i].x, pts[i].y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawShading(){
+    ctx.save();
+    clipGlobe();
+
+    var night = ctx.createLinearGradient(view.cx - view.R, view.cy, view.cx + view.R * 0.3, view.cy);
+    night.addColorStop(0, 'rgba(3,8,19,.66)');
+    night.addColorStop(0.55, 'rgba(3,8,19,.30)');
+    night.addColorStop(1, 'rgba(3,8,19,0)');
+    ctx.fillStyle = night;
+    ctx.fillRect(view.cx - view.R, view.cy - view.R, view.R * 2, view.R * 2);
+
+    var day = ctx.createRadialGradient(
+      view.cx + view.R * 0.55, view.cy - view.R * 0.42, view.R * 0.05,
+      view.cx + view.R * 0.3, view.cy - view.R * 0.3, view.R * 1.1
+    );
+    day.addColorStop(0, 'rgba(140,200,255,.20)');
+    day.addColorStop(0.5, 'rgba(80,150,230,.07)');
+    day.addColorStop(1, 'rgba(80,150,230,0)');
+    ctx.fillStyle = day;
+    ctx.fillRect(view.cx - view.R, view.cy - view.R, view.R * 2, view.R * 2);
+
+    // 昼夜分界附近的柔化过渡
+    var term = ctx.createLinearGradient(view.cx - view.R * 0.18, view.cy, view.cx + view.R * 0.2, view.cy);
+    term.addColorStop(0, 'rgba(4,9,20,0)');
+    term.addColorStop(1, 'rgba(4,9,20,.22)');
+    ctx.fillStyle = term;
+    ctx.fillRect(view.cx - view.R * 0.18, view.cy - view.R, view.R * 0.38, view.R * 2);
+
+    ctx.restore();
+  }
+
+  function drawRim(){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,190,255,.85)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(view.cx, view.cy, view.R, -0.62 * Math.PI, 0.62 * Math.PI);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(110,175,240,.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(view.cx, view.cy, view.R, 0, TAU);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPoleMarker(x, y, gold){
+    var r = Math.max(4, view.R * 0.023);
+    var g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, 0, x, y, r);
+    if (gold){
+      g.addColorStop(0, '#ffe9a8');
+      g.addColorStop(0.55, '#f0c452');
+      g.addColorStop(1, '#a8791f');
+      ctx.shadowColor = 'rgba(245,196,81,.7)';
+    } else {
+      g.addColorStop(0, '#e4edf8');
+      g.addColorStop(0.6, '#9fb0c4');
+      g.addColorStop(1, '#4e5f72');
+      ctx.shadowColor = 'rgba(180,200,225,.3)';
+    }
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawAxisFront(){
+    if (state.view === 'top'){
+      var pn = axisUnit(true);
+      var x = view.cx + pn.x * 0.22 * view.R;
+      var y = view.cy + pn.y * 0.22 * view.R;
+      drawPoleMarker(x, y, true);
+      label('北极 (N)', x + view.R * 0.07, y - view.R * 0.06, '#f3cf74', view.font, 'left', true);
+      return;
+    }
+
+    var n = axisUnit(true);
+    var s = axisUnit(false);
+    var nX = view.cx + n.x * 1.15 * view.R;
+    var nY = view.cy + n.y * 1.15 * view.R;
+    var sX = view.cx + s.x * 1.15 * view.R;
+    var sY = view.cy + s.y * 1.15 * view.R;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(245,196,81,.8)';
+    ctx.lineWidth = 1.3;
+    ctx.setLineDash([4, 7]);
+    ctx.beginPath();
+    ctx.moveTo(nX, nY);
+    ctx.lineTo(view.cx + n.x * 0.99 * view.R, view.cy + n.y * 0.99 * view.R);
+    ctx.moveTo(sX, sY);
+    ctx.lineTo(view.cx + s.x * 0.99 * view.R, view.cy + s.y * 0.99 * view.R);
+    ctx.stroke();
+    ctx.restore();
+
+    drawPoleMarker(nX, nY, true);
+    drawPoleMarker(sX, sY, false);
+
+    // 北极点的小轨道环
+    ctx.save();
+    ctx.strokeStyle = 'rgba(245,196,81,.85)';
+    ctx.lineWidth = 1.2;
+    ctx.translate(nX, nY);
+    ctx.rotate(VIEWS[state.view].tilt * DEG);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, view.R * 0.038, view.R * 0.012, 0, 0, TAU);
+    ctx.stroke();
+    ctx.restore();
+
+    label('北极 (N)', nX + view.R * 0.055, nY - view.R * 0.055, '#f3cf74', view.font, 'left', true);
+    label('南极 (S)', sX + view.R * 0.045, sY + view.R * 0.055, 'rgba(175,193,214,.72)', view.font * 0.92, 'left');
+    label('自转轴', nX + view.R * 0.02, nY + view.R * 0.11, 'rgba(245,196,81,.85)', view.font * 0.84, 'center');
+  }
+
+  function sunGeometry(){
+    var sunR = Math.max(20, Math.min(view.W * 0.055, view.R * 0.26));
+    var sunX = Math.max(view.W * 0.90, view.cx + view.R * 2.02);
+    var sunY = view.cy - view.R * 0.02;
+    return { x: sunX, y: sunY, r: sunR };
+  }
+
+  function drawSun(){
+    var s = sunGeometry();
+
+    // 阳光：三束平行箭头指向地球
+    var rayYs = [view.cy - view.R * 0.5, view.cy - view.R * 0.06, view.cy + view.R * 0.36];
+    for (var i = 0; i < rayYs.length; i++){
+      var startX = s.x - s.r * 1.12;
+      var endX = view.cx + view.R * 0.94;
+      if (startX > endX + 34){
+        ctx.save();
+        ctx.globalAlpha = 0.92;
+        drawArrow(startX, rayYs[i], endX, rayYs[i], 'rgba(246,201,86,.9)', 2.2, Math.max(10, view.R * 0.065));
+        ctx.restore();
+      }
+    }
+
+    var glow = ctx.createRadialGradient(s.x, s.y, s.r * 0.15, s.x, s.y, s.r * 3.2);
+    glow.addColorStop(0, 'rgba(255,224,130,.55)');
+    glow.addColorStop(0.35, 'rgba(250,196,80,.18)');
+    glow.addColorStop(1, 'rgba(250,196,80,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r * 3.2, 0, TAU);
+    ctx.fill();
+
+    var core = ctx.createRadialGradient(s.x - s.r * 0.3, s.y - s.r * 0.35, s.r * 0.1, s.x, s.y, s.r);
+    core.addColorStop(0, '#fff4c4');
+    core.addColorStop(0.45, '#ffe07a');
+    core.addColorStop(0.82, '#f6c44e');
+    core.addColorStop(1, '#d99b2f');
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, TAU);
+    ctx.fill();
+
+    label('太阳', s.x - s.r * 0.12, s.y - s.r * 1.55, '#f5cd6b', view.font * 1.05, 'center', true);
+  }
+
+  function velocityData(){
+    var markerLon = 55 * DEG - state.spin;
+    var p = project(markerLon, state.lat);
+    var p1 = project(markerLon - 3 * DEG, state.lat);
+    var p2 = project(markerLon + 3 * DEG, state.lat);
+    var dx = p2.x - p1.x;
+    var dy = p2.y - p1.y;
+    var len = Math.sqrt(dx * dx + dy * dy) || 1;
+    var cosLat = Math.cos(state.lat * DEG);
+    var arrowLen = view.R * (0.10 + 0.34 * cosLat);
+    return {
+      marker: p,
+      dir: { x: dx / len, y: dy / len },
+      arrowLen: arrowLen,
+      speed: VMAX * cosLat
+    };
+  }
+
+  function drawVelocityVector(){
+    var data = velocityData();
+    var m = data.marker;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,138,61,.95)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, Math.max(4.2, view.R * 0.022), 0, TAU);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(120,205,255,.95)';
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, Math.max(1.6, view.R * 0.008), 0, TAU);
+    ctx.fill();
+    ctx.restore();
+
+    if (state.showVec){
+      var ex = m.x + data.dir.x * data.arrowLen;
+      var ey = m.y + data.dir.y * data.arrowLen;
+      ctx.save();
+      ctx.shadowColor = 'rgba(58,212,240,.6)';
+      ctx.shadowBlur = 8;
+      drawArrow(m.x, m.y, ex, ey, 'rgba(72,214,242,.96)', 2.2, Math.max(9, view.R * 0.055));
+      ctx.restore();
+    }
+
+    label(
+      state.lat + '° ' + Math.round(data.speed) + 'km/h',
+      m.x + view.R * 0.035,
+      m.y - view.R * 0.085,
+      '#4fc3ff',
+      view.font,
+      'left'
+    );
+
+    // 标注纬线与赤道
+    var p60 = project(90 * DEG - state.spin, 60);
+    label('60° ' + Math.round(VMAX * Math.cos(60 * DEG)) + 'km/h',
+      p60.x + view.R * 0.02, p60.y - view.R * 0.05, 'rgba(185,167,255,.92)', view.font * 0.94, 'left');
+
+    var pEq = project(76 * DEG - state.spin, 0);
+    label('赤道 1670km/h', pEq.x + view.R * 0.02, pEq.y - view.R * 0.02, 'rgba(90,214,244,.9)', view.font * 0.94, 'left');
+
+    // 角速度示意小球
+    var orbX = view.cx + view.R * 1.46;
+    var orbY = view.cy + view.R * 0.20;
+    var sunCheck = sunGeometry();
+    if (sunCheck.x - orbX > view.R * 0.55 && orbX > view.cx + view.R * 1.2){
+      var orbR = Math.max(6, view.R * 0.042);
+      var og = ctx.createRadialGradient(orbX - orbR * 0.35, orbY - orbR * 0.35, 0, orbX, orbY, orbR);
+      og.addColorStop(0, '#8fe6f4');
+      og.addColorStop(0.55, '#2f9db6');
+      og.addColorStop(1, '#145368');
+      ctx.save();
+      ctx.fillStyle = og;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, TAU);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(120,220,240,.55)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(orbX, orbY, orbR * 1.65, orbR * 0.55, -0.35, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+      label('角速度（15°/h）', orbX + orbR * 1.9, orbY + 1, 'rgba(80,210,230,.9)', view.font * 0.86, 'left');
+    }
+  }
+
+  function drawSceneLabels(){
+    var v = VIEWS[state.view];
+
+    label('夜半球', view.cx - view.R * 1.30, view.cy - view.R * 0.55, 'rgba(150,166,188,.55)', view.font * 0.98, 'center');
+    label('昼半球', view.cx + view.R * 0.98, view.cy - view.R * 0.78, '#f5c451', view.font * 1.02, 'center', true);
+
+    if (v.pitch < 50){
+      // 地球下方：自转方向箭头
+      var arcR = view.R * 1.45;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(74,222,128,.8)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(view.cx, view.cy, arcR, 165 * DEG, 15 * DEG, true);
+      ctx.stroke();
+      ctx.restore();
+      var ax = view.cx + arcR * Math.cos(25 * DEG);
+      var ay = view.cy + arcR * Math.sin(25 * DEG);
+      var bx = view.cx + arcR * Math.cos(13 * DEG);
+      var by = view.cy + arcR * Math.sin(13 * DEG);
+      drawArrow(ax, ay, bx, by, 'rgba(74,222,128,.88)', 1.8, Math.max(8, view.R * 0.05));
+      label('自转方向 →', view.cx, view.cy + view.R * 1.62, 'rgba(110,235,165,.9)', view.font * 0.9, 'center');
+    } else {
+      var topR = view.R * 1.22;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(74,222,128,.75)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(view.cx, view.cy, topR, 200 * DEG, 340 * DEG, false);
+      ctx.stroke();
+      ctx.restore();
+      label('自转方向', view.cx + topR * 0.98, view.cy - view.R * 0.18, 'rgba(110,235,165,.9)', view.font * 0.9, 'left');
+    }
+  }
+
+  function draw(t){
+    drawSky(t);
+    drawVelocityCurve();
+    drawAxisBack();
+    drawAtmosphere();
+    drawGlobeBase();
+    drawContinents();
+    drawGraticule();
+    drawSelectedRing();
+    drawShading();
+    drawRim();
+    drawAxisFront();
+    drawSun();
+    drawVelocityVector();
+    drawSceneLabels();
+  }
+
+  function syncUI(){
+    var speed = Math.round(VMAX * Math.cos(state.lat * DEG));
+    statusEl.textContent = '转速 ' + state.speed.toFixed(1) + '× · 纬度 ' + state.lat +
+      '° · 线速度 ' + speed + 'km/h · 向量' + (state.showVec ? '开' : '关');
+    stSpeedEl.textContent = speed + ' km/h';
+    stLatEl.textContent = state.lat + '°';
+    latOut.textContent = state.lat + '°';
+    latRange.value = String(state.lat);
+    playBtn.textContent = state.paused ? '播放' : '暂停';
+    vecBtn.textContent = '向量 ' + (state.showVec ? '开' : '关');
+  }
+
+  var last = 0;
+  function frame(t){
+    if (!last) last = t;
+    var dt = Math.min((t - last) / 1000, 0.12);
+    last = t;
+    if (!state.paused){
+      state.spin += dt * (TAU / 24) * state.speed;
+    }
+    draw(t / 1000);
+    requestAnimationFrame(frame);
+  }
+
+  viewsEl.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-view]');
+    if (!btn) return;
+    state.view = btn.getAttribute('data-view');
+    Array.prototype.forEach.call(viewsEl.querySelectorAll('button'), function(b){
+      b.classList.toggle('on', b === btn);
+    });
+  });
+
+  speedSeg.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-speed]');
+    if (!btn) return;
+    state.speed = parseFloat(btn.getAttribute('data-speed'));
+    Array.prototype.forEach.call(speedSeg.querySelectorAll('button'), function(b){
+      b.classList.toggle('on', b === btn);
+    });
+    syncUI();
+  });
+
+  latRange.addEventListener('input', function(){
+    state.lat = parseInt(latRange.value, 10) || 0;
+    syncUI();
+  });
+
+  vecBtn.addEventListener('click', function(){
+    state.showVec = !state.showVec;
+    syncUI();
+  });
+
+  playBtn.addEventListener('click', function(){
+    state.paused = !state.paused;
+    syncUI();
+  });
+
+  window.addEventListener('resize', function(){
+    layout();
+  });
+
+  layout();
+  syncUI();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

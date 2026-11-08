@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>细胞分裂交互式动画 · 有丝分裂 / 减数分裂</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:#eef2f7;color:#334155;
+    font:15px/1.65 "Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+  }
+  .app{max-width:1180px;margin:0 auto;padding:16px 16px 46px}
+  header h1{font-size:20px;margin:2px 0 0;color:#1e293b}
+  header .sub{margin:2px 0 0;color:#7b8ba1;font-size:13px}
+  .topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0 10px}
+  .topbar .spacer{flex:1 1 12px}
+  .seg{display:inline-flex;background:#e3e9f1;border-radius:999px;padding:3px;gap:2px}
+  .seg button{
+    border:0;background:transparent;color:#54657c;font:inherit;font-size:13px;
+    padding:6px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;touch-action:manipulation;
+  }
+  .seg button.on{background:#fff;color:#1d4ed8;font-weight:700;box-shadow:0 1px 4px rgba(15,23,42,.14)}
+  .seg button:disabled{opacity:.4;cursor:not-allowed}
+  .btn{
+    border:1px solid #d6dfea;background:#fff;color:#3b4a5e;font:inherit;font-size:13px;
+    padding:7px 14px;border-radius:10px;cursor:pointer;touch-action:manipulation;
+  }
+  .btn:hover:not(:disabled){border-color:#b9c8dc;background:#f8fafc}
+  .btn.primary{background:#2f6fd0;border-color:#2f6fd0;color:#fff;font-weight:600}
+  .btn.primary:hover{background:#2860b8}
+  .btn:disabled{opacity:.42;cursor:not-allowed}
+  .stage-card{position:relative;background:#fff;border-radius:16px;box-shadow:0 12px 34px rgba(15,23,42,.08);padding:6px}
+  #stage{display:block;width:100%;height:auto}
+  .legend{
+    position:absolute;top:12px;right:14px;background:rgba(255,255,255,.9);
+    border:1px solid #e4eaf2;border-radius:12px;padding:8px 11px;font-size:12px;
+    color:#54657c;line-height:1.9;backdrop-filter:blur(2px);pointer-events:none;
+  }
+  .legend div{white-space:nowrap}
+  .legend b{color:#334155;font-weight:700;display:block;margin-bottom:2px;font-size:12px}
+  .lg-short{display:none}
+  .sw{display:inline-block;width:16px;height:8px;border-radius:4px;margin-right:7px;vertical-align:1px}
+  .sw.line{height:0;border-top:2px dashed #9aa5b1;border-radius:0}
+  .badge{
+    position:absolute;left:14px;bottom:12px;background:rgba(255,255,255,.92);
+    border:1px solid #e4eaf2;border-radius:10px;padding:4px 10px;font-size:12px;color:#54657c;
+  }
+  .steps{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 8px}
+  .step{
+    border:1px solid #dbe3ec;background:#fff;border-radius:999px;padding:6px 13px;
+    font-size:13px;color:#4b5b70;cursor:pointer;touch-action:manipulation;
+  }
+  .step:hover{border-color:#a8bcd6}
+  .step.on{background:#2f6fd0;border-color:#2f6fd0;color:#fff;font-weight:700}
+  .ctrls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .panels{display:grid;grid-template-columns:1.45fr 1fr;gap:14px}
+  @media (max-width:880px){.panels{grid-template-columns:1fr}}
+  .card{background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 12px 34px rgba(15,23,42,.07)}
+  .card h3{margin:0 0 8px;font-size:15px;color:#1e293b;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:400;color:#64748b;background:#f1f5f9;border-radius:999px;padding:2px 9px}
+  #infoBody p{margin:0;font-size:14px;color:#43536a}
+  #infoBody strong{color:#c2410c}
+  .rule{font-size:12px;color:#64748b;background:#f6f9fd;border:1px dashed #d6e2f0;border-radius:10px;padding:7px 10px;margin-bottom:10px}
+  .rule b{color:#1d4ed8}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .tile{background:#f8fafc;border:1px solid #e8eef5;border-radius:12px;padding:9px 4px;text-align:center}
+  .tile .v{font-size:25px;font-weight:800;color:#0f172a;line-height:1.2}
+  .tile .k{font-size:12px;color:#71829a}
+  .tile.hl .v{color:#c2410c}
+  .note{margin-top:9px;font-size:12.5px;color:#71829a}
+  details.fold{margin-top:14px;background:#fff;border-radius:16px;padding:10px 16px 4px;box-shadow:0 12px 34px rgba(15,23,42,.07)}
+  details.fold>summary{cursor:pointer;font-weight:700;color:#1e293b;padding:6px 0;font-size:15px;outline:none}
+  details.fold>summary::marker{color:#2f6fd0}
+  details.fold .wrap{padding:6px 0 12px}
+  table.cmp{width:100%;border-collapse:collapse;font-size:13px}
+  table.cmp th,table.cmp td{border:1px solid #e6ecf4;padding:6px 9px;text-align:left;vertical-align:top}
+  table.cmp thead th{background:#f2f7fd;color:#1e293b}
+  table.cmp tbody th{background:#fafcfe;font-weight:600;color:#43536a;white-space:nowrap}
+  table.cmp td.c{text-align:center}
+  .hint{text-align:center;color:#8a9bb0;font-size:12.5px;margin-top:16px}
+  .hint kbd{background:#fff;border:1px solid #d9e2ec;border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;color:#54657c}
+  .hint .touch{display:none}
+
+  /* ---------- 移动端 / 窄屏适配 ---------- */
+  @media (max-width:900px){
+    .legend{font-size:11px;padding:6px 9px;line-height:1.8;border-radius:10px;top:10px;right:10px}
+    .legend b{font-size:11px;margin-bottom:1px}
+    .sw{width:13px;height:7px;margin-right:6px;border-radius:3px}
+  }
+  @media (max-width:640px){
+    body{font-size:14px}
+    .app{padding:10px 10px 34px}
+    header h1{font-size:17px}
+    header .sub{font-size:12px}
+    .topbar{gap:8px;margin:10px 0 8px}
+    .seg{padding:2px}
+    .seg button{padding:5px 10px;font-size:12.5px}
+    .btn{padding:6px 11px;font-size:12.5px}
+    .stage-card{border-radius:12px;padding:4px}
+    /* 图例：缩小 + 短标签 + 紧凑排布，避免遮挡动画 */
+    .legend{
+      font-size:10px;padding:4px 7px;line-height:1.5;border-radius:8px;
+      top:6px;right:6px;background:rgba(255,255,255,.88);
+    }
+    .legend b{display:none}
+    .legend .sw{width:10px;height:5px;margin-right:4px;vertical-align:0}
+    .lg-long{display:none}
+    .lg-short{display:inline}
+    .badge{left:8px;bottom:8px;font-size:10.5px;padding:3px 8px}
+    .steps{gap:6px;margin:10px 0 6px}
+    .step{padding:5px 10px;font-size:12.5px}
+    .ctrls{gap:7px;margin-bottom:12px}
+    .panels{gap:11px}
+    .card{padding:12px 13px;border-radius:13px}
+    .card h3{font-size:14.5px}
+    #infoBody p{font-size:13.5px}
+    .rule{font-size:11.5px;padding:6px 9px;margin-bottom:9px}
+    .tiles{gap:7px}
+    .tile{padding:8px 3px}
+    .tile .v{font-size:22px}
+    .tile .k{font-size:11.5px}
+    .note{font-size:12px}
+    .wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table.cmp{min-width:440px;font-size:12.5px}
+    table.cmp th,table.cmp td{padding:5px 7px}
+    details.fold{padding:8px 12px 2px;border-radius:13px}
+    details.fold>summary{font-size:14.5px}
+    .hint{font-size:11.5px;margin-top:12px}
+    .hint .kb{display:none}
+    .hint .touch{display:inline}
+  }
+  @media (max-width:400px){
+    .legend{font-size:9.5px;padding:3px 6px;line-height:1.45}
+    .step{padding:4px 9px;font-size:12px}
+    .seg button{padding:4px 8px;font-size:12px}
+    .btn{padding:5px 9px;font-size:12px}
+    .tile .v{font-size:20px}
+  }
+  @media (max-height:540px) and (orientation:landscape){
+    .app{padding:8px 12px 26px}
+    header h1{font-size:16px}
+    header .sub{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>细胞分裂交互式动画 · 有丝分裂 / 减数分裂</h1>
+    <p class="sub">2N = 4（2 对同源染色体：1 长对 + 1 短对）· 动物细胞 / 植物细胞 · 高中生物复习</p>
+  </header>
+
+  <div class="topbar">
+    <div class="seg" id="modeSeg">
+      <button data-mode="mitosis" class="on">有丝分裂</button>
+      <button data-mode="meiosis">减数分裂</button>
+    </div>
+    <div class="seg" id="cellSeg">
+      <button data-cell="animal" class="on">动物细胞</button>
+      <button data-cell="plant">植物细胞</button>
+    </div>
+    <span class="spacer"></span>
+    <div class="seg" id="crossSeg" title="交叉互换范围（仅减数分裂可用）">
+      <button data-cross="long">互换·长对</button>
+      <button data-cross="short">互换·短对</button>
+      <button data-cross="all" class="on">互换·两对</button>
+    </div>
+    <button class="btn" id="rerandBtn" title="重新随机减I中期/后期两极组合（仅减数分裂可用）">🔄 重新随机</button>
+  </div>
+
+  <div class="stage-card">
+    <svg id="stage" viewBox="0 0 760 540" role="img" aria-label="细胞分裂动画舞台"></svg>
+    <div class="badge" id="badge"></div>
+    <div class="legend">
+      <b>图例</b>
+      <div><span class="sw" style="background:#f0952f"></span><span class="lg-long">橙色 = 父方染色体</span><span class="lg-short">橙 = 父方</span></div>
+      <div><span class="sw" style="background:#4a8fe0"></span><span class="lg-long">蓝色 = 母方染色体</span><span class="lg-short">蓝 = 母方</span></div>
+      <div><span class="sw" style="background:#a855f7"></span><span class="lg-long">紫色 = 交叉互换片段（保留至配子）</span><span class="lg-short">紫 = 互换片段</span></div>
+      <div><span class="sw line"></span><span class="lg-long">灰色虚线 = 赤道板</span><span class="lg-short">虚线 = 赤道板</span></div>
+    </div>
+  </div>
+
+  <div class="steps" id="steps"></div>
+  <div class="ctrls">
+    <button class="btn" id="prevBtn">◀ 上一步</button>
+    <button class="btn primary" id="playBtn">▶ 自动播放</button>
+    <button class="btn" id="nextBtn">下一步 ▶</button>
+    <div class="seg" id="speedSeg" title="播放速度">
+      <button data-rate="0.5">0.5×</button>
+      <button data-rate="1" class="on">1×</button>
+      <button data-rate="2">2×</button>
+    </div>
+  </div>
+
+  <div class="panels">
+    <section class="card">
+      <h3>阶段说明 <span class="tag" id="stageIdx"></span></h3>
+      <div id="infoBody"><p></p></div>
+    </section>
+    <section class="card">
+      <h3>数目统计 <span class="tag" id="scopeTag">—</span></h3>
+      <div class="rule">计数规则：<b>染色体数 = 着丝粒数</b>（例：有丝后期着丝粒分裂，染色体数 4→8）；每条染色单体含 1 个 DNA 分子，故 <b>有单体时 DNA 数 = 单体数，无单体时 DNA 数 = 染色体数</b>。（本动画按 2N = 4 计）</div>
+      <div class="tiles">
+        <div class="tile"><div class="v" id="vChromo">4</div><div class="k">染色体数</div></div>
+        <div class="tile hl"><div class="v" id="vSister">0</div><div class="k">染色单体数</div></div>
+        <div class="tile hl"><div class="v" id="vDna">4</div><div class="k">DNA 分子数</div></div>
+      </div>
+      <div class="note" id="countNote"></div>
+    </section>
+  </div>
+
+  <details class="fold" open>
+    <summary>有丝分裂 vs 减数分裂 对比总结（核心考点）</summary>
+    <div class="wrap">
+      <table class="cmp">
+        <thead><tr><th>对比项</th><th>有丝分裂</th><th>减数分裂</th></tr></thead>
+        <tbody>
+          <tr><th>发生场所</th><td>一般为体细胞</td><td>有性生殖器官（精巢 / 卵巢等）</td></tr>
+          <tr><th>细胞分裂次数</th><td>1 次</td><td>连续 2 次</td></tr>
+          <tr><th>DNA 复制次数</th><td>1 次（间期）</td><td>1 次（减前间期），减II 不再复制</td></tr>
+          <tr><th>同源染色体行为</th><td>不联会、后期不分离</td><td>减I 联会形成四分体、可交叉互换；后期同源染色体分离</td></tr>
+          <tr><th>着丝粒分裂时机</th><td>后期</td><td>减II 后期</td></tr>
+          <tr><th>子细胞数目</th><td>2 个</td><td>4 个</td></tr>
+          <tr><th>子细胞染色体数</th><td>2N（与亲代相同）</td><td>N（减半）</td></tr>
+          <tr><th>子细胞遗传组成</th><td>与亲代基本相同</td><td>各不相同（自由组合 + 交叉互换 → 基因重组）</td></tr>
+          <tr><th>意义</th><td>细胞增殖、个体生长</td><td>产生配子；维持亲子代染色体数恒定；增加生物变异</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>数目变化参考表（2N = 4）</summary>
+    <div class="wrap">
+      <table class="cmp">
+        <thead><tr><th>阶段</th><th class="c">染色体数</th><th class="c">染色单体数</th><th class="c">DNA 数</th></tr></thead>
+        <tbody>
+          <tr><td>有丝·间期（复制前）</td><td class="c">4</td><td class="c">0</td><td class="c">4</td></tr>
+          <tr><td>有丝·间期（复制后）/ 前期 / 中期</td><td class="c">4</td><td class="c">8</td><td class="c">8</td></tr>
+          <tr><td>有丝·后期（整个细胞）</td><td class="c">8</td><td class="c">0</td><td class="c">8</td></tr>
+          <tr><td>有丝·末期（每个子细胞）</td><td class="c">4</td><td class="c">0</td><td class="c">4</td></tr>
+          <tr><td>减前·间期（复制前）</td><td class="c">4</td><td class="c">0</td><td class="c">4</td></tr>
+          <tr><td>减前·间期（复制后）/ 减I·前期 / 中期</td><td class="c">4</td><td class="c">8</td><td class="c">8</td></tr>
+          <tr><td>减I·后期 / 末期（分裂未完成时，按整个细胞）</td><td class="c">4</td><td class="c">8</td><td class="c">8</td></tr>
+          <tr><td>减I·结束（每个子细胞）</td><td class="c">2</td><td class="c">4</td><td class="c">4</td></tr>
+          <tr><td>减II·前期 / 中期（每个细胞）</td><td class="c">2</td><td class="c">4</td><td class="c">4</td></tr>
+          <tr><td>减II·后期（每个细胞）</td><td class="c">4</td><td class="c">0</td><td class="c">4</td></tr>
+          <tr><td>减II·结束（每个生殖细胞）</td><td class="c">2</td><td class="c">0</td><td class="c">2</td></tr>
+        </tbody>
+      </table>
+      <p class="note">注：减I 结束后每个细胞含 2 条染色体，分别进入减II，故减II 各阶段均按“每个细胞”统计；减I 各阶段细胞尚未完全分开，按“整个细胞”统计。</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>动物细胞 vs 植物细胞 差异（本身为考点）</summary>
+    <div class="wrap">
+      <table class="cmp">
+        <thead><tr><th>项目</th><th>动物细胞</th><th>植物细胞</th></tr></thead>
+        <tbody>
+          <tr><th>外形</th><td>圆形轮廓</td><td>矩形轮廓（含细胞壁）</td></tr>
+          <tr><th>纺锤体</th><td>中心粒 + 星射线</td><td>两极纺锤丝（高等植物无中心粒）</td></tr>
+          <tr><th>末期分裂</th><td>细胞膜中部缢裂</td><td>赤道板处形成细胞板 → 扩展为细胞壁</td></tr>
+        </tbody>
+      </table>
+      <p class="note">注：低等植物细胞含中心体；本动画按高中教材惯例，以高等植物细胞演示。</p>
+    </div>
+  </details>
+
+  <p class="hint">
+    <span class="kb">快捷键：<kbd>←</kbd> / <kbd>→</kbd> 切换阶段 · <kbd>空格</kbd> 播放 / 暂停 · 点击当前阶段可重播该阶段动画</span>
+    <span class="touch">建议横屏浏览，动画画面更大 · 点阶段圆点可跳转，点当前阶段可重播该阶段动画</span>
+  </p>
+</div>
+
+<script>
+'use strict';
+/* ============================ 基础常量与工具 ============================ */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const clamp = (v, a = 0, b = 1) => v < a ? a : (v > b ? b : v);
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = k => k < 0.5 ? 2 * k * k : 1 - 2 * (1 - k) * (1 - k);
+const mix3 = (a, b, c, k1, k2) => { const p = lerp(a, b, k1); return lerp(p, c, k2); };
+
+const C = {
+  mem:'#8fa3b8', cellFill:'#fbfdff', wall:'#a9c08c', wallFill:'#f6fbf1',
+  nuc:'#8ea6c8', nucFill:'#eef5ff', nucleolus:'#7ea0d8',
+  fiber:'#aab5c3', aster:'#c0cad7', pole:'#5f6b7a', centro:'#6b7a89',
+  equator:'#9aa5b1', plate:'#9cb389',
+  P:'#f0952f', M:'#4a8fe0', purple:'#a855f7', cen:'#374151', label:'#334155'
+};
+
+/* 染色体：2N = 4，h = 半高，tip = 端点横向偏移（用于 X 形两条染色单体交叉） */
+const CHROMS = {
+  LP:{pair:'long', origin:'P', h:32, tip:13},
+  LM:{pair:'long', origin:'M', h:32, tip:13},
+  SP:{pair:'short', origin:'P', h:25, tip:10},
+  SM:{pair:'short', origin:'M', h:25, tip:10}
+};
+const CHROM_KEYS = ['LP','LM','SP','SM'];
+const PAIR_KEYS = {long:['LP','LM'], short:['SP','SM']};
+
+/* 2N = 4 的散点布局：间期细丝位置 / 前期散布位置 / 中期赤道板行位置 */
+const FIL_SLOTS = [
+  {x:-40, y:-34, rot: 22}, {x: 38, y:-26, rot:-16},
+  {x:-32, y: 36, rot:-38}, {x: 34, y: 30, rot: 12}
+];
+const PRO_SLOTS = [
+  {x:-72, y:-56, rot: 24}, {x: 74, y:-46, rot:-14},
+  {x:-60, y: 60, rot:-30}, {x: 62, y: 56, rot: 10}
+];
+const META_ROWS = [-100, -31, 38, 107];           // 中期：着丝粒所在行（长短交替）
+const META_ORDER = ['LP','SM','LM','SP'];
+const CC = {x:380, y:270};                        // 单细胞中心
+const POLE = 128;                                 // 有丝分裂 / 减I 极距
+const MII_POLE = 90;                              // 减II 极距
+const MII_CELLS = [{x:245, y:270}, {x:515, y:270}];
+const GAMETE_POS = [{x:245, y:204}, {x:515, y:204}, {x:245, y:336}, {x:515, y:336}];
+
+/* ============================ 运行状态 ============================ */
+const state = {
+  mode:'mitosis', idx:0, cell:'animal', rate:1, playing:false,
+  cross:{long:true, short:true},
+  assort:{long:0, short:0},        // 0：父方染色体去左极；1：母方染色体去左极
+  sister:{},                       // 减II：姐妹染色单体去向（+1 表示 idx0 去正向）
+};
+function rollMeiosis(){
+  state.assort.long = Math.random() < 0.5 ? 0 : 1;
+  state.assort.short = Math.random() < 0.5 ? 0 : 1;
+  for (const c of [0,1]) for (const p of ['long','short'])
+    state.sister[c + '|' + p] = Math.random() < 0.5 ? 1 : -1;
+}
+/* 四分体中某一侧的同源染色体（决定自由组合与“朝向”） */
+function tetradSide(pair, sideLeft){
+  const [a, b] = PAIR_KEYS[pair];
+  const leftKey = state.assort[pair] === 0 ? a : b;
+  const rightKey = leftKey === a ? b : a;
+  return sideLeft ? leftKey : rightKey;
+}
+/* 该染色单体是否为“互换对象”（即四分体中相对、朝向赤道板一侧的非姐妹染色单体） */
+function isFacingRod(cid){
+  const key = cid.slice(0, 2), idx = +cid[2];
+  const pair = CHROMS[key].pair;
+  const isLeft = (key === tetradSide(pair, true));
+  return idx === (isLeft ? 1 : 0);
+}
+/* 互换片段显示强度：reveal 为阶段内揭示进度 */
+function patchReveal(cid, reveal){
+  const pair = CHROMS[cid.slice(0, 2)].pair;
+  if (!state.cross[pair]) return 0;
+  return isFacingRod(cid) ? reveal : 0;
+}
+
+/* ============================ 演员（SVG 元素 + 可补间属性） ============================ */
+const A = {};
+const svg = document.getElementById('stage');
+function el(tag, attrs, parent){
+  const e = document.createElementNS(SVGNS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  (parent || svg).appendChild(e);
+  return e;
+}
+const LY = {
+  cell: el('g'), nuc: el('g'), plate: el('g'), spin: el('g'),
+  equ: el('g'), chr: el('g'), cen: el('g'), centro: el('g'), block: el('g'), lab: el('g')
+};
+function defaults(type){
+  switch (type){
+    case 'cell': return {cx:0, cy:0, rx:0, ry:0, n:2, furrow:0, frot:0, op:0, memOp:1, wallOp:0, fillOp:1};
+    case 'nucleus': return {cx:0, cy:0, rx:0, ry:0, op:0};
+    case 'nucleolus': return {cx:0, cy:0, r:0, op:0};
+    case 'spindle': return {cx:0, cy:0, rot:0, len:0, spread:0, op:0, kinOp:0, ast:0, pole:1, kinOne:0, kin:[]};
+    case 'chromatid': return {x:0, y:0, rot:0, t1x:0, t1y:0, t2x:0, t2y:0, bow:0, width:8, wav:0, seed:0, op:0, pOp:0, p0:0.06, p1:0.34};
+    case 'centromere': return {x:0, y:0, r:4.6, op:0};
+    case 'equator': return {cx:0, cy:0, len:0, rot:0, op:0};
+    case 'plate': return {cx:0, cy:0, len:0, rot:0, op:0};
+    case 'centro': return {x:0, y:0, rot:0, op:0};
+    case 'label': return {x:0, y:0, op:0, text:'', anchor:'middle'};
+    case 'block': return {x1:0, y1:0, x2:0, y2:0, op:0};
+  }
+}
+function mkActor(key, type){
+  const a = {key, type, p: defaults(type), els: []};
+  switch (type){
+    case 'cell': {
+      const g = el('g', null, LY.cell);
+      a.els.push(el('path', {fill:C.cellFill, 'fill-opacity':1, stroke:'none'}, g));   // 底色
+      a.els.push(el('path', {fill:'none', stroke:C.mem, 'stroke-width':2.4}, g));      // 细胞膜
+      a.els.push(el('path', {fill:C.wallFill, 'fill-opacity':0.9, stroke:C.wall, 'stroke-width':6.5}, g)); // 细胞壁
+      break;
+    }
+    case 'nucleus': a.els.push(el('ellipse', {fill:C.nucFill, stroke:C.nuc, 'stroke-width':2}, LY.nuc)); break;
+    case 'nucleolus': a.els.push(el('circle', {fill:C.nucleolus, opacity:0.85}, LY.nuc)); break;
+    case 'spindle': {
+      const g = el('g', null, LY.spin); a.els.push(g);
+      const inner = el('g', null, g); a.els.push(inner);
+      a.els.push(el('path', {fill:'none', stroke:C.fiber, 'stroke-width':1.6, opacity:0.95}, inner));
+      a.els.push(el('path', {fill:'none', stroke:C.aster, 'stroke-width':1.6, opacity:0.9}, inner));
+      a.els.push(el('circle', {r:4.4, fill:C.pole}, inner));
+      a.els.push(el('circle', {r:4.4, fill:C.pole}, inner));
+      a.els.push(el('g', {opacity:0.9}, inner));
+      a.els.push(el('path', {fill:'none', stroke:C.fiber, 'stroke-width':1.7}, g));    // 动粒纺锤丝（世界坐标）
+      break;
+    }
+    case 'chromatid': {
+      const g = el('g', null, LY.chr); a.els.push(g);
+      a.els.push(el('path', {fill:'none', 'stroke-linecap':'round', stroke:C.P, 'stroke-width':8}, g));
+      a.els.push(el('path', {fill:'none', 'stroke-linecap':'round', stroke:C.purple, opacity:0}, g));
+      break;
+    }
+    case 'centromere': a.els.push(el('circle', {r:4.6, fill:C.cen}, LY.cen)); break;
+    case 'equator': {
+      const g = el('g', null, LY.equ); a.els.push(g);
+      a.els.push(el('line', {x1:0, y1:0, x2:0, y2:0, stroke:C.equator, 'stroke-width':2, 'stroke-dasharray':'7 6', 'stroke-linecap':'round'}, g));
+      break;
+    }
+    case 'plate': {
+      const g = el('g', null, LY.plate); a.els.push(g);
+      a.els.push(el('line', {x1:0, y1:0, x2:0, y2:0, stroke:C.plate, 'stroke-width':6.5, 'stroke-linecap':'round'}, g));
+      break;
+    }
+    case 'centro': {
+      const g = el('g', null, LY.centro); a.els.push(g);
+      a.els.push(el('rect', {x:-2.6, y:-8, width:5.2, height:16, rx:2.4, fill:C.centro}, g));
+      a.els.push(el('rect', {x:-8, y:-2.6, width:16, height:5.2, rx:2.4, fill:C.centro}, g));
+      break;
+    }
+    case 'label': {
+      const t = el('text', {
+        'text-anchor':'middle', 'font-size':13, fill:C.label,
+        stroke:'#ffffff', 'stroke-width':3.4, 'paint-order':'stroke', 'font-weight':'600'
+      }, LY.lab);
+      a.els.push(t);
+      break;
+    }
+    case 'block': a.els.push(el('line', {'stroke-linecap':'round', stroke:C.purple, 'stroke-width':9}, LY.block)); break;
+  }
+  A[key] = a;
+}
+function initActors(){
+  ['c0','c1','c2','c3'].forEach(k => mkActor(k, 'cell'));
+  ['n0','n1','n2','n3'].forEach(k => mkActor(k, 'nucleus'));
+  ['u0','u1','u2','u3'].forEach(k => mkActor(k, 'nucleolus'));
+  ['pl0','pl1'].forEach(k => mkActor(k, 'plate'));
+  ['e0','e1'].forEach(k => mkActor(k, 'equator'));
+  ['s0','s1'].forEach(k => mkActor(k, 'spindle'));
+  ['y0','y1','y2','y3'].forEach(k => mkActor(k, 'centro'));
+  CHROM_KEYS.forEach(k => [0,1].forEach(i => {
+    const key = k + i;
+    mkActor(key, 'chromatid');
+    A[key].els[1].setAttribute('stroke', C[CHROMS[k].origin]);
+    A[key].p.seed = Math.random() * Math.PI * 2;
+    const ck = key + '@cen';
+    mkActor(ck, 'centromere');
+    A[ck].src = key;                       // 着丝粒跟随同名染色单体
+    A[key].cen = ck;
+  }));
+  for (let i = 0; i < 8; i++) mkActor('l' + i, 'label');
+  ['b0','b1','b2','b3'].forEach(k => mkActor(k, 'block'));
+}
+
+/* ---------------- 几何：路径生成 ---------------- */
+function cellPathD(p){
+  const {cx, cy, rx, ry, n, furrow, frot} = p;
+  if (rx < 0.5 || ry < 0.5) return '';
+  const N = 84, pts = [];
+  for (let i = 0; i < N; i++){
+    const ang = i / N * Math.PI * 2, ca = Math.cos(ang), sa = Math.sin(ang);
+    let x = cx + rx * Math.sign(ca) * Math.pow(Math.abs(ca), 2 / n);
+    let y = cy + ry * Math.sign(sa) * Math.pow(Math.abs(sa), 2 / n);
+    if (furrow > 0.001){
+      if (frot === 0){
+        const k = Math.exp(-Math.pow((x - cx) / (rx * 0.5), 2));
+        y = cy + (y - cy) * (1 - furrow * 0.94 * k);
+      } else {
+        const k = Math.exp(-Math.pow((y - cy) / (ry * 0.5), 2));
+        x = cx + (x - cx) * (1 - furrow * 0.94 * k);
+      }
+    }
+    pts.push(x.toFixed(1) + ' ' + y.toFixed(1));
+  }
+  return 'M' + pts.join('L') + 'Z';
+}
+function rodPts(p, u0, u1, count, time){
+  const dx = p.t2x - p.t1x, dy = p.t2y - p.t1y, L = Math.hypot(dx, dy) || 1;
+  const nx = dy / L, ny = -dx / L;
+  const mx = (p.t1x + p.t2x) / 2, my = (p.t1y + p.t2y) / 2;
+  const cx = mx + nx * p.bow, cy = my + ny * p.bow;
+  const ph = p.seed + time * 0.00055;
+  const pts = [];
+  for (let i = 0; i <= count; i++){
+    const u = u0 + (u1 - u0) * i / count;
+    let x = (1-u)*(1-u)*p.t1x + 2*u*(1-u)*cx + u*u*p.t2x;
+    let y = (1-u)*(1-u)*p.t1y + 2*u*(1-u)*cy + u*u*p.t2y;
+    if (p.wav > 0.02){
+      const amp = p.wav * 6.5 * Math.sin(Math.PI * clamp(u));
+      const off = amp * Math.sin(ph + u * Math.PI * 4.8);
+      x += nx * off; y += ny * off;
+    }
+    pts.push(x.toFixed(1) + ' ' + y.toFixed(1));
+  }
+  return 'M' + pts.join('L');
+}
+function rodPoint(p, u){                     // 用于计算互换标记位置
+  const dx = p.t2x - p.t1x, dy = p.t2y - p.t1y, L = Math.hypot(dx, dy) || 1;
+  const nx = dy / L, ny = -dx / L;
+  const mx = (p.t1x + p.t2x) / 2, my = (p.t1y + p.t2y) / 2;
+  const cx = mx + nx * p.bow, cy = my + ny * p.bow;
+  return {
+    x: p.x + (1-u)*(1-u)*p.t1x + 2*u*(1-u)*cx + u*u*p.t2x,
+    y: p.y + (1-u)*(1-u)*p.t1y + 2*u*(1-u)*cy + u*u*p.t2y
+  };
+}
+
+/* ---------------- 渲染 ---------------- */
+let TIME = 0;
+function renderAll(){
+  for (const key in A){
+    const a = A[key], p = a.p;
+    switch (a.type){
+      case 'cell': {
+        const d = cellPathD(p);
+        a.els[0].setAttribute('d', d); a.els[0].setAttribute('opacity', p.fillOp * p.op);
+        a.els[0].setAttribute('fill', p.wallOp > 0.5 ? C.wallFill : C.cellFill);
+        a.els[1].setAttribute('d', d); a.els[1].setAttribute('opacity', p.memOp * p.op);
+        a.els[2].setAttribute('d', d); a.els[2].setAttribute('opacity', p.wallOp * p.op);
+        break;
+      }
+      case 'nucleus':
+        a.els[0].setAttribute('cx', p.cx); a.els[0].setAttribute('cy', p.cy);
+        a.els[0].setAttribute('rx', Math.max(0, p.rx)); a.els[0].setAttribute('ry', Math.max(0, p.ry));
+        a.els[0].setAttribute('opacity', p.op);
+        break;
+      case 'nucleolus':
+        a.els[0].setAttribute('cx', p.cx); a.els[0].setAttribute('cy', p.cy);
+        a.els[0].setAttribute('r', Math.max(0, p.r)); a.els[0].setAttribute('opacity', p.op * 0.9);
+        break;
+      case 'spindle': {
+        const inner = a.els[1], fibers = a.els[2], asters = a.els[3];
+        const po0 = a.els[4], po1 = a.els[5], poleG = a.els[6];
+        inner.setAttribute('transform', `translate(${p.cx} ${p.cy}) rotate(${p.rot})`);
+        inner.setAttribute('opacity', p.op);
+        let d = '';
+        for (const f of [0.12, 0.42, 0.78, 1]){
+          const b = Math.max(2, p.spread * f);
+          d += `M${-p.len} 0Q0 ${-b} ${p.len} 0M${-p.len} 0Q0 ${b} ${p.len} 0`;
+        }
+        fibers.setAttribute('d', d);
+        let ad = '';
+        if (p.ast > 0.02){
+          for (const s of [-1, 1]) for (const deg of [-54, -28, 0, 28, 54]){
+            const r = deg * Math.PI / 180;
+            ad += `M${s * p.len} 0L${(s * p.len + s * Math.cos(r) * 32).toFixed(1)} ${(Math.sin(r) * 32).toFixed(1)}`;
+          }
+        }
+        asters.setAttribute('d', ad);
+        asters.setAttribute('opacity', p.ast * p.op);
+        po0.setAttribute('cx', -p.len); po0.setAttribute('cy', 0);
+        po1.setAttribute('cx', p.len); po1.setAttribute('cy', 0);
+        poleG.setAttribute('opacity', p.ast > 0.05 ? p.op : 0);
+        // 动粒纺锤丝（世界坐标：由两极连向每条着丝粒）
+        let kd = '';
+        if (p.kinOp > 0.02 && p.kin && p.kin.length){
+          const r = p.rot * Math.PI / 180, ax = Math.cos(r), ay = Math.sin(r);
+          const p1 = {x: p.cx - ax * p.len, y: p.cy - ay * p.len};
+          const p2 = {x: p.cx + ax * p.len, y: p.cy + ay * p.len};
+          const nx = -ay, ny = ax;
+          for (const k of p.kin){
+            const tgt = A[k];
+            if (!tgt || tgt.p.op < 0.05) continue;
+            let froms = [p1, p2];
+            if (p.kinOne > 0.5){
+              const d1 = Math.hypot(tgt.p.x - p1.x, tgt.p.y - p1.y);
+              const d2 = Math.hypot(tgt.p.x - p2.x, tgt.p.y - p2.y);
+              froms = [d1 <= d2 ? p1 : p2];
+            }
+            for (const from of froms){
+              const mx = (from.x + tgt.p.x) / 2, my = (from.y + tgt.p.y) / 2;
+              kd += `M${from.x.toFixed(1)} ${from.y.toFixed(1)}Q${(mx + nx * 8).toFixed(1)} ${(my + ny * 8).toFixed(1)} ${tgt.p.x.toFixed(1)} ${tgt.p.y.toFixed(1)}`;
+            }
+          }
+        }
+        a.els[7].setAttribute('d', kd);
+        a.els[7].setAttribute('opacity', p.kinOp * p.op);
+        break;
+      }
+      case 'chromatid': {
+        a.els[0].setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${p.rot})`);
+        a.els[0].setAttribute('opacity', p.op);
+        if (p.op <= 0.01){ a.els[1].setAttribute('d', ''); a.els[2].setAttribute('d', ''); break; }
+        a.els[1].setAttribute('d', rodPts(p, 0, 1, 20, TIME));
+        a.els[1].setAttribute('stroke-width', Math.max(0.5, p.width));
+        a.els[2].setAttribute('d', p.pOp > 0.02 ? rodPts(p, p.p0, p.p1, 9, TIME) : '');
+        a.els[2].setAttribute('stroke-width', Math.max(0.5, p.width + 3.2));
+        a.els[2].setAttribute('opacity', p.pOp);
+        break;
+      }
+      case 'centromere': {
+        const src = A[a.src];
+        const sp = src ? src.p : p;
+        a.els[0].setAttribute('cx', sp.x); a.els[0].setAttribute('cy', sp.y);
+        a.els[0].setAttribute('r', Math.max(0, p.r));
+        a.els[0].setAttribute('opacity', p.op);
+        break;
+      }
+      case 'equator':
+      case 'plate': {
+        a.els[0].setAttribute('transform', `translate(${p.cx} ${p.cy}) rotate(${p.rot})`);
+        a.els[1].setAttribute('y1', -p.len); a.els[1].setAttribute('y2', p.len);
+        a.els[1].setAttribute('opacity', p.op);
+        break;
+      }
+      case 'centro':
+        a.els[0].setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${p.rot})`);
+        a.els[0].setAttribute('opacity', p.op);
+        break;
+      case 'label':
+        a.els[0].setAttribute('x', p.x); a.els[0].setAttribute('y', p.y);
+        a.els[0].setAttribute('opacity', p.op);
+        a.els[0].setAttribute('text-anchor', p.anchor || 'middle');
+        if (a.els[0].textContent !== (p.text || '')) a.els[0].textContent = p.text || '';
+        break;
+      case 'block':
+        a.els[0].setAttribute('x1', p.x1); a.els[0].setAttribute('y1', p.y1);
+        a.els[0].setAttribute('x2', p.x2); a.els[0].setAttribute('y2', p.y2);
+        a.els[0].setAttribute('opacity', p.op);
+        break;
+    }
+  }
+}
+
+/* ---------------- 场景套用与补间 ---------------- */
+function hiddenProps(a){
+  const h = defaults(a.type); h.op = 0;
+  if ('text' in h) h.text = '';
+  if ('kin' in h) h.kin = [];
+  return h;
+}
+function applyScene(scene){
+  for (const key in A){
+    const a = A[key];
+    const tgt = scene[a.type] && scene[a.type][key];
+    a.p = tgt ? Object.assign(defaults(a.type), tgt) : hiddenProps(a);
+  }
+  renderAll();
+}
+function blendScene(from, to, k){
+  const swap = k >= 0.5;                    // 标注文字在透明度最低处切换
+  for (const key in A){
+    const a = A[key], f = from[key] || {};
+    const tgt = to[a.type] && to[a.type][key];
+    const t = tgt ? Object.assign(defaults(a.type), tgt) : hiddenProps(a);
+    const lbl = a.type === 'label';
+    const changed = lbl && ((t.text || '') !== (f.text || ''));
+    const dip = changed ? 1 - 0.95 * Math.sin(Math.PI * k) : 1;
+    const p = {};
+    for (const kk in t){
+      const tv = t[kk];
+      if (typeof tv === 'number'){
+        let v = (typeof f[kk] === 'number') ? lerp(f[kk], tv, k) : ((kk === 'op') ? tv * k : tv);
+        if (changed && kk === 'op') v *= dip;
+        p[kk] = v;
+      } else if (lbl && kk === 'text' && changed && !swap){
+        p[kk] = f.text || '';
+      } else p[kk] = tv;
+    }
+    for (const kk in f){
+      if (!(kk in p)){
+        p[kk] = (typeof f[kk] === 'number') ? f[kk] * (1 - k) : f[kk];
+      }
+    }
+    a.p = p;
+  }
+  renderAll();
+}
+function snapProps(){
+  const s = {};
+  for (const k in A) s[k] = Object.assign({}, A[k].p);
+  return s;
+}
+
+/* ---------------- 场景小工具 ---------------- */
+function emptyScene(){
+  return {cell:{}, chromatid:{}, centromere:{}, nucleus:{}, nucleolus:{},
+          spindle:{}, equator:{}, plate:{}, centro:{}, label:{}, block:{}, counts:{}};
+}
+function putCell(S, key, o){
+  S.cell[key] = Object.assign({
+    cx:0, cy:0, rx:0, ry:0, n: state.cell === 'animal' ? 2 : 4.6, furrow:0, frot:0,
+    op:1, memOp:1, wallOp: state.cell === 'animal' ? 0 : 1, fillOp:1
+  }, o);
+}
+function putNuc(S, key, o){ S.nucleus[key] = Object.assign({cx:0, cy:0, rx:0, ry:0, op:1}, o); }
+function putNucleolus(S, key, o){ S.nucleolus[key] = Object.assign({cx:0, cy:0, r:0, op:1}, o); }
+function putSpindle(S, key, o){
+  S.spindle[key] = Object.assign({
+    cx:0, cy:0, rot:0, len:0, spread:0, op:0, kinOp:0, ast:0, pole:1, kinOne:0, kin:[]
+  }, o);
+}
+function putEquator(S, key, o){ S.equator[key] = Object.assign({cx:0, cy:0, len:0, rot:0, op:0}, o); }
+function putPlate(S, key, o){ S.plate[key] = Object.assign({cx:0, cy:0, len:0, rot:0, op:0}, o); }
+function putCentro(S, key, o){ S.centro[key] = Object.assign({x:0, y:0, rot:0, op:0}, o); }
+function putLabel(S, i, text, x, y, op){
+  let anchor = 'middle', px = x;
+  if (x === LX){ anchor = 'start'; px = LXL; }
+  else if (x === RX){ anchor = 'end'; px = RXL; }
+  S.label['l' + i] = {x:px, y, op:clamp(op), text, anchor};
+}
+/* 染色体（X 形：两条姐妹染色单体共着丝粒） */
+function putChromX(S, key, x, y, rot, opt){
+  opt = opt || {};
+  const ch = CHROMS[key], sc = opt.scale || 1, h = ch.h * sc, tip = ch.tip * sc;
+  for (const idx of [0, 1]){
+    const s = idx === 0 ? -1 : 1;
+    const cid = key + idx;
+    S.chromatid[cid] = {
+      x, y, rot,
+      t1x: s * tip, t1y: -h, t2x: -s * tip, t2y: h,
+      bow: 0, width: 8.4, wav: 0, seed: A[cid].p.seed, op: opt.op === undefined ? 1 : opt.op,
+      pOp: patchReveal(cid, opt.reveal || 0), p0: 0.06, p1: 0.34
+    };
+    S.centromere[cid + '@cen'] = {x, y, r: 4.6, op: opt.cenOp === undefined ? 1 : opt.cenOp};
+  }
+}
+/* 单条染色单体（着丝粒分裂后，I 形） */
+function putChromI(S, key, idx, x, y, rot, opt){
+  opt = opt || {};
+  const ch = CHROMS[key], sc = opt.scale || 1, h = ch.h * sc;
+  const cid = key + idx;
+  S.chromatid[cid] = {
+    x, y, rot, t1x: 0, t1y: -h, t2x: 0, t2y: h,
+    bow: 3, width: 8.4, wav: 0, seed: A[cid].p.seed, op: 1,
+    pOp: patchReveal(cid, opt.reveal || 0), p0: 0.06, p1: 0.34
+  };
+  S.centromere[cid + '@cen'] = {x, y, r: 4.6, op: 1};
+}
+/* 染色质细丝（间期） */
+function putFilament(S, key, idx, x, y, rot, opt){
+  opt = opt || {};
+  const cid = key + idx;
+  const len = opt.len === undefined ? 118 : opt.len;
+  S.chromatid[cid] = {
+    x, y, rot, t1x: -3, t1y: -len / 2, t2x: 3, t2y: len / 2,
+    bow: 0, width: 3.4, wav: 1, seed: A[cid].p.seed, op: opt.op === undefined ? 1 : opt.op,
+    pOp: 0, p0: 0.06, p1: 0.34
+  };
+  S.centromere[cid + '@cen'] = {x, y, r: 4.6, op: 0};
+}
+/* @@END@@ */
+
+/* ============================ 几何/命名小工具 ============================ */
+function rotPt(center, local, deg){
+  const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+  return {x: center.x + local.x * c - local.y * s, y: center.y + local.x * s + local.y * c};
+}
+function qbez(A, Ct, B, k){
+  const m = 1 - k;
+  return {x: m * m * A.x + 2 * k * m * Ct.x + k * k * B.x, y: m * m * A.y + 2 * k * m * Ct.y + k * k * B.y};
+}
+const KIN_ALL = CHROM_KEYS.flatMap(k => [k + '0@cen', k + '1@cen']);
+/* 两侧说明列：靠边缘对齐（英文/长句不会被舞台边缘裁切） */
+const LX = 100, RX = 660, LXL = 14, RXL = 746;
+const replU = t => clamp((t - 0.28) / 0.42);          // 间期 DNA 复制进度
+const animal = () => state.cell === 'animal';
+
+/* ============================ 有丝分裂（5 阶段） ============================ */
+function m0(t, S){                                     // 间期
+  const cx = CC.x, cy = CC.y, an = animal(), u = replU(t);
+  putCell(S, 'c0', {cx, cy, rx:195, ry:158});
+  putNuc(S, 'n0', {cx, cy, rx:118, ry:100, op:1});
+  putNucleolus(S, 'u0', {cx:cx + 36, cy:cy - 28, r:26, op:1});
+  CHROM_KEYS.forEach((k, j) => {
+    const s = FIL_SLOTS[j];
+    putFilament(S, k, 0, cx + s.x, cy + s.y, s.rot, {op:1});
+    putFilament(S, k, 1, cx + s.x + 13 * u, cy + s.y + 9 * u, s.rot + 8 * u, {op:u});
+  });
+  putSpindle(S, 's0', {cx, cy, op:0});
+  putCentro(S, 'y0', {x:cx, y:cy - 124, rot:0, op:an ? 1 : 0});
+  putCentro(S, 'y1', {x:cx + 34, y:cy - 116, rot:0, op:an ? u : 0});
+  putEquator(S, 'e0', {cx, cy, len:0, op:0});
+  putLabel(S, 0, '染色质呈细丝状（看不见染色体）', LX, cy - 80, 1);
+  putLabel(S, 1, 'DNA 复制：4 → 8', LX, cy - 46, clamp((t - 0.12) / 0.2));
+  putLabel(S, 2, '合成大量蛋白质', LX, cy - 12, clamp((t - 0.18) / 0.2));
+  putLabel(S, 3, '每条染色体形成 2 条姐妹染色单体（共 8 条单体）', CC.x, 486, clamp((u - 0.85) / 0.1));
+  putLabel(S, 4, '中心体复制（倍增）', 470, 96, an ? clamp((u - 0.25) / 0.2) : 0);
+  putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:4, s:Math.round(8 * u), d:4 + Math.round(4 * u), scope:'整个细胞',
+    note: u < 0.98 ? '复制进行中：DNA 数 4 → 8，染色单体 0 → 8（染色体数不变 = 4）'
+                   : '复制完成：每条染色体含 2 条姐妹染色单体 → 4 / 8 / 8'};
+  return S;
+}
+function m1(t, S){                                     // 前期
+  const cx = CC.x, cy = CC.y, an = animal();
+  const u = ease(clamp(t / 0.5));                      // 螺旋化
+  const w = ease(clamp((t - 0.2) / 0.55));             // 核膜、核仁消失
+  const v = ease(clamp((t - 0.12) / 0.6));             // 纺锤体
+  putCell(S, 'c0', {cx, cy, rx:195, ry:158});
+  putNuc(S, 'n0', {cx, cy, rx:118 + 10 * w, ry:100 + 8 * w, op:1 - w});
+  putNucleolus(S, 'u0', {cx:cx + 36, cy:cy - 28, r:26, op:1 - clamp(t / 0.22)});
+  CHROM_KEYS.forEach((k, j) => {
+    const a = PRO_SLOTS[j], b = FIL_SLOTS[j], ch = CHROMS[k];
+    const x = lerp(cx + b.x, cx + a.x, u), y = lerp(cy + b.y, cy + a.y, u), rot = lerp(b.rot, a.rot, u);
+    const h = lerp(59, ch.h, u), tip = lerp(3, ch.tip, u);
+    for (const idx of [0, 1]){
+      const s = idx === 0 ? -1 : 1, cid = k + idx;
+      S.chromatid[cid] = {
+        x, y, rot, t1x:s * tip, t1y:-h, t2x:-s * tip, t2y:h, bow:0,
+        width:lerp(3.4, 8.4, u), wav:1 - u, seed:A[cid].p.seed, op:1, pOp:0, p0:0.06, p1:0.34
+      };
+      S.centromere[cid + '@cen'] = {x, y, r:4.6, op:u};
+    }
+  });
+  putSpindle(S, 's0', {cx, cy, rot:0, op:v, len:lerp(40, POLE, v), spread:lerp(18, 48, v), ast:an ? v : 0, kinOp:0});
+  if (an){
+    const cL = qbez({x:cx, y:cy - 124}, {x:cx - POLE, y:cy - 124}, {x:cx - POLE, y:cy}, v);
+    const cR = qbez({x:cx + 34, y:cy - 116}, {x:cx + POLE, y:cy - 116}, {x:cx + POLE, y:cy}, v);
+    putCentro(S, 'y0', {x:cL.x, y:cL.y, rot:90 * v, op:1});
+    putCentro(S, 'y1', {x:cR.x, y:cR.y, rot:90 * v, op:1});
+  } else {
+    putCentro(S, 'y0', {op:0}); putCentro(S, 'y1', {op:0});
+  }
+  putEquator(S, 'e0', {cx, cy, len:140, rot:0, op:0.85 * clamp((t - 0.72) / 0.28)});
+  putLabel(S, 0, '两消：核膜、核仁逐渐消失', LX, cy - 80, clamp((t - 0.2) / 0.2));
+  putLabel(S, 1, '两现：染色体、纺锤体出现', LX, cy - 46, clamp((t - 0.4) / 0.2));
+  putLabel(S, 2, '染色质螺旋化 → 可见的 X 形染色体', LX, cy - 12, clamp((t - 0.55) / 0.2));
+  putLabel(S, 3, an ? '中心粒移向两极，发出星射线' : '两极直接发出纺锤丝（无中心粒）', RX, cy - 80, clamp((t - 0.35) / 0.2));
+  putLabel(S, 4, an ? '注意：中心粒倍增发生在间期' : '高等植物：无中心体', RX, cy - 46, clamp((t - 0.5) / 0.2));
+  putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:4, s:8, d:8, scope:'整个细胞', note:'每条染色体含 2 条姐妹染色单体（有单体时 DNA 数 = 单体数）'};
+  return S;
+}
+function m2(t, S){                                     // 中期
+  const cx = CC.x, cy = CC.y, an = animal();
+  putCell(S, 'c0', {cx, cy, rx:195, ry:158});
+  putNuc(S, 'n0', {cx, cy, rx:132, ry:112, op:0});
+  putNucleolus(S, 'u0', {cx:cx + 36, cy:cy - 28, r:26, op:0});
+  META_ORDER.forEach((k, j) => putChromX(S, k, cx, cy + META_ROWS[j], 0, {}));
+  putSpindle(S, 's0', {cx, cy, rot:0, op:1, len:POLE, spread:48, ast:an ? 1 : 0, kinOp:1, kin:KIN_ALL});
+  if (an){
+    putCentro(S, 'y0', {x:cx - POLE, y:cy, rot:90, op:1});
+    putCentro(S, 'y1', {x:cx + POLE, y:cy, rot:90, op:1});
+  } else { putCentro(S, 'y0', {op:0}); putCentro(S, 'y1', {op:0}); }
+  putEquator(S, 'e0', {cx, cy, len:140, rot:0, op:1});
+  putLabel(S, 0, '赤道板', cx, cy - 178, 1);
+  putLabel(S, 1, '着丝粒整齐排列在赤道板上', LX, cy - 80, 1);
+  putLabel(S, 2, '纺锤丝连着丝粒（两侧均有）', LX, cy - 46, 1);
+  putLabel(S, 3, '观察、计数染色体的最佳时期', RX, cy - 80, clamp((t - 0.25) / 0.25));
+  putLabel(S, 4, '4 条染色体 / 8 条单体 / 8 个 DNA', RX, cy - 46, clamp((t - 0.35) / 0.25));
+  putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:4, s:8, d:8, scope:'整个细胞', note:'染色体形态稳定、数目清晰，是计数的最佳时期'};
+  return S;
+}
+function m3(t, S){                                     // 后期
+  const cx = CC.x, cy = CC.y, an = animal(), u = ease(clamp(t / 0.7));
+  putCell(S, 'c0', {cx, cy, rx:195 + 16 * u, ry:158 - 8 * u});
+  putNuc(S, 'n0', {cx, cy, rx:132, ry:112, op:0});
+  putNucleolus(S, 'u0', {cx:cx + 36, cy:cy - 28, r:26, op:0});
+  CHROM_KEYS.forEach((k, j) => {
+    const y = cy + META_ROWS[j], ch = CHROMS[k];
+    for (const idx of [0, 1]){
+      const dir = idx === 0 ? -1 : 1, cid = k + idx;
+      const x = cx + dir * (24 + 92 * u);
+      S.chromatid[cid] = {
+        x, y, rot:0, t1x:dir * ch.tip * (1 - u), t1y:-ch.h, t2x:-dir * ch.tip * (1 - u), t2y:ch.h,
+        bow:3 * u, width:8.4, wav:0, seed:A[cid].p.seed, op:1, pOp:0, p0:0.06, p1:0.34
+      };
+      S.centromere[cid + '@cen'] = {x, y, r:4.6, op:1};
+    }
+  });
+  putSpindle(S, 's0', {cx, cy, rot:0, op:1, len:POLE + 14 * u, spread:48, ast:an ? 1 : 0, kinOp:1, kin:KIN_ALL});
+  if (an){
+    putCentro(S, 'y0', {x:cx - POLE - 14 * u, y:cy, rot:90, op:1});
+    putCentro(S, 'y1', {x:cx + POLE + 14 * u, y:cy, rot:90, op:1});
+  } else { putCentro(S, 'y0', {op:0}); putCentro(S, 'y1', {op:0}); }
+  putEquator(S, 'e0', {cx, cy, len:140, rot:0, op:1 - 0.75 * u});
+  putLabel(S, 0, '着丝粒分裂', LX, cy - 80, clamp(t / 0.12));
+  putLabel(S, 1, '姐妹染色单体分开 → 成为两条染色体', LX, cy - 46, clamp((t - 0.15) / 0.15));
+  putLabel(S, 2, '染色体数 4 → 8（暂时加倍）', LX, cy - 12, clamp((t - 0.3) / 0.2));
+  putLabel(S, 3, '纺锤丝牵拉子染色体移向两极', RX, cy - 80, clamp((t - 0.25) / 0.2));
+  putLabel(S, 4, '单体数 8 → 0，DNA 仍为 8', RX, cy - 46, clamp((t - 0.35) / 0.2));
+  putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:8, s:0, d:8, scope:'整个细胞', note:'着丝粒分裂 → 染色体数暂时加倍；口径为“整个细胞”（2 个子染色体群）'};
+  return S;
+}
+function m4(t, S){                                     // 末期
+  const cx = CC.x, cy = CC.y, an = animal();
+  const u1 = ease(clamp(t / 0.5));                     // 解螺旋 + 核膜核仁重建
+  const u2 = ease(clamp((t - 0.3) / 0.35));            // 缢裂 / 细胞板
+  const u3 = ease(clamp((t - 0.62) / 0.36));           // 子细胞呈现
+  const dRx = an ? 116 : 132, dRy = an ? 132 : 148;
+  putCell(S, 'c0', {cx, cy, rx:211, ry:150, furrow:an ? u2 : 0, op:1 - 0.96 * u3});
+  putCell(S, 'c1', {cx:cx - 135, cy, rx:dRx, ry:dRy, op:u3});
+  putCell(S, 'c2', {cx:cx + 135, cy, rx:dRx, ry:dRy, op:u3});
+  putNuc(S, 'n1', {cx:cx - 135, cy, rx:92, ry:108, op:clamp((t - 0.22) / 0.45)});
+  putNuc(S, 'n2', {cx:cx + 135, cy, rx:92, ry:108, op:clamp((t - 0.22) / 0.45)});
+  putNucleolus(S, 'u1', {cx:cx - 135 + 28, cy:cy - 34, r:20, op:clamp((t - 0.35) / 0.4)});
+  putNucleolus(S, 'u2', {cx:cx + 135 + 28, cy:cy - 34, r:20, op:clamp((t - 0.35) / 0.4)});
+  CHROM_KEYS.forEach((k, j) => {
+    const ch = CHROMS[k];
+    for (const idx of [0, 1]){
+      const dir = idx === 0 ? -1 : 1, cid = k + idx;
+      const x = cx + dir * (120 + 4 * u1);
+      const y = cy + META_ROWS[j] * lerp(1, 0.44, u1);
+      S.chromatid[cid] = {
+        x, y, rot:lerp(0, dir * 16, u1),
+        t1x:0, t1y:-lerp(ch.h, 42, u1), t2x:0, t2y:lerp(ch.h, 42, u1),
+        bow:3, width:lerp(8.4, 3.4, u1), wav:u1, seed:A[cid].p.seed, op:1, pOp:0, p0:0.06, p1:0.34
+      };
+      S.centromere[cid + '@cen'] = {x, y, r:4.6, op:1 - u1};
+    }
+  });
+  putSpindle(S, 's0', {
+    cx, cy, rot:0, op:1 - clamp(t / 0.3), len:POLE + 14, spread:48,
+    ast:an ? 1 - clamp(t / 0.3) : 0, kinOp:1 - clamp(t / 0.25), kin:KIN_ALL
+  });
+  if (an){
+    putCentro(S, 'y0', {x:cx - POLE - 14, y:cy, rot:90, op:1 - clamp(t / 0.3)});
+    putCentro(S, 'y1', {x:cx + POLE + 14, y:cy, rot:90, op:1 - clamp(t / 0.3)});
+  } else {
+    putCentro(S, 'y0', {op:0}); putCentro(S, 'y1', {op:0});
+    putPlate(S, 'pl0', {cx, cy, rot:0, len:152 * u2, op:0.85 * u2});
+  }
+  putEquator(S, 'e0', {cx, cy, len:140, rot:0, op:0.25 * (1 - u2)});
+  putLabel(S, 0, '两现：核膜、核仁重建', LX, cy - 80, clamp((t - 0.25) / 0.2));
+  putLabel(S, 1, '两消：染色体、纺锤体消失', LX, cy - 46, clamp((t - 0.3) / 0.2));
+  putLabel(S, 2, an ? '细胞膜中部缢裂 → 2 个子细胞' : '赤道板发生成细胞板 → 扩展为新细胞壁', RX, cy - 80, clamp((t - 0.35) / 0.2));
+  putLabel(S, 3, an ? '动物细胞' : '植物细胞（含细胞壁）', RX, cy - 46, clamp((t - 0.45) / 0.2));
+  putLabel(S, 4, '每个子细胞染色体数恢复 2N = 4，与亲代完全相同', cx, 486, clamp((u3 - 0.6) / 0.3));
+  putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:4, s:0, d:4, scope:'每个子细胞',
+    note:'末期按“每个子细胞”统计（整个细胞为 8 / 0 / 8）——子细胞与亲代染色体数相同'};
+  return S;
+}
+
+/* ============================ 减数分裂（9 阶段） ============================ */
+function e0s(t, S){                                    // 减前·间期
+  const cx = CC.x, cy = CC.y, an = animal(), u = replU(t);
+  putCell(S, 'c0', {cx, cy, rx:195, ry:158});
+  putNuc(S, 'n0', {cx, cy, rx:118, ry:100, op:1});
+  putNucleolus(S, 'u0', {cx:cx + 36, cy:cy - 28, r:26, op:1});
+  CHROM_KEYS.forEach((k, j) => {
+    const s = FIL_SLOTS[j];
+    putFilament(S, k, 0, cx + s.x, cy + s.y, s.rot, {op:1});
+    putFilament(S, k, 1, cx + s.x + 13 * u, cy + s.y + 9 * u, s.rot + 8 * u, {op:u});
+  });
+  putSpindle(S, 's0', {cx, cy, op:0});
+  putCentro(S, 'y0', {x:cx, y:cy - 124, rot:0, op:an ? 1 : 0});
+  putCentro(S, 'y1', {x:cx + 34, y:cy - 116, rot:0, op:an ? u : 0});
+  putEquator(S, 'e0', {cx, cy, len:0, op:0});
+  putLabel(S, 0, '染色质呈细丝状（看不见染色体）', LX, cy - 80, 1);
+  putLabel(S, 1, 'DNA 复制：4 → 8（整个减数分裂仅此一次）', LX, cy - 46, clamp((t - 0.12) / 0.2));
+  putLabel(S, 2, '合成有关蛋白质', LX, cy - 12, clamp((t - 0.18) / 0.2));
+  putLabel(S, 3, '染色体数不变（4）；此后连续分裂两次而 DNA 不再复制', CC.x, 486, clamp((u - 0.85) / 0.1));
+  putLabel(S, 4, '中心体复制（倍增）', 470, 96, an ? clamp((u - 0.25) / 0.2) : 0);
+  putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:4, s:Math.round(8 * u), d:4 + Math.round(4 * u), scope:'整个细胞',
+    note: u < 0.98 ? '复制进行中：DNA 数 4 → 8，染色单体 0 → 8（染色体数不变 = 4）'
+                   : '复制完成：4 / 8 / 8；这是染色体数目最终减半的前提'};
+  return S;
+}
+function e1s(t, S){                                    // 减I·前期（联会 + 交叉互换）
+  const cx = CC.x, cy = CC.y, an = animal();
+  const u = ease(clamp(t / 0.4));                      // 螺旋化
+  const w = ease(clamp((t - 0.15) / 0.45));            // 核膜、核仁消失
+  const v = ease(clamp((t - 0.15) / 0.6));             // 纺锤体
+  const k1 = ease(clamp(t / 0.34)), k2 = ease(clamp((t - 0.34) / 0.22));  // 靠拢 → 联会
+  const cv = ease(clamp((t - 0.6) / 0.18));            // 交叉互换揭示
+  putCell(S, 'c0', {cx, cy, rx:195, ry:158});
+  putNuc(S, 'n0', {cx, cy, rx:118 + 10 * w, ry:100 + 8 * w, op:1 - w});
+  putNucleolus(S, 'u0', {cx:cx + 36, cy:cy - 28, r:26, op:1 - clamp(t / 0.18)});
+  for (const pair of ['long', 'short']){
+    const ty = pair === 'long' ? cy - 58 : cy + 58;
+    const sL = pair === 'long' ? {x:cx - 148, y:cy - 88} : {x:cx - 142, y:cy + 92};
+    const sR = pair === 'long' ? {x:cx + 148, y:cy - 50} : {x:cx + 142, y:cy + 72};
+    const pL = {x:cx - 56, y:ty}, pR = {x:cx + 56, y:ty};
+    const fL = {x:cx - 20, y:ty}, fR = {x:cx + 20, y:ty};
+    const items = [[tetradSide(pair, true), -1, sL, pL, fL], [tetradSide(pair, false), 1, sR, pR, fR]];
+    for (const [key, sd, sp, pp, fp] of items){
+      const ch = CHROMS[key];
+      const x = mix3(sp.x, pp.x, fp.x, k1, k2), y = mix3(sp.y, pp.y, fp.y, k1, k2);
+      const rot = lerp(sd * 20, 0, k1);
+      const h = lerp(59, ch.h, u), tip = lerp(3, ch.tip, u);
+      for (const idx of [0, 1]){
+        const s = idx === 0 ? -1 : 1, cid = key + idx;
+        S.chromatid[cid] = {
+          x, y, rot, t1x:s * tip, t1y:-h, t2x:-s * tip, t2y:h, bow:0,
+          width:lerp(3.4, 8.4, u), wav:1 - u, seed:A[cid].p.seed, op:1,
+          pOp:patchReveal(cid, cv), p0:0.06, p1:0.34
+        };
+        S.centromere[cid + '@cen'] = {x, y, r:4.6, op:u};
+      }
+    }
+  }
+  /* 交叉互换的“片段搬运”动画：两块紫色片段相向滑动 */
+  const bb = clamp((t - 0.62) / 0.16);
+  const bOp = Math.sin(Math.PI * bb);
+  let bi = 0;
+  for (const pair of ['long', 'short']){
+    if (!state.cross[pair]) continue;
+    const LK = tetradSide(pair, true), RK = tetradSide(pair, false);
+    const pA = rodPoint(S.chromatid[LK + '1'], 0.2), pB = rodPoint(S.chromatid[RK + '0'], 0.2);
+    const f1 = lerp(pA.x, pB.x, bb), f2 = lerp(pB.x, pA.x, bb);
+    S.block['b' + (bi * 2)] = {x1:f1 - 9, y1:pA.y - 8, x2:f1 + 9, y2:pA.y - 8, op:bOp};
+    S.block['b' + (bi * 2 + 1)] = {x1:f2 - 9, y1:pB.y + 8, x2:f2 + 9, y2:pB.y + 8, op:bOp};
+    bi++;
+  }
+  putSpindle(S, 's0', {cx, cy, rot:0, op:v, len:lerp(40, POLE, v), spread:lerp(18, 48, v), ast:an ? v : 0, kinOp:0});
+  if (an){
+    const cL = qbez({x:cx, y:cy - 124}, {x:cx - POLE, y:cy - 124}, {x:cx - POLE, y:cy}, v);
+    const cR = qbez({x:cx + 34, y:cy - 116}, {x:cx + POLE, y:cy - 116}, {x:cx + POLE, y:cy}, v);
+    putCentro(S, 'y0', {x:cL.x, y:cL.y, rot:90 * v, op:1});
+    putCentro(S, 'y1', {x:cR.x, y:cR.y, rot:90 * v, op:1});
+  } else { putCentro(S, 'y0', {op:0}); putCentro(S, 'y1', {op:0}); }
+  putEquator(S, 'e0', {cx, cy, len:140, rot:0, op:0.85 * clamp((t - 0.72) / 0.28)});
+  putLabel(S, 0, '联会：同源染色体两两配对', LX, cy - 80, clamp((t - 0.38) / 0.2));
+  putLabel(S, 1, '形成四分体（含 4 条染色单体）', LX, cy - 46, clamp((t - 0.52) / 0.2));
+  putLabel(S, 2, '交叉互换发生在非姐妹染色单体之间', RX, cy - 80, clamp((t - 0.6) / 0.2));
+  putLabel(S, 3, '紫色 = 互换片段（保留至最终配子）', RX, cy - 46, clamp((t - 0.68) / 0.2));
+  putLabel(S, 4, '染色体 4 / 单体 8 / DNA 8（DNA 已在间期复制）', CC.x, 486, clamp((t - 0.8) / 0.2));
+  putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:4, s:8, d:8, scope:'整个细胞', note:'联会与交叉互换不改变染色体数、单体数与 DNA 数'};
+  return S;
+}
+function e2s(t, S){                                    // 减I·中期
+  const cx = CC.x, cy = CC.y, an = animal();
+  putCell(S, 'c0', {cx, cy, rx:195, ry:158});
+  putNuc(S, 'n0', {cx, cy, rx:132, ry:112, op:0});
+  putNucleolus(S, 'u0', {cx:cx + 36, cy:cy - 28, r:26, op:0});
+  for (const pair of ['long', 'short']){
+    const ty = pair === 'long' ? cy - 58 : cy + 58;
+    putChromX(S, tetradSide(pair, true), cx - 20, ty, 0, {reveal:1});
+    putChromX(S, tetradSide(pair, false), cx + 20, ty, 0, {reveal:1});
+  }
+  putSpindle(S, 's0', {cx, cy, rot:0, op:1, len:POLE, spread:48, ast:an ? 1 : 0, kinOp:1, kin:KIN_ALL});
+  if (an){
+    putCentro(S, 'y0', {x:cx - POLE, y:cy, rot:90, op:1});
+    putCentro(S, 'y1', {x:cx + POLE, y:cy, rot:90, op:1});
+  } else { putCentro(S, 'y0', {op:0}); putCentro(S, 'y1', {op:0}); }
+  putEquator(S, 'e0', {cx, cy, len:140, rot:0, op:1});
+  putLabel(S, 0, '四分体排列在赤道板两侧', LX, cy - 80, 1);
+  putLabel(S, 1, '注意与有丝分裂中期的区别：', LX, cy - 46, 1);
+  putLabel(S, 2, '有丝分裂是着丝粒排在赤道板上', LX, cy - 12, 1);
+  putLabel(S, 3, '朝向随机 → 非同源染色体自由组合', RX, cy - 80, 1);
+  putLabel(S, 4, '可点“重新随机”换一种组合', RX, cy - 46, clamp((t - 0.3) / 0.3));
+  putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:4, s:8, d:8, scope:'整个细胞', note:'四分体（而非单条染色体）排列在赤道板两侧'};
+  return S;
+}
+function e3s(t, S){                                    // 减I·后期
+  const cx = CC.x, cy = CC.y, an = animal(), u = ease(clamp(t / 0.75));
+  putCell(S, 'c0', {cx, cy, rx:195 + 16 * u, ry:158 - 8 * u});
+  putNuc(S, 'n0', {cx, cy, rx:132, ry:112, op:0});
+  putNucleolus(S, 'u0', {cx:cx + 36, cy:cy - 28, r:26, op:0});
+  for (const pair of ['long', 'short']){
+    const ty = pair === 'long' ? cy - 58 : cy + 58;
+    putChromX(S, tetradSide(pair, true), cx - 20 - 98 * u, ty - 4 * u, -6 * u, {reveal:1});
+    putChromX(S, tetradSide(pair, false), cx + 20 + 98 * u, ty + 4 * u, 6 * u, {reveal:1});
+  }
+  putSpindle(S, 's0', {cx, cy, rot:0, op:1, len:POLE + 14 * u, spread:48, ast:an ? 1 : 0, kinOp:1, kin:KIN_ALL, kinOne:1});
+  if (an){
+    putCentro(S, 'y0', {x:cx - POLE - 14 * u, y:cy, rot:90, op:1});
+    putCentro(S, 'y1', {x:cx + POLE + 14 * u, y:cy, rot:90, op:1});
+  } else { putCentro(S, 'y0', {op:0}); putCentro(S, 'y1', {op:0}); }
+  putEquator(S, 'e0', {cx, cy, len:140, rot:0, op:1 - 0.75 * u});
+  putLabel(S, 0, '同源染色体分离，分别被拉向两极', LX, cy - 80, clamp(t / 0.15));
+  putLabel(S, 1, '姐妹染色单体不分开（仍共有着丝粒）', LX, cy - 46, clamp((t - 0.15) / 0.2));
+  putLabel(S, 2, '这是与有丝分裂后期的根本区别', LX, cy - 12, clamp((t - 0.3) / 0.2));
+  putLabel(S, 3, '非同源染色体自由组合', RX, cy - 80, clamp((t - 0.25) / 0.2));
+  putLabel(S, 4, '点“重新随机”可重放另一种组合', RX, cy - 46, clamp((t - 0.4) / 0.2));
+  putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:4, s:8, d:8, scope:'整个细胞', note:'同源染色体分开，但姐妹染色单体不分开 → 数目暂不变'};
+  return S;
+}
+function e4s(t, S){                                    // 减I·末期
+  const cx = CC.x, cy = CC.y, an = animal();
+  const u1 = ease(clamp((t - 0.02) / 0.42));
+  const u2 = ease(clamp((t - 0.3) / 0.32));
+  const u3 = ease(clamp((t - 0.58) / 0.4));
+  const dRx = an ? 112 : 132, dRy = an ? 130 : 148;
+  putCell(S, 'c0', {cx:lerp(cx, 245, u3), cy, rx:lerp(195, dRx, u3), ry:lerp(158, dRy, u3),
+                    furrow:an ? u2 * (1 - 0.75 * u3) : 0, op:1});
+  putCell(S, 'c1', {cx:515, cy, rx:dRx, ry:dRy, op:u3});
+  for (const pair of ['long', 'short']){
+    const sign = pair === 'long' ? -1 : 1;
+    const yl = cy + sign * lerp(58, 46, u1);
+    putChromX(S, tetradSide(pair, true), lerp(cx - 118, 245, u1), yl, lerp(-6, 0, u1), {reveal:1});
+    putChromX(S, tetradSide(pair, false), lerp(cx + 118, 515, u1), yl, lerp(6, 0, u1), {reveal:1});
+  }
+  putSpindle(S, 's0', {cx, cy, rot:0, op:1 - clamp(t / 0.35), len:POLE + 14, spread:48,
+                       ast:an ? 1 - clamp(t / 0.35) : 0, kinOp:1 - clamp(t / 0.3), kin:KIN_ALL, kinOne:1});
+  if (an){
+    putCentro(S, 'y0', {x:cx - POLE - 14, y:cy, rot:90, op:1 - clamp(t / 0.35)});
+    putCentro(S, 'y1', {x:cx + POLE + 14, y:cy, rot:90, op:1 - clamp(t / 0.35)});
+  } else {
+    putCentro(S, 'y0', {op:0}); putCentro(S, 'y1', {op:0});
+    putPlate(S, 'pl0', {cx, cy, rot:0, len:152 * u2, op:0.85 * u2});
+  }
+  putEquator(S, 'e0', {cx, cy, len:140, rot:0, op:0.25 * (1 - u2)});
+  putLabel(S, 0, '染色体数减半：4 → 2（实质是同源染色体分开）', cx, 96, clamp((t - 0.2) / 0.2));
+  putLabel(S, 1, '每条染色体仍含 2 条姐妹染色单体（单体 4 / DNA 4）', cx, 466, clamp((t - 0.45) / 0.25));
+  putLabel(S, 2, '形成 2 个子细胞（动物：2 个次级性母细胞）', cx, 494, clamp((t - 0.6) / 0.25));
+  putLabel(S, 3, '', 0, 0, 0); putLabel(S, 4, '', 0, 0, 0); putLabel(S, 5, '', 0, 0, 0);
+  S.counts = t < 0.6
+    ? {c:4, s:8, d:8, scope:'整个细胞', note:'细胞尚未完全分开，按“整个细胞”统计'}
+    : {c:2, s:4, d:4, scope:'每个子细胞', note:'细胞已一分为二，按“每个子细胞”统计：2 / 4 / 4'};
+  return S;
+}
+function e5s(t, S){                                    // 减II·前期
+  const an = animal();
+  const u = ease(clamp((t - 0.05) / 0.5));
+  const sp = ease(clamp((t - 0.15) / 0.5));
+  const rot = 90 * u;
+  MII_CELLS.forEach((cc, i) => {
+    putCell(S, 'c' + i, {cx:cc.x, cy:cc.y, rx:an ? 112 : 132, ry:an ? 130 : 148});
+    putSpindle(S, 's' + i, {
+      cx:cc.x, cy:cc.y, rot, op:sp, len:lerp(34, MII_POLE, sp), spread:lerp(14, 34, sp),
+      ast:an ? sp : 0, kinOp:0
+    });
+    putEquator(S, 'e' + i, {cx:cc.x, cy:cc.y, rot, len:86 * clamp((t - 0.5) / 0.5), op:1});
+    if (an){
+      putCentro(S, 'y' + 2 * i, {x:cc.x, y:cc.y - MII_POLE * sp, rot:90, op:sp});
+      putCentro(S, 'y' + (2 * i + 1), {x:cc.x, y:cc.y + MII_POLE * sp, rot:90, op:sp});
+    }
+    ['long', 'short'].forEach((pair, j) => {
+      const key = tetradSide(pair, i === 0), sign = pair === 'long' ? -1 : 1;
+      const w = rotPt(cc, {x:(j === 0 ? -14 : 14) * u, y:sign * lerp(46, 34, u)}, rot);
+      putChromX(S, key, w.x, w.y, rot, {reveal:1});
+    });
+  });
+  if (!an){ for (let i = 0; i < 4; i++) putCentro(S, 'y' + i, {op:0}); }
+  putLabel(S, 0, '无 DNA 复制、无联会（细胞中已无同源染色体）', CC.x, 96, 1);
+  putLabel(S, 1, '染色体再次清晰可见：每个细胞 2 条，各含 2 条单体', CC.x, 466, clamp((t - 0.4) / 0.3));
+  putLabel(S, 2, '纺锤体以新的方向重新形成（两次分裂的方向互相垂直）', CC.x, 494, clamp((t - 0.5) / 0.3));
+  putLabel(S, 3, '', 0, 0, 0); putLabel(S, 4, '', 0, 0, 0); putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:2, s:4, d:4, scope:'每个细胞', note:'减II 各阶段均按“每个细胞”统计'};
+  return S;
+}
+function e6s(t, S){                                    // 减II·中期
+  const an = animal();
+  MII_CELLS.forEach((cc, i) => {
+    const kin = [];
+    ['long', 'short'].forEach(pair => { const key = tetradSide(pair, i === 0); kin.push(key + '0@cen', key + '1@cen'); });
+    putCell(S, 'c' + i, {cx:cc.x, cy:cc.y, rx:an ? 112 : 132, ry:an ? 130 : 148});
+    putSpindle(S, 's' + i, {cx:cc.x, cy:cc.y, rot:90, op:1, len:MII_POLE, spread:34, ast:an ? 1 : 0, kinOp:1, kin});
+    putEquator(S, 'e' + i, {cx:cc.x, cy:cc.y, rot:90, len:86, op:1});
+    if (an){
+      putCentro(S, 'y' + 2 * i, {x:cc.x, y:cc.y - MII_POLE, rot:90, op:1});
+      putCentro(S, 'y' + (2 * i + 1), {x:cc.x, y:cc.y + MII_POLE, rot:90, op:1});
+    }
+    ['long', 'short'].forEach(pair => {
+      const key = tetradSide(pair, i === 0), sign = pair === 'long' ? -1 : 1;
+      const w = rotPt(cc, {x:0, y:sign * 34}, 90);
+      putChromX(S, key, w.x, w.y, 90, {reveal:1});
+    });
+  });
+  if (!an){ for (let i = 0; i < 4; i++) putCentro(S, 'y' + i, {op:0}); }
+  putLabel(S, 0, '着丝粒整齐排列在各自细胞的赤道板上', CC.x, 96, 1);
+  putLabel(S, 1, '每个细胞：2 条染色体 / 4 条单体 / 4 个 DNA', CC.x, 466, clamp((t - 0.25) / 0.3));
+  putLabel(S, 2, '与有丝分裂中期相同；但细胞中已无同源染色体', CC.x, 494, clamp((t - 0.35) / 0.3));
+  putLabel(S, 3, '', 0, 0, 0); putLabel(S, 4, '', 0, 0, 0); putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:2, s:4, d:4, scope:'每个细胞', note:'与有丝分裂中期相同，但染色体数为体细胞的一半'};
+  return S;
+}
+function e7s(t, S){                                    // 减II·后期
+  const an = animal(), u = ease(clamp(t / 0.7));
+  MII_CELLS.forEach((cc, i) => {
+    const kin = [];
+    ['long', 'short'].forEach(pair => { const key = tetradSide(pair, i === 0); kin.push(key + '0@cen', key + '1@cen'); });
+    putCell(S, 'c' + i, {cx:cc.x, cy:cc.y, rx:(an ? 112 : 132) - 6 * u, ry:(an ? 130 : 148) + 14 * u});
+    putSpindle(S, 's' + i, {cx:cc.x, cy:cc.y, rot:90, op:1, len:MII_POLE + 12 * u, spread:34,
+                            ast:an ? 1 : 0, kinOp:1, kin, kinOne:1});
+    if (an){
+      putCentro(S, 'y' + 2 * i, {x:cc.x, y:cc.y - MII_POLE - 12 * u, rot:90, op:1});
+      putCentro(S, 'y' + (2 * i + 1), {x:cc.x, y:cc.y + MII_POLE + 12 * u, rot:90, op:1});
+    }
+    ['long', 'short'].forEach(pair => {
+      const key = tetradSide(pair, i === 0), sign = pair === 'long' ? -1 : 1;
+      const sd = state.sister[i + '|' + pair];
+      for (const idx of [0, 1]){
+        const dir = (idx === 0 ? 1 : -1) * sd;
+        const w = rotPt(cc, {x:dir * (16 + 62 * u), y:sign * 34}, 90);
+        putChromI(S, key, idx, w.x, w.y, 90, {reveal:1});
+      }
+    });
+  });
+  if (!an){ for (let i = 0; i < 4; i++) putCentro(S, 'y' + i, {op:0}); }
+  putLabel(S, 0, '着丝粒分裂，姐妹染色单体分开（机制同有丝分裂后期）', CC.x, 96, 1);
+  putLabel(S, 1, '每个细胞染色体数 2 → 4（暂时加倍），单体 4 → 0', CC.x, 466, clamp((t - 0.25) / 0.3));
+  putLabel(S, 2, '注意：减I 后期分离的是同源染色体，此处分离的是姐妹染色单体', CC.x, 494, clamp((t - 0.4) / 0.3));
+  putLabel(S, 3, '', 0, 0, 0); putLabel(S, 4, '', 0, 0, 0); putLabel(S, 5, '', 0, 0, 0);
+  S.counts = {c:4, s:0, d:4, scope:'每个细胞', note:'每个细胞瞬间 2 → 4 条染色体，随后分别进入两个配子'};
+  return S;
+}
+function e8s(t, S){                                    // 减II·末期（4 个配子）
+  const an = animal();
+  const u1 = ease(clamp(t / 0.5));
+  const u2 = ease(clamp((t - 0.28) / 0.32));
+  const u3 = ease(clamp((t - 0.58) / 0.4));
+  const dRx = an ? 100 : 120, dRy = an ? 58 : 62;
+  MII_CELLS.forEach((cc, i) => {
+    const top = GAMETE_POS[i], bot = GAMETE_POS[i + 2];
+    putCell(S, 'c' + i, {
+      cx:lerp(cc.x, top.x, u3), cy:lerp(cc.y, top.y, u3),
+      rx:lerp(an ? 112 : 132, dRx, u3), ry:lerp(an ? 130 : 148, dRy, u3),
+      furrow:an ? u2 * (1 - 0.8 * u3) : 0, frot:90, op:1
+    });
+    putCell(S, 'c' + (i + 2), {cx:bot.x, cy:bot.y, rx:dRx, ry:dRy, op:u3});
+    const nOp = clamp((t - 0.4) / 0.4);
+    putNuc(S, 'n' + i, {cx:top.x, cy:top.y, rx:76, ry:42, op:nOp});
+    putNuc(S, 'n' + (i + 2), {cx:bot.x, cy:bot.y, rx:76, ry:42, op:nOp});
+    putNucleolus(S, 'u' + i, {cx:top.x + 24, cy:top.y - 14, r:13, op:clamp((t - 0.5) / 0.4)});
+    putNucleolus(S, 'u' + (i + 2), {cx:bot.x + 24, cy:bot.y - 14, r:13, op:clamp((t - 0.5) / 0.4)});
+    const kin = [];
+    ['long', 'short'].forEach(pair => { const key = tetradSide(pair, i === 0); kin.push(key + '0@cen', key + '1@cen'); });
+    putSpindle(S, 's' + i, {
+      cx:cc.x, cy:cc.y, rot:90, op:1 - clamp(t / 0.3), len:MII_POLE + 12, spread:34,
+      ast:an ? 1 - clamp(t / 0.3) : 0, kinOp:1 - clamp(t / 0.25), kin, kinOne:1
+    });
+    if (!an) putPlate(S, 'pl' + i, {cx:cc.x, cy:cc.y, rot:90, len:100 * u2, op:0.85 * u2});
+    ['long', 'short'].forEach(pair => {
+      const key = tetradSide(pair, i === 0), sign = pair === 'long' ? -1 : 1, ch = CHROMS[key];
+      const sd = state.sister[i + '|' + pair];
+      for (const idx of [0, 1]){
+        const dir = (idx === 0 ? 1 : -1) * sd;
+        const target = dir > 0 ? bot : top;
+        const from = {x:cc.x - sign * 34, y:cc.y + dir * 78};
+        const to = {x:target.x + (sign < 0 ? -38 : 38), y:target.y};
+        const cid = key + idx, h = lerp(ch.h, 35, u1);
+        const px = lerp(from.x, to.x, u1), py = lerp(from.y, to.y, u1);
+        S.chromatid[cid] = {
+          x:px, y:py, rot:90 + lerp(0, dir * 10, u1),
+          t1x:0, t1y:-h, t2x:0, t2y:h, bow:3, width:lerp(8.4, 3.4, u1), wav:u1,
+          seed:A[cid].p.seed, op:1, pOp:patchReveal(cid, 1), p0:0.06, p1:0.34
+        };
+        S.centromere[cid + '@cen'] = {x:px, y:py, r:4.6, op:1 - u1};
+      }
+    });
+  });
+  for (let i = 0; i < 4; i++) putCentro(S, 'y' + i, {op:0});
+  putLabel(S, 0, '共形成 4 个子细胞（动物：4 个精细胞）', CC.x, 96, 1);
+  putLabel(S, 1, '每个细胞染色体数 N = 2，是亲代细胞的一半，且无同源染色体', CC.x, 466, clamp((t - 0.45) / 0.3));
+  putLabel(S, 2, '交叉互换的高亮片段已随重组染色体进入不同配子', CC.x, 494, clamp((t - 0.55) / 0.3));
+  putLabel(S, 3, '', 0, 0, 0); putLabel(S, 4, '', 0, 0, 0); putLabel(S, 5, '', 0, 0, 0);
+  S.counts = t < 0.55
+    ? {c:4, s:0, d:4, scope:'每个细胞', note:'细胞正在分裂，按“每个细胞”统计'}
+    : {c:2, s:0, d:2, scope:'每个生殖细胞', note:'分裂完成：4 个配子，每个 2 / 0 / 2（复制一次、连续分裂两次）'};
+  return S;
+}
+const STAGES = {
+  mitosis: [
+    {name:'间期', text:'细胞看似平静，实为最繁忙的阶段。①完成 <strong>DNA 分子的复制</strong>（DNA 数 4→8）；②合成大量<strong>蛋白质</strong>；③染色单体形成（每条染色体含 2 条姐妹染色单体，共 8 条单体）；④染色体数不变（4）；⑤动物细胞的<strong>中心体</strong>也在此期完成复制（倍增），到前期再移向两极。染色质呈细丝状，光学显微镜下看不见染色体。', build:m0},
+    {name:'前期', text:'“两消两现”——核膜、核仁<strong>逐渐消失</strong>；染色体、纺锤体<strong>出现</strong>。细丝状染色质螺旋化缩短变粗，形成可见的 X 形染色体（含姐妹染色单体）。动物细胞的两组中心粒分别移向两极，发出星射线形成纺锤体（注意：中心粒的倍增发生在间期，不在前期）；植物细胞由两极直接发出纺锤丝。', build:m1},
+    {name:'中期', text:'纺锤丝牵引染色体运动，使其<strong>着丝粒整齐排列在赤道板</strong>上。这是观察和计数染色体的最佳时期——染色体形态稳定、数目清晰（4 条，8 条单体）。每条染色体的着丝粒两侧均连有纺锤丝。', build:m2},
+    {name:'后期', text:'<strong>着丝粒分裂</strong>，姐妹染色单体<strong>分开</strong>，成为两条独立染色体（染色体数 4→8，单体数 8→0，DNA 仍为 8）。纺锤丝缩短牵引子染色体分别移向<strong>两极</strong>——实现复制的遗传物质<strong>平均分配</strong>。', build:m3},
+    {name:'末期', text:'“两现两消”（与前期相反）——核膜、核仁<strong>重建</strong>；染色体、纺锤体<strong>消失</strong>。子染色体解螺旋重新变回染色质。动物细胞：细胞膜中部<strong>缢裂</strong>，细胞一分为二；植物细胞：赤道板处出现<strong>细胞板</strong>，向四周扩展形成新细胞壁。每个子细胞染色体数恢复 2N=4，与亲代细胞<strong>完全相同</strong>。', build:m4}
+      ],
+      meiosis: [
+        {name:'间期（减数分裂前）', text:'与有丝分裂间期类似——完成 <strong>DNA 分子的复制</strong>（DNA 数 4→8）和有关<strong>蛋白质</strong>的合成，每条染色体形成 2 条姐妹染色单体（共 8 条单体），染色体数不变（4）；动物细胞的中心体在此期完成复制。注意：<strong>整个减数分裂过程 DNA 只复制这一次</strong>，之后细胞连续分裂两次，这是染色体数目最终减半的前提。', build:e0s},
+        {name:'减I · 前期', text:'核心事件是<strong>联会</strong>——<strong>同源染色体</strong>（一条来自父方、一条来自母方，大小形态相似，图中橙/蓝两色）两两配对，形成<strong>四分体</strong>（含 4 条染色单体）。联会后，<strong>非姐妹染色单体</strong>间发生<strong>交叉互换</strong>（图中紫色高亮片段，且该标记将一直保留到最终配子），这是基因重组的来源之一。染色体数 4、单体数 8、DNA 8（DNA 已在间期完成复制）。', build:e1s},
+        {name:'减I · 中期', text:'四分体（而非单条染色体）整齐排列在赤道板<strong>两侧</strong>，注意与有丝分裂中期的区别——有丝分裂是着丝粒排在赤道板上。每对同源染色体中哪一条朝向哪一极是<strong>随机</strong>的，决定了非同源染色体的自由组合。', build:e2s},
+        {name:'减I · 后期', text:'<strong>同源染色体分离</strong>，分别被拉向两极；<strong>非同源染色体自由组合</strong>（图中可见两极的染色体组合随机，点击“重新随机”可重放另一种组合）。姐妹染色单体<strong>不分开</strong>，仍共有一个着丝粒——这是减数分裂与有丝分裂后期的根本区别。', build:e3s},
+        {name:'减I · 末期', text:'细胞分裂为 2 个子细胞（动物中称为<strong>次级性母细胞</strong>）。<strong>染色体数减半</strong>（4→2），每条染色体仍含 2 条姐妹染色单体（单体 4，DNA 4）。减半的实质是<strong>同源染色体分开</strong>进入了不同细胞。', build:e4s},
+        {name:'减II · 前期', text:'子细胞中染色体再次清晰可见（2 条，各含 2 条单体），纺锤体重新形成。注意：减II 过程<strong>没有</strong> DNA 复制，也<strong>没有</strong>同源染色体的联会——细胞中已无同源染色体。', build:e5s},
+        {name:'减II · 中期', text:'染色体的<strong>着丝粒</strong>整齐排列在各自细胞的赤道板上（与有丝分裂中期相同）。每个细胞仅 2 条染色体、4 条单体、4 个 DNA。', build:e6s},
+        {name:'减II · 后期', text:'<strong>着丝粒分裂</strong>，姐妹染色单体分开，被拉向两极——机制与有丝分裂后期相同。每个细胞染色体数瞬时 2→4，单体 4→0。', build:e7s},
+        {name:'减II · 末期', text:'分裂完成，共产生 <strong>4 个</strong>子细胞（动物：精原细胞产生 4 个<strong>精细胞</strong>；卵原细胞则产生 1 个卵细胞和 3 个极体——图中 4 个大小一致代表精细胞的情形）。每个细胞<strong>染色体数为 N=2</strong>，是亲代细胞的一半，且<strong>无同源染色体</strong>。注意观察：交叉互换的高亮片段已随重组染色体进入不同配子。减数分裂 = 复制一次、连续分裂两次 → 染色体数减半。', build:e8s}
+      ]
+    };
+
+/* ============================ 播放驱动与界面 ============================ */
+const INT_BASE = 2800, TR_BASE = 1200, STAGE_BASE = 4000;
+let phase = 'tween', twFrom = null, twTo = null, twStart = 0, twDur = 1, t0 = 0, stageStart = 0;
+let lastCountKey = '', lastIdxKey = '';
+
+const $ = id => document.getElementById(id);
+const stepsBox = $('steps');
+const badgeEl = $('badge'), infoBody = $('infoBody'), stageIdxEl = $('stageIdx');
+const scopeTagEl = $('scopeTag'), countNoteEl = $('countNote');
+const vChromo = $('vChromo'), vSister = $('vSister'), vDna = $('vDna');
+const playBtn = $('playBtn'), prevBtn = $('prevBtn'), nextBtn = $('nextBtn');
+const rerandBtn = $('rerandBtn'), modeSeg = $('modeSeg'), cellSeg = $('cellSeg');
+const speedSeg = $('speedSeg'), crossSeg = $('crossSeg');
+
+const listStages = () => STAGES[state.mode];
+const curStage = () => listStages()[state.idx];
+function curScene(t){ return curStage().build(t, emptyScene()); }
+
+function buildSteps(){
+  stepsBox.innerHTML = '';
+  listStages().forEach((st, i) => {
+    const b = document.createElement('button');
+    b.className = 'step' + (i === state.idx ? ' on' : '');
+    b.textContent = (i + 1) + '. ' + st.name;
+    b.addEventListener('click', () => { setPlaying(false); state.idx = i; enterStage(); });
+    stepsBox.appendChild(b);
+  });
+}
+function highlightSteps(){
+  [...stepsBox.children].forEach((b, i) => b.className = 'step' + (i === state.idx ? ' on' : ''));
+}
+function updatePanels(counts){
+  const st = curStage();
+  const key = state.mode + '|' + state.idx + '|' + state.cell;
+  if (key !== lastIdxKey){
+    lastIdxKey = key;
+    stageIdxEl.textContent = '第 ' + (state.idx + 1) + ' / ' + listStages().length + ' 阶段';
+    infoBody.innerHTML = '<p><strong>' + st.name + '</strong>：' + st.text + '</p>';
+    badgeEl.textContent = (state.mode === 'mitosis' ? '有丝分裂' : '减数分裂') + ' · ' + st.name +
+                          ' · ' + (state.cell === 'animal' ? '动物细胞' : '植物细胞');
+    highlightSteps();
+  }
+  counts = counts || {};
+  const ck = [counts.c, counts.s, counts.d, counts.scope, counts.note].join('|');
+  if (ck !== lastCountKey){
+    lastCountKey = ck;
+    vChromo.textContent = counts.c;
+    vSister.textContent = counts.s;
+    vDna.textContent = counts.d;
+    scopeTagEl.textContent = counts.scope || '';
+    countNoteEl.textContent = counts.note || '';
+  }
+}
+function enterStage(){
+  const now = performance.now();
+  twFrom = snapProps();
+  twTo = curScene(0);
+  twStart = now; twDur = TR_BASE / state.rate;
+  phase = 'tween'; t0 = now; stageStart = now;
+  updatePanels(twTo.counts);
+}
+function setPlaying(on){
+  state.playing = on;
+  playBtn.textContent = on ? '⏸ 暂停' : '▶ 自动播放';
+  if (!on) return;
+  const now = performance.now();
+  if (state.idx >= listStages().length - 1){ state.idx = 0; enterStage(); return; }
+  if (phase === 'tween'){
+    const k = clamp((now - twStart) / twDur);
+    twStart = now - k * twDur;
+  } else {
+    const t = clamp((now - t0) / (INT_BASE / state.rate));
+    if (t >= 0.999) enterStage();                     // 已播完 → 重播本阶段动画
+    else t0 = now - t * (INT_BASE / state.rate);      // 续播
+  }
+  stageStart = now;
+}
+function go(i){
+  setPlaying(false);
+  state.idx = Math.max(0, Math.min(listStages().length - 1, i));
+  enterStage();
+}
+function setMode(m){
+  if (state.mode === m) return;
+  setPlaying(false);
+  state.mode = m;
+  state.idx = 0;
+  if (m === 'meiosis') rollMeiosis();
+  buildSteps();
+  updateSegs();
+  enterStage();
+}
+function changeRate(r){
+  const now = performance.now(), old = state.rate;
+  if (old === r) return;
+  if (phase === 'tween'){
+    const k = clamp((now - twStart) / twDur);
+    twDur = TR_BASE / r; twStart = now - k * twDur;
+  } else {
+    const t = clamp((now - t0) / (INT_BASE / old));
+    t0 = now - t * (INT_BASE / r);
+  }
+  const el = now - stageStart;
+  stageStart = now - el * (old / r);
+  state.rate = r;
+}
+function updateSegs(){
+  [...modeSeg.children].forEach(b => b.classList.toggle('on', b.dataset.mode === state.mode));
+  [...cellSeg.children].forEach(b => b.classList.toggle('on', b.dataset.cell === state.cell));
+  [...speedSeg.children].forEach(b => b.classList.toggle('on', +b.dataset.rate === state.rate));
+  const mio = state.mode !== 'meiosis';
+  rerandBtn.disabled = mio;
+  [...crossSeg.children].forEach(b => { b.disabled = mio; });
+}
+function frame(now){
+  TIME = now;
+  let counts;
+  if (phase === 'tween'){
+    const k = clamp((now - twStart) / twDur);
+    blendScene(twFrom, twTo, ease(k));
+    counts = twTo.counts;
+    if (k >= 1){ phase = 'internal'; t0 = now; }
+  } else {
+    const t = clamp((now - t0) / (INT_BASE / state.rate));
+    const S = curScene(t);
+    applyScene(S);
+    counts = S.counts;
+  }
+  updatePanels(counts);
+  if (state.playing && now - stageStart >= STAGE_BASE / state.rate){
+    if (state.idx < listStages().length - 1){ state.idx++; enterStage(); }
+    else setPlaying(false);
+  }
+  requestAnimationFrame(frame);
+}
+function init(){
+  initActors();
+  rollMeiosis();
+  buildSteps();
+  updateSegs();
+  enterStage();
+  modeSeg.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b && b.dataset.mode) setMode(b.dataset.mode);
+  });
+  cellSeg.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b && b.dataset.cell && b.dataset.cell !== state.cell){
+      state.cell = b.dataset.cell; updateSegs(); enterStage();
+    }
+  });
+  speedSeg.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b && b.dataset.rate){ changeRate(+b.dataset.rate); updateSegs(); }
+  });
+  crossSeg.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || state.mode !== 'meiosis') return;
+    const v = b.dataset.cross;
+    state.cross = {long:v === 'long' || v === 'all', short:v === 'short' || v === 'all'};
+    [...crossSeg.children].forEach(x => x.classList.toggle('on', x === b));
+    enterStage();
+  });
+  rerandBtn.addEventListener('click', () => {
+    if (state.mode !== 'meiosis') return;
+    rollMeiosis();
+    enterStage();
+  });
+  prevBtn.addEventListener('click', () => go(state.idx - 1));
+  nextBtn.addEventListener('click', () => go(state.idx + 1));
+  playBtn.addEventListener('click', () => setPlaying(!state.playing));
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft'){ e.preventDefault(); go(state.idx - 1); }
+    else if (e.key === 'ArrowRight'){ e.preventDefault(); go(state.idx + 1); }
+    else if (e.key === ' '){ e.preventDefault(); setPlaying(!state.playing); }
+  });
+  requestAnimationFrame(frame);
+}
+init();
+</script>
+</body>
+</html>
