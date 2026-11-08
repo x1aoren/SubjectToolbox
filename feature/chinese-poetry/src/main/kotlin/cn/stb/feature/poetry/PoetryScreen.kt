@@ -369,7 +369,7 @@ private fun PoemDetail(poem: Poem, modifier: Modifier = Modifier) {
 
         Spacer(Modifier.height(40.dp))
         Text(
-            text = "内容为教学示例数据，以统编版教材为准，可由内容管线整册替换。",
+            text = "以统编版教材为准",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
         )

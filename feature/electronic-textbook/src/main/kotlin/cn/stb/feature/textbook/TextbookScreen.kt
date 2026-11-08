@@ -50,9 +50,19 @@ private fun WebView.stepPageZoom(direction: Int, onPercent: (Int) -> Unit) {
             if (next !== current) {
               var ev = { pointers: [{ pageX: window.innerWidth / 2, pageY: window.innerHeight / 2 }] };
               if (next > 100 && !page.parameters.zoomFlag) page.zoomIn(page);
-              page.parameters.origin = page.mathOrigin(page, ev);
+              // 固定以页面中心缩放；缩小回 100% 时中心点归零，页面自然恢复居中
+              page.parameters.origin = { x: 50, y: 50 };
               page.originObj(page, page.parameters.origin);
               page.animateToScale(page, next / 100, ev);
+              if (next <= 100) {
+                // 阅读器收尾只复位标记，拖动过的位移会留在 transform 上，手动清掉
+                setTimeout(function () {
+                  page.parameters.tran = { x: 0, y: 0 };
+                  page.parameters.scale = 1;
+                  page.parameters.toScale = 1;
+                  page.css({ '-webkit-transform': 'none', transform: 'none' });
+                }, 420);
+              }
             }
             return String(next);
           }

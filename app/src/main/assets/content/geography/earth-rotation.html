@@ -236,7 +236,7 @@
     view.stageH = Math.max(320, H - view.dockH);
     view.R = Math.max(86, Math.min(W * 0.172, view.stageH * 0.295));
     view.cx = W * (W < 720 ? 0.5 : 0.462);
-    view.cy = view.stageH * 0.52 + 6;
+    view.cy = view.stageH * 0.50 + 6;
     view.font = Math.max(11, view.R * 0.061);
 
     buildStars();
@@ -439,7 +439,7 @@
     var pts = [];
     for (var lat = 88; lat >= -88; lat -= 3){
       var c = Math.cos(lat * DEG);
-      var off = screenFromUnit(1.03 + 0.58 * c, -0.92 * Math.sin(lat * DEG));
+      var off = screenFromUnit(1.03 + 0.58 * c, 0.92 * Math.sin(lat * DEG));
       pts.push({ x: view.cx + off.x, y: view.cy + off.y });
     }
     if (!pts.length) return;
@@ -519,15 +519,6 @@
         if (pt.z > 0){
           if (!started){ ctx.moveTo(pt.x, pt.y); started = true; }
           else ctx.lineTo(pt.x, pt.y);
-        } else {
-          started = false;
-        }
-      }
-      for (var m = pts.length - 1; m >= 0; m--){
-        var pt2 = pts[m];
-        if (pt2.z > 0){
-          if (m === pts.length - 1) ctx.moveTo(pt2.x, pt2.y);
-          else ctx.lineTo(pt2.x, pt2.y);
         }
       }
       ctx.closePath();
@@ -704,7 +695,7 @@
     var s = sunGeometry();
 
     // 阳光：三束平行箭头指向地球
-    var rayYs = [view.cy - view.R * 0.5, view.cy - view.R * 0.06, view.cy + view.R * 0.36];
+    var rayYs = [view.cy - view.R * 0.64, view.cy - view.R * 0.20, view.cy + view.R * 0.34];
     for (var i = 0; i < rayYs.length; i++){
       var startX = s.x - s.r * 1.12;
       var endX = view.cx + view.R * 0.94;
@@ -782,26 +773,33 @@
       ctx.restore();
     }
 
+    var topMode = state.view === 'top';
     label(
       state.lat + '° ' + Math.round(data.speed) + 'km/h',
-      m.x + view.R * 0.035,
-      m.y - view.R * 0.085,
+      m.x + view.R * (topMode ? 0.10 : 0.035),
+      m.y + view.R * (topMode ? 0.10 : -0.085),
       '#4fc3ff',
       view.font,
       'left'
     );
 
-    // 标注纬线与赤道
-    var p60 = project(90 * DEG - state.spin, 60);
-    label('60° ' + Math.round(VMAX * Math.cos(60 * DEG)) + 'km/h',
-      p60.x + view.R * 0.02, p60.y - view.R * 0.05, 'rgba(185,167,255,.92)', view.font * 0.94, 'left');
-
-    var pEq = project(76 * DEG - state.spin, 0);
-    label('赤道 1670km/h', pEq.x + view.R * 0.02, pEq.y - view.R * 0.02, 'rgba(90,214,244,.9)', view.font * 0.94, 'left');
+    // 标注纬线与赤道（俯视时环线挤在一起，省略固定标注避免重叠）
+    if (state.view !== 'top'){
+      if (Math.abs(state.lat - 60) > 8){
+        var p60 = project(90 * DEG - state.spin, 60);
+        label('60° ' + Math.round(VMAX * Math.cos(60 * DEG)) + 'km/h',
+          p60.x + view.R * 0.02, p60.y - view.R * 0.05, 'rgba(185,167,255,.92)', view.font * 0.94, 'left');
+      }
+      if (state.lat > 8){
+        var pEq = project(76 * DEG - state.spin, 0);
+        label('赤道 1670km/h', pEq.x + view.R * 0.02, pEq.y - view.R * 0.02, 'rgba(90,214,244,.9)', view.font * 0.94, 'left');
+      }
+    }
 
     // 角速度示意小球
-    var orbX = view.cx + view.R * 1.46;
-    var orbY = view.cy + view.R * 0.20;
+    var sideView = state.view === 'side';
+    var orbX = view.cx + view.R * (sideView ? 1.52 : 1.46);
+    var orbY = view.cy + view.R * (sideView ? 0.42 : 0.20);
     var sunCheck = sunGeometry();
     if (sunCheck.x - orbX > view.R * 0.55 && orbX > view.cx + view.R * 1.2){
       var orbR = Math.max(6, view.R * 0.042);
@@ -827,12 +825,14 @@
   function drawSceneLabels(){
     var v = VIEWS[state.view];
 
-    label('夜半球', view.cx - view.R * 1.30, view.cy - view.R * 0.55, 'rgba(150,166,188,.55)', view.font * 0.98, 'center');
-    label('昼半球', view.cx + view.R * 0.98, view.cy - view.R * 0.78, '#f5c451', view.font * 1.02, 'center', true);
+    label('夜半球', view.cx - view.R * 1.32, view.cy - view.R * 0.52, 'rgba(150,166,188,.55)', view.font * 0.98, 'center');
+    var dayX = view.cx + view.R * (state.view === 'side' ? 1.5 : 0.98);
+    var dayY = view.cy - view.R * (state.view === 'side' ? 0.74 : 0.78);
+    label('昼半球', dayX, dayY, '#f5c451', view.font * 1.02, 'center', true);
 
     if (v.pitch < 50){
       // 地球下方：自转方向箭头
-      var arcR = view.R * 1.45;
+      var arcR = view.R * 1.28;
       ctx.save();
       ctx.strokeStyle = 'rgba(74,222,128,.8)';
       ctx.lineWidth = 1.8;
@@ -845,7 +845,7 @@
       var bx = view.cx + arcR * Math.cos(13 * DEG);
       var by = view.cy + arcR * Math.sin(13 * DEG);
       drawArrow(ax, ay, bx, by, 'rgba(74,222,128,.88)', 1.8, Math.max(8, view.R * 0.05));
-      label('自转方向 →', view.cx, view.cy + view.R * 1.62, 'rgba(110,235,165,.9)', view.font * 0.9, 'center');
+      label('自转方向 →', view.cx, view.cy + view.R * 1.43, 'rgba(110,235,165,.9)', view.font * 0.9, 'center');
     } else {
       var topR = view.R * 1.22;
       ctx.save();

@@ -24,7 +24,7 @@ private val Context.settingsStore: DataStore<Preferences> by preferencesDataStor
 /**
  * 个性化配置的持久化。
  *
- * 只存「意图」：用户置顶了谁、隐藏了谁、选了什么颜色。
+ * 只存「意图」：用户置顶了谁、隐藏了谁、开了什么开关。
  * 首页长什么样由 HomeComposer 每次实时算出来，绝不把计算结果写进存储——
  * 否则一旦内容升级导致工具增减，存下来的快照就会和现实对不上。
  */
