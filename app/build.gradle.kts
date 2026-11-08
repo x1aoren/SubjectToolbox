@@ -1,8 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// 签名信息放 local.properties（已 gitignore），keystore 放 keystore/（同样不提交）。
+// 换了机器就把这两样一起搬过去，否则无法覆盖升级。
+val localProps = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val releaseStorePath = localProps.getProperty("stb.storeFile")
+val hasReleaseKey = releaseStorePath != null && rootProject.file(releaseStorePath).exists()
 
 android {
     namespace = "cn.stb.app"
@@ -16,12 +27,25 @@ android {
         versionName = "1.0.0"
     }
 
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = rootProject.file(releaseStorePath!!)
+                storePassword = localProps.getProperty("stb.storePassword")
+                keyAlias = localProps.getProperty("stb.keyAlias")
+                keyPassword = localProps.getProperty("stb.keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             // 上架形态：R8 代码压缩 + 资源收缩。必须实测，混淆常把反射/序列化打坏
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // 没有密钥时退化成未签名包，保证别的机器也能构建
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

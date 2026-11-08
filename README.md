@@ -57,12 +57,13 @@ sdk.dir=你的SDK路径
 # 产物：app/build/outputs/apk/debug/app-debug.apk（56MB，含调试符号与压缩后约 40MB 的词库）
 
 ./gradlew assembleRelease
-# 产物：app/build/outputs/apk/release/app-release-unsigned.apk（39.4MB，需自行签名）
+# 产物：app/build/outputs/apk/release/app-release.apk（约 40MB，已签名）
 ```
 
 release 已开启 R8 代码压缩 + 资源收缩；当前包体积主体是词库（86.1MB SQLite，压缩后约 38MB）。
-`dist/SubjectToolbox-1.0.0-debug.apk` 是同步刷新的可安装 debug 包；release 包未签名，
-上架前必须用学校/公司的正式密钥签名（否则无法覆盖安装、也无法上架）。
+签名信息放在 `local.properties`（`stb.storeFile` / `stb.storePassword` / `stb.keyAlias` / `stb.keyPassword`），
+密钥文件为 `keystore/subjecttoolbox-release.jks`；两者都已 gitignore，换机器时必须一起搬走，
+否则新包无法覆盖安装。`dist/` 同目录保留可安装的 debug 包与已签名 release 包。
 
 `minSdk 26` 是权衡结果：覆盖校园在役设备，同时避开 Android 7 的存储与后台限制差异。
 注意它**和全文检索无关**——Android 系统 SQLite 只编译了 FTS3/FTS4，没有 FTS5，换版本号也换不来（在 API 35 上实测 `CREATE VIRTUAL TABLE ... USING fts5` 直接报 `no such module: fts5`）。词典因此干脆不用全文索引：`word` 列声明 `COLLATE NOCASE`，精确/前缀查询走 `idx_entry_word` 索引，中文反查走 LIKE 全表扫描（放在 IO 线程 + 300ms 输入防抖）。不做 FTS4 是因为全量 77 万条下它会让词库体积再涨近一倍。
@@ -153,5 +154,5 @@ python tools/dictionary/verify_dict_db.py
 - 数据为示例规模，未做教材全量校对；
 - 化学配平只处理分子方程式，不含离子方程式与氧化还原半反应；
 - 未接入音频朗读、云同步、账号体系（设计上的非目标）；
-- release 已开 R8 + 资源收缩并在模拟器实测通过，但签名用的是调试密钥；上架前需换正式密钥并补 Baseline Profile；
+- release 已开 R8 + 资源收缩，使用项目内自签名密钥（`keystore/`）；上架前需补 Baseline Profile 并做一次真机回归；
 

@@ -828,6 +828,7 @@ private fun SuperscriptSlotIcon(color: Color) {
             style = MaterialTheme.typography.bodyLarge,
             color = color,
         )
+        Spacer(Modifier.width(1.dp))
         Box(
             modifier = Modifier
                 .offset(y = (-6).dp)
