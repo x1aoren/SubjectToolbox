@@ -100,11 +100,66 @@ class PlotComposerTest {
         assertEquals(7.0, result.xMax, 1e-9)
     }
 
+    /* ---------------- 定义域 ---------------- */
+
+    @Test
+    fun `定义域裁剪显式函数的采样范围`() {
+        val result = plot(
+            listOf(PlotFn(1, "x", 1L, domain = Domain(-1.0, 1.0))),
+            xSpan = 10.0,
+        )
+
+        val points = result!!.series.first().segments.flatten()
+        assertTrue("应当有采样点", points.isNotEmpty())
+        assertTrue("所有点的 x 都应在定义域内", points.all { it.first in -1.0..1.0 })
+        assertEquals(-1.0, points.minOf { it.first }, 1e-9)
+        assertEquals(1.0, points.maxOf { it.first }, 1e-9)
+    }
+
+    @Test
+    fun `空的定义域不画线`() {
+        val result = plot(listOf(PlotFn(1, "x", 1L, domain = Domain(-10.0, -20.0))), xSpan = 10.0)
+
+        assertTrue(result!!.series.first().segments.isEmpty())
+    }
+
+    @Test
+    fun `单边定义域只画半边`() {
+        val result = plot(
+            listOf(PlotFn(1, "sqrt(x)", 1L, domain = Domain(0.0, null))),
+            xSpan = 10.0,
+        )
+
+        val points = result!!.series.first().segments.flatten()
+        assertTrue(points.isNotEmpty())
+        assertTrue(points.all { it.first >= -1e-9 })
+    }
+
+    @Test
+    fun `定义域也会裁剪隐式方程的网格`() {
+        val full = plot(listOf(PlotFn(1, "x^2+y^2=25", 1L, mode = FnMode.IMPLICIT)), xSpan = 20.0)
+        val half = plot(
+            listOf(
+                PlotFn(1, "x^2+y^2=25", 1L, mode = FnMode.IMPLICIT, domain = Domain(0.0, null)),
+            ),
+            xSpan = 20.0,
+        )
+
+        val fullPoints = full!!.series.first().segments.flatten()
+        val halfPoints = half!!.series.first().segments.flatten()
+        assertTrue("全圆应当覆盖左右两侧", fullPoints.any { it.first < -2 })
+        assertTrue("裁剪后不应再出现负 x 的点", halfPoints.all { it.first >= -1e-6 })
+        assertTrue("右半边仍应有足够多的点", halfPoints.size > 100)
+    }
+
     /* ---------------- 隐函数 ---------------- */
 
     @Test
     fun `圆方程能画出闭合曲线`() {
-        val result = plot(listOf(PlotFn(1, "x^2+y^2=25", 1L)), xSpan = 20.0)
+        val result = plot(
+            listOf(PlotFn(1, "x^2+y^2=25", 1L, mode = FnMode.IMPLICIT)),
+            xSpan = 20.0,
+        )
 
         assertNotNull(result)
         val points = result!!.series.first().segments.flatten()
@@ -122,7 +177,10 @@ class PlotComposerTest {
     @Test
     fun `椭圆的半轴长度正确`() {
         // x^2/16 + y^2/4 = 1 → 半轴 4 与 2
-        val result = plot(listOf(PlotFn(1, "x^2/16+y^2/4=1", 1L)), xSpan = 20.0)
+        val result = plot(
+            listOf(PlotFn(1, "x^2/16+y^2/4=1", 1L, mode = FnMode.IMPLICIT)),
+            xSpan = 20.0,
+        )
 
         val points = result!!.series.first().segments.flatten()
         assertEquals(4.0, points.maxOf { it.first }, 0.15)
@@ -131,7 +189,11 @@ class PlotComposerTest {
 
     @Test
     fun `隐函数纵轴跟随绘图区宽高比`() {
-        val result = plot(listOf(PlotFn(1, "x^2+y^2=25", 1L)), xSpan = 20.0, aspect = 0.6)
+        val result = plot(
+            listOf(PlotFn(1, "x^2+y^2=25", 1L, mode = FnMode.IMPLICIT)),
+            xSpan = 20.0,
+            aspect = 0.6,
+        )
 
         assertEquals(-6.0, result!!.yMin, 1e-9)
         assertEquals(6.0, result.yMax, 1e-9)
@@ -139,7 +201,7 @@ class PlotComposerTest {
 
     @Test
     fun `y 等于 sin x 仍按显式处理`() {
-        val def = parseCurve("y=sin(x)")
+        val def = parseCurve(FnMode.EXPLICIT, "y=sin(x)")
         assertTrue("带 y= 前缀应走显式路径以保留渐近线处理", def is CurveDef.Explicit)
 
         val result = plot(listOf(PlotFn(1, "y=sin(x)", 1L)), xSpan = 7.0)
@@ -147,11 +209,18 @@ class PlotComposerTest {
     }
 
     @Test
+    fun `显式模式下的表达式按显式绘制`() {
+        val result = plot(listOf(PlotFn(1, "sin(x)", 1L, mode = FnMode.EXPLICIT)), xSpan = 7.0)
+        assertEquals(1, result!!.series.size)
+        assertTrue(result.series.first().segments.isNotEmpty())
+    }
+
+    @Test
     fun `显式与隐式可以同图共存`() {
         val result = plot(
             listOf(
                 PlotFn(1, "sin(x)", 1L),
-                PlotFn(2, "x^2+y^2=25", 2L),
+                PlotFn(2, "x^2+y^2=25", 2L, mode = FnMode.IMPLICIT),
             ),
             xSpan = 20.0,
             aspect = 0.6,
@@ -160,5 +229,29 @@ class PlotComposerTest {
         assertEquals(2, result!!.series.size)
         // 有隐函数时纵轴由宽高比决定，而不是由 sin 的幅值决定
         assertEquals(6.0, result.yMax, 1e-9)
+    }
+
+    @Test
+    fun `同一条表达式在两种模式下结果不同`() {
+        // 显式 sin(x) 是正弦曲线；隐式 sin(x)=0 是一组竖线
+        val explicit = plot(listOf(PlotFn(1, "sin(x)", 1L)), xSpan = 7.0)!!
+        val implicit = plot(
+            listOf(PlotFn(1, "sin(x)", 1L, mode = FnMode.IMPLICIT)),
+            xSpan = 7.0,
+        )!!
+
+        val explicitPoints = explicit.series.first().segments.flatten()
+        assertTrue("显式应当是一条有波峰的曲线", explicitPoints.any { it.second > 0.9 })
+
+        val implicitPoints = implicit.series.first().segments.flatten()
+        assertTrue("隐式曲线应当有采样点", implicitPoints.isNotEmpty())
+        assertTrue(
+            "隐式 sin(x)=0 的曲线应该贴着竖直线 x=0",
+            implicitPoints.any { abs(it.first) < 0.1 },
+        )
+        assertTrue(
+            "隐式曲线的 y 分布应当覆盖很宽（竖线），而不是正弦波",
+            implicitPoints.maxOf { it.second } - implicitPoints.minOf { it.second } > 3.0,
+        )
     }
 }

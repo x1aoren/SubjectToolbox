@@ -35,7 +35,8 @@ private sealed interface Token {
     data object Comma : Token
 }
 
-private val FUNCTIONS = setOf("sin", "cos", "tan", "ln", "lg", "log", "sqrt", "abs", "exp")
+/** 解析器认识的函数名。滑块变量名也会拿它做保留字检查，所以不能是 private。 */
+internal val FUNCTION_NAMES = setOf("sin", "cos", "tan", "ln", "lg", "log", "sqrt", "abs", "exp")
 
 private fun tokenize(input: String): List<Token> {
     val out = mutableListOf<Token>()
@@ -143,7 +144,7 @@ private class Parser(private val tokens: List<Token>) {
             is Token.Ident -> {
                 pos++
                 val name = t.name
-                if (peek() is Token.LParen && name in FUNCTIONS) {
+                if (peek() is Token.LParen && name in FUNCTION_NAMES) {
                     pos++
                     val args = mutableListOf<Expr>()
                     if (peek() !is Token.RParen) {
@@ -247,24 +248,54 @@ sealed interface CurveDef {
 }
 
 /**
- * 解析一行输入。
+ * 解析一行输入，模式由用户在界面上显式切换（点击 f(x) / F(x,y) 标签）。
  *
- * - 没有等号 → 当作 y = f(x)
- * - 「y = ...」→ 仍按显式处理，享受渐近线断开的画质
- * - 其余含等号的 → 移项成 F = 左 − 右 = 0
+ * 显式模式：
+ * - 普通表达式 → y = f(x)
+ * - 「y = 表达式」→ 也按显式处理，享受渐近线断开的画质
+ * - 出现别的等号 → 报错，并提示切到隐式（而不是猜出一个奇怪的隐函数）
+ *
+ * 隐式模式：
+ * - 普通表达式 → 当作 F(x,y) = 0
+ * - 含等号 → 移项成 F = 左 − 右 = 0，学生可以直接照书写方程
  */
-fun parseCurve(raw: String): CurveDef {
+internal fun parseCurve(mode: FnMode, raw: String): CurveDef {
     val text = raw.trim()
+    if (mode == FnMode.IMPLICIT) {
+        if (text.isEmpty()) throw ParseException("还没有输入表达式", 0)
+        val eq = text.indexOf('=')
+        if (eq < 0) return CurveDef.Implicit(parseExpression(text))
+
+        val lhs = text.substring(0, eq).trim()
+        val rhs = text.substring(eq + 1).trim()
+        if (lhs.isEmpty()) throw ParseException("等号左边是空的", eq)
+        if (rhs.isEmpty()) throw ParseException("等号右边是空的", eq)
+        return CurveDef.Implicit(Expr.Binary('-', parseExpression(lhs), parseExpression(rhs)))
+    }
+
+    // 显式：允许「y = ...」，但不接受别的等号
     val eq = text.indexOf('=')
-    if (eq < 0) return CurveDef.Explicit(parseExpression(text))
+    if (eq < 0) return explicitCurve(text)
 
     val lhs = text.substring(0, eq).trim()
     val rhs = text.substring(eq + 1).trim()
-    if (lhs.isEmpty()) throw ParseException("等号左边是空的", eq)
-    if (rhs.isEmpty()) throw ParseException("等号右边是空的", eq)
-    if (lhs == "y") return CurveDef.Explicit(parseExpression(rhs))
+    if (lhs == "y") {
+        if (rhs.isEmpty()) throw ParseException("等号右边是空的", eq)
+        return explicitCurve(rhs)
+    }
+    throw ParseException("显式函数不能含等号，点上方 f(x) 可切换为隐式方程", eq)
+}
 
-    return CurveDef.Implicit(Expr.Binary('-', parseExpression(lhs), parseExpression(rhs)))
+/**
+ * 显式函数的表达式必须只含 x：出现 y 说明学生其实想画方程，
+ * 与其画出一条空图还不如直接提示切换模式。
+ */
+private fun explicitCurve(text: String): CurveDef {
+    val expr = parseExpression(text)
+    if (expr.variables().contains("y")) {
+        throw ParseException("显式函数里不能出现 y；点上方 f(x) 可切换为隐式方程", 0)
+    }
+    return CurveDef.Explicit(expr)
 }
 
 fun CurveDef.variables(): List<String> = when (this) {

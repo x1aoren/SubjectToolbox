@@ -71,6 +71,13 @@ data class AppSettings(
     val schemaVersion: Int = 1,
     /** 首次启动是否已完成默认置顶的播种，避免用户清空置顶后又被重新填满 */
     val seeded: Boolean = false,
+    /**
+     * 用户上次确认过更新提示的版本名（如 "1.0.0"），空串表示还没记录过。
+     *
+     * 只用于「每个版本只提示一次」：写入当前版本后，同一版本再次启动不再弹窗。
+     * 是否全新安装由 core:data 的工具类按系统安装时间判断，不落盘——它属于系统事实，不是用户意图。
+     */
+    val lastSeenVersion: String = "",
 ) {
     companion object {
         const val CURRENT_SCHEMA = 1

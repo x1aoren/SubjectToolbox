@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cn.stb.core.data.AppVersion
 import cn.stb.core.data.AssetReader
 import cn.stb.core.data.manifest
 import cn.stb.core.model.AppGraph
@@ -51,6 +53,7 @@ import cn.stb.core.model.DarkMode
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenDisplayManager: () -> Unit,
+    onOpenChangelog: () -> Unit,
     viewModel: SettingsViewModel = viewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -103,12 +106,17 @@ fun SettingsScreen(
                     Spacer(Modifier.height(10.dp))
                     Text("作者：2025届2班 胡城玮", style = MaterialTheme.typography.bodyMedium)
                     HorizontalDivider(Modifier.padding(vertical = 14.dp))
-                    InfoRow("版本", "1.0.0")
+                    // 版本号运行时从 PackageManager 读取，和 build.gradle.kts 永远一致；
+                    // 「更新日志」做成版本行右侧的小胶囊，不再单独占一整行。
+                    VersionRow(
+                        version = AppVersion.name(context),
+                        onOpenChangelog = onOpenChangelog,
+                    )
                     InfoRow("内容版本", manifest?.contentVersion?.toString() ?: "未读取到")
                     InfoRow("学科 / 工具", "${catalog.subjects.size} / ${catalog.allTools.size}")
                     HorizontalDivider(Modifier.padding(vertical = 12.dp))
                     Text(
-                        text = "特别鸣谢：陈子怡老师 郑晓宇老师",
+                        text = "特别鸣谢：陈子仪老师 郑晓宇老师",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -139,8 +147,14 @@ fun SettingsScreen(
 
             item {
                 SettingsGroup(title = "字号") {
+                    // 0.85×「较小」是本次新增档位：标准仍嫌大的用户也有了选择；四档同一行。
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        listOf(1f to "标准", 1.15f to "较大", 1.3f to "特大").forEach { (scale, label) ->
+                        listOf(
+                            0.85f to "较小",
+                            1f to "标准",
+                            1.15f to "较大",
+                            1.3f to "特大",
+                        ).forEach { (scale, label) ->
                             FilterChip(
                                 selected = kotlin.math.abs(settings.theme.fontScale - scale) < 0.01f,
                                 onClick = { viewModel.setFontScale(scale) },
@@ -148,7 +162,13 @@ fun SettingsScreen(
                             )
                         }
                     }
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(12.dp))
+                    // 预览文字随所选字号实时缩放：主题已按 fontScale 缩放整套 Typography。
+                    Text(
+                        text = "预览：把语文、数学、英语、化学等学科的工具收进一个平板 App。",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Spacer(Modifier.height(6.dp))
                     Text(
                         text = "古诗文正文会随字号一起放大，行距保持 1.8 倍。",
                         style = MaterialTheme.typography.bodySmall,
@@ -251,5 +271,44 @@ private fun InfoRow(label: String, value: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/**
+ * 「版本」行：右侧跟一个紧凑的「更新日志 ›」小胶囊。
+ *
+ * 之前是一整行带图标、副标题的大卡片，在设置页里过于抢眼；改成贴在版本号旁边的小按钮，
+ * 位置更合理（用户想看更新内容时自然会在版本附近找），也不打断「关于」信息的阅读节奏。
+ */
+@Composable
+private fun VersionRow(version: String, onOpenChangelog: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("版本", style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.weight(1f))
+        Text(
+            version,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(8.dp))
+        Surface(
+            onClick = onOpenChangelog,
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.height(28.dp),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("更新日志", style = MaterialTheme.typography.labelSmall)
+                Spacer(Modifier.width(2.dp))
+                Text("›", style = MaterialTheme.typography.labelMedium)
+            }
+        }
     }
 }

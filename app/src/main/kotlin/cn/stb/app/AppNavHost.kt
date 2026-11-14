@@ -20,6 +20,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,6 +31,7 @@ import cn.stb.core.model.AppGraph
 import cn.stb.core.model.ToolId
 import cn.stb.core.registry.ToolHost
 import cn.stb.feature.home.HomeScreen
+import cn.stb.feature.settings.ChangelogScreen
 import cn.stb.feature.settings.DisplayManagerScreen
 import cn.stb.feature.settings.SettingsScreen
 
@@ -36,6 +39,7 @@ private object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
     const val DISPLAY = "display"
+    const val CHANGELOG = "changelog"
     const val TOOL = "tool/{toolId}"
     fun tool(id: String) = "tool/$id"
 }
@@ -51,7 +55,11 @@ fun AppNavHost(startToolId: String? = null) {
             }
 
             override fun close() {
-                navController.popBackStack()
+                // 只从工具页返回。连点返回时，旧页面的点击可能晚于新页面出现，
+                // 此时栈顶已经不是工具页，再返回会把主页也弹掉，界面就空白了。
+                if (navController.currentDestination?.route == Routes.TOOL) {
+                    navController.navigateUp()
+                }
             }
         }
     }
@@ -72,15 +80,20 @@ fun AppNavHost(startToolId: String? = null) {
             )
         }
 
-        composable(Routes.SETTINGS) {
+        composable(Routes.SETTINGS) { entry ->
             SettingsScreen(
-                onBack = { navController.popBackStack() },
+                onBack = { navController.popBackFrom(entry) },
                 onOpenDisplayManager = { navController.navigate(Routes.DISPLAY) },
+                onOpenChangelog = { navController.navigate(Routes.CHANGELOG) },
             )
         }
 
-        composable(Routes.DISPLAY) {
-            DisplayManagerScreen(onBack = { navController.popBackStack() })
+        composable(Routes.DISPLAY) { entry ->
+            DisplayManagerScreen(onBack = { navController.popBackFrom(entry) })
+        }
+
+        composable(Routes.CHANGELOG) { entry ->
+            ChangelogScreen(onBack = { navController.popBackFrom(entry) })
         }
 
         composable(
@@ -96,12 +109,16 @@ fun AppNavHost(startToolId: String? = null) {
 
             if (provider == null) {
                 // 工具已下线，或者旧返回栈指向了不存在的 id——别崩，给个能回去的页面
-                MissingToolScreen(onBack = { navController.popBackStack() })
+                MissingToolScreen(onBack = { navController.popBackFrom(entry) })
             } else {
                 provider.Content(host)
             }
         }
     }
+
+    // 版本升级提示挂在 NavHost 之后：它只往独立的 Dialog 窗口画内容，
+    // 不参与页面布局与导航栈；「查看完整更新日志」由这里接到 changelog 路由。
+    UpdateNotice(onOpenChangelog = { navController.navigate(Routes.CHANGELOG) })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,5 +149,18 @@ private fun MissingToolScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+/**
+ * 返回上一页，但只接受当前栈顶页面的返回请求。
+ *
+ * 返回动画期间旧页面的按钮仍然可能被点到：快速连点返回时，第一次返回已经把
+ * 页面弹出栈，晚到的第二次点击若继续 pop，会把主页也一起弹掉，只剩空白背景。
+ * 这里用 NavBackStackEntry 实例判断页面是否仍在栈顶，旧页面的点击直接忽略。
+ */
+private fun NavController.popBackFrom(entry: NavBackStackEntry) {
+    if (currentBackStackEntry === entry) {
+        navigateUp()
     }
 }

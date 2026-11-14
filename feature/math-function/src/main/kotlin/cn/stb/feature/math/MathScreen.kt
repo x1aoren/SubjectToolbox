@@ -1,13 +1,21 @@
 package cn.stb.feature.math
 
 import android.graphics.Paint
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -18,12 +26,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -35,15 +43,16 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
@@ -53,7 +62,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,12 +70,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -75,17 +81,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -104,9 +109,9 @@ class MathToolProvider : ToolProvider {
         id = ToolId("math.function"),
         subjectId = SubjectId("math"),
         title = "函数编辑器",
-        summary = "多曲线 · 圆与隐函数 · 上标显示",
+        summary = "多曲线 · 显隐式切换 · 滑块与定义域",
         glyph = "函",
-        keywords = listOf("函数", "图像", "绘图", "表达式", "坐标", "曲线", "圆", "方程", "隐函数"),
+        keywords = listOf("函数", "图像", "绘图", "表达式", "坐标", "曲线", "圆", "方程", "隐函数", "开方", "滑块", "定义域"),
     )
 
     @Composable
@@ -115,49 +120,8 @@ class MathToolProvider : ToolProvider {
     }
 }
 
-/** 一条曲线：表达式 + 颜色 + 是否显示。 */
-internal data class PlotFn(
-    val id: Int,
-    val expr: String,
-    val colorArgb: Long,
-    val visible: Boolean = true,
-)
-
-private val curvePalette = listOf(
-    0xFF34558B, // 靛蓝
-    0xFFB4453A, // 赭红
-    0xFF2E7D6F, // 青绿
-    0xFF6B4A8F, // 绛紫
-    0xFF9A6B1F, // 琥珀
-    0xFF1F6F78, // 青碧
-)
-
-private const val MAX_CURVES = 6
-
-/** 表达式可能含任意字符，用不可见分隔符打包，避免和输入内容冲突。 */
-private const val SEP = "\u0001"
-
-private val FnListSaver: Saver<List<PlotFn>, List<String>> = Saver(
-    save = { list ->
-        list.map { "${it.id}$SEP${it.colorArgb}$SEP${it.visible}$SEP${it.expr}" }
-    },
-    restore = { saved ->
-        saved.mapNotNull { raw ->
-            val parts = raw.split(SEP, limit = 4)
-            if (parts.size < 4) null else PlotFn(
-                id = parts[0].toIntOrNull() ?: 0,
-                colorArgb = parts[1].toLongOrNull() ?: curvePalette[0],
-                visible = parts[2].toBoolean(),
-                expr = parts[3],
-            )
-        }
-    },
-)
-
+/** 一条曲线画出来的结果：颜色 + 若干段折线。 */
 internal data class Series(val colorArgb: Long, val segments: List<List<Pair<Double, Double>>>)
-
-/** 图例条目带上原始序号，隐藏某条曲线后 f2 仍然叫 f2，不会错位。 */
-private data class LegendItem(val colorArgb: Long, val expr: String, val number: Int)
 
 internal data class PlotData(
     val xMin: Double,
@@ -180,7 +144,16 @@ fun MathScreen(onBack: () -> Unit) {
     var xSpan by rememberSaveable { mutableStateOf(20.0) }
     var yCenter by rememberSaveable { mutableStateOf(0.0) }
     var aspect by rememberSaveable { mutableStateOf(0.62f) }
-    var params by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+
+    // 滑块与「用户主动删掉的变量」都跨旋转保存
+    var params by rememberSaveable(stateSaver = ParamListSaver) { mutableStateOf(emptyList<ParamDef>()) }
+    var dismissedVarsRaw by rememberSaveable { mutableStateOf("") }
+    val dismissedVars = remember(dismissedVarsRaw) {
+        dismissedVarsRaw.split(',').filter { it.isNotBlank() }.toSet()
+    }
+
+    var domainDialogFor by remember { mutableStateOf<Int?>(null) }
+    var pendingParamDelete by remember { mutableStateOf<ParamDef?>(null) }
 
     val selected = functions.firstOrNull { it.id == selectedId } ?: functions.first()
     val selectedIndex = functions.indexOfFirst { it.id == selected.id }
@@ -199,37 +172,81 @@ fun MathScreen(onBack: () -> Unit) {
         update(selected.id) { it.copy(expr = value.text) }
     }
 
-    // 键盘插入到光标处（有选区则替换选区），而不是永远追加到末尾
-    fun insertAtCursor(text: String) {
-        val source = editor.text
-        val start = editor.selection.start.coerceIn(0, source.length)
-        val end = editor.selection.end.coerceIn(0, source.length)
-        val newText = source.substring(0, start) + text + source.substring(end)
-        applyEditor(TextFieldValue(newText, TextRange(start + text.length)))
+    fun applyEdit(edit: MathEdit.Edit) = applyEditor(edit.toTextFieldValue())
+
+    fun deleteParam(def: ParamDef) {
+        params = params.filterNot { it.name == def.name }
+        dismissedVarsRaw = (dismissedVars + def.name).joinToString(",")
     }
 
-    fun deleteAtCursor() {
-        val source = editor.text
-        val start = editor.selection.start.coerceIn(0, source.length)
-        val end = editor.selection.end.coerceIn(0, source.length)
-        if (start != end) {
-            applyEditor(TextFieldValue(source.removeRange(start, end), TextRange(start)))
-        } else if (start > 0) {
-            applyEditor(TextFieldValue(source.removeRange(start - 1, start), TextRange(start - 1)))
+    fun requestDeleteParam(def: ParamDef) {
+        val used = functions.any { fn ->
+            runCatching { parseCurve(fn.mode, fn.expr) }.getOrNull()
+                ?.variables()?.contains(def.name) == true
         }
+        if (used) pendingParamDelete = def else deleteParam(def)
+    }
+
+    fun addParam(def: ParamDef) {
+        if (params.size >= MAX_SLIDERS || params.any { it.name == def.name }) return
+        params = params + def
+        dismissedVarsRaw = (dismissedVars - def.name).joinToString(",")
+    }
+
+    fun updateParam(def: ParamDef) {
+        params = params.map { if (it.name == def.name) def else it }
+    }
+
+    // 表达式里新出现的自由变量自动生成滑块；用户删过的变量不再自动塞回来
+    val activeCurves = remember(functions) {
+        functions.filter { it.visible }.mapNotNull { fn ->
+            runCatching { parseCurve(fn.mode, fn.expr) }.getOrNull()?.let { fn to it }
+        }
+    }
+    val freeVars = remember(activeCurves) {
+        activeCurves.flatMap { it.second.variables() }.filter { it != "x" && it != "y" }.distinct()
+    }
+    LaunchedEffect(freeVars, dismissedVars, params.size) {
+        val missing = freeVars.filter { name ->
+            params.none { it.name == name } && name !in dismissedVars && validateParamName(name, params) == null
+        }
+        if (missing.isNotEmpty()) {
+            val room = MAX_SLIDERS - params.size
+            if (room > 0) {
+                params = params + missing.take(room).map { ParamDef(name = it, value = 1.0, auto = true) }
+            }
+        }
+    }
+
+    val paramsMap = remember(params) { params.associate { it.name to it.value } }
+
+    val legend = remember(functions) {
+        functions.mapIndexedNotNull { index, fn ->
+            if (!fn.visible) return@mapIndexedNotNull null
+            if (runCatching { parseCurve(fn.mode, fn.expr) }.isFailure) return@mapIndexedNotNull null
+            LegendItem(fn.colorArgb, fn.expr, index + 1, fn.mode)
+        }
+    }
+
+    val plot = remember(functions, xCenter, xSpan, yCenter, params, aspect) {
+        composePlot(functions, xCenter, xSpan, yCenter, paramsMap, aspect.toDouble())
     }
 
     fun addFunction() {
         if (functions.size >= MAX_CURVES) return
         val id = nextId
         nextId += 1
+        // 优先挑一个还没用过的颜色，删改之后也不会两条曲线撞色
+        val usedColors = functions.map { it.colorArgb }.toSet()
+        val color = curvePalette.firstOrNull { it !in usedColors }
+            ?: curvePalette[functions.size.coerceAtMost(curvePalette.lastIndex)]
         val seed = when (functions.size) {
-            1 -> "cos(x)"
-            2 -> "x^2"
-            3 -> "x^2+y^2=25"
-            else -> "x"
+            1 -> PlotFn(id, "cos(x)", color)
+            2 -> PlotFn(id, "x^2", color)
+            3 -> PlotFn(id, "x^2+y^2=25", color, mode = FnMode.IMPLICIT)
+            else -> PlotFn(id, "x", color)
         }
-        functions = functions + PlotFn(id, seed, curvePalette[functions.size % curvePalette.size])
+        functions = functions + seed
         selectedId = id
     }
 
@@ -238,34 +255,6 @@ fun MathScreen(onBack: () -> Unit) {
         val remaining = functions.filterNot { it.id == id }
         functions = remaining
         if (selectedId == id) selectedId = remaining.first().id
-    }
-
-    val active = remember(functions) {
-        functions.filter { it.visible }.mapNotNull { fn ->
-            runCatching { parseCurve(fn.expr) }.getOrNull()?.let { fn to it }
-        }
-    }
-
-    val hasImplicit = remember(active) { active.any { it.second is CurveDef.Implicit } }
-
-    val freeVars = remember(active) {
-        active.flatMap { it.second.variables() }.filter { it != "x" && it != "y" }.distinct()
-    }
-
-    val legend = remember(functions) {
-        functions.mapIndexedNotNull { index, fn ->
-            if (!fn.visible) return@mapIndexedNotNull null
-            if (runCatching { parseCurve(fn.expr) }.isFailure) null
-            else LegendItem(fn.colorArgb, fn.expr, index + 1)
-        }
-    }
-
-    LaunchedEffect(freeVars) {
-        params = freeVars.take(4).associateWith { params[it] ?: 1.0 }
-    }
-
-    val plot = remember(functions, xCenter, xSpan, yCenter, params, aspect) {
-        composePlot(functions, xCenter, xSpan, yCenter, params, aspect.toDouble())
     }
 
     Scaffold(
@@ -279,7 +268,7 @@ fun MathScreen(onBack: () -> Unit) {
                             text = if (functions.size > 1) {
                                 "${functions.size} 条曲线 · 同一坐标系"
                             } else {
-                                "支持方程，如 x^2+y^2=25"
+                                "支持方程与开方，点 f(x) 可切换显隐式"
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -299,80 +288,102 @@ fun MathScreen(onBack: () -> Unit) {
     ) { padding ->
         BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
             val wide = maxWidth >= 720.dp
+            val panelWidth = if (maxWidth >= 1160.dp) 468.dp else 412.dp
+
+            val editorPanel: @Composable (Modifier) -> Unit = { panelModifier ->
+                EditorPanel(
+                    functions = functions,
+                    selected = selected,
+                    selectedIndex = selectedIndex,
+                    editor = editor,
+                    params = params,
+                    onEditorChange = ::applyEditor,
+                    onSelect = { selectedId = it },
+                    onToggleVisible = { id -> update(id) { fn -> fn.copy(visible = !fn.visible) } },
+                    onToggleMode = { id -> update(id) { fn -> fn.copy(mode = fn.mode.toggled()) } },
+                    onDelete = ::removeFunction,
+                    onAdd = ::addFunction,
+                    onOpenDomain = { domainDialogFor = selected.id },
+                    onChar = { token -> applyEdit(MathEdit.insert(editor.text, editor.selection, token)) },
+                    onOperator = { op -> applyEdit(MathEdit.insertOperator(editor.text, editor.selection, op)) },
+                    onFunction = { name -> applyEdit(MathEdit.insertFunction(editor.text, editor.selection, name)) },
+                    onPower = { applyEdit(MathEdit.insertPower(editor.text, editor.selection)) },
+                    onBackspace = { applyEdit(MathEdit.backspace(editor.text, editor.selection)) },
+                    onClear = { applyEditor(TextFieldValue("", TextRange(0))) },
+                    onParamAdd = ::addParam,
+                    onParamUpdate = ::updateParam,
+                    onParamDelete = ::requestDeleteParam,
+                    modifier = panelModifier,
+                )
+            }
+
+            val plotPane: @Composable (Modifier) -> Unit = { plotModifier ->
+                PlotPane(
+                    plot = plot,
+                    legend = legend,
+                    onPan = { dx, dy, w, h ->
+                        xCenter -= dx / w * xSpan
+                        yCenter += dy / h * (xSpan * aspect)
+                    },
+                    onZoom = { zoom -> xSpan = (xSpan / zoom).coerceIn(0.05, 5000.0) },
+                    onReset = { xCenter = 0.0; xSpan = 20.0; yCenter = 0.0 },
+                    onAspect = { newAspect ->
+                        if (abs(newAspect - aspect) > 0.01f) aspect = newAspect
+                    },
+                    modifier = plotModifier,
+                )
+            }
 
             if (wide) {
                 Row(modifier = Modifier.fillMaxSize()) {
-                    EditorPanel(
-                        functions = functions,
-                        selected = selected,
-                        selectedIndex = selectedIndex,
-                        editor = editor,
-                        freeVars = freeVars,
-                        params = params,
-                        onEditorChange = ::applyEditor,
-                        onSelect = { selectedId = it },
-                        onInsert = ::insertAtCursor,
-                        onBackspace = ::deleteAtCursor,
-                        onClear = { applyEditor(TextFieldValue("")) },
-                        onToggleVisible = { id -> update(id) { fn -> fn.copy(visible = !fn.visible) } },
-                        onDelete = { removeFunction(it) },
-                        onAdd = { addFunction() },
-                        onParamChange = { name, value -> params = params + (name to value) },
-                        modifier = Modifier.width(404.dp).fillMaxHeight(),
-                    )
+                    editorPanel(Modifier.width(panelWidth).fillMaxHeight())
                     VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    PlotPane(
-                        plot = plot,
-                        legend = legend,
-                        onPan = { dx, dy, w, h ->
-                            xCenter -= dx / w * xSpan
-                            yCenter += dy / h * (xSpan * aspect)
-                        },
-                        onZoom = { zoom -> xSpan = (xSpan / zoom).coerceIn(0.05, 5000.0) },
-                        onReset = { xCenter = 0.0; xSpan = 20.0; yCenter = 0.0 },
-                        onAspect = { newAspect ->
-                            if (abs(newAspect - aspect) > 0.01f) aspect = newAspect
-                        },
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                    )
+                    plotPane(Modifier.weight(1f).fillMaxHeight())
                 }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    PlotPane(
-                        plot = plot,
-                        legend = legend,
-                        onPan = { dx, dy, w, h ->
-                            xCenter -= dx / w * xSpan
-                            yCenter += dy / h * (xSpan * aspect)
-                        },
-                        onZoom = { zoom -> xSpan = (xSpan / zoom).coerceIn(0.05, 5000.0) },
-                        onReset = { xCenter = 0.0; xSpan = 20.0; yCenter = 0.0 },
-                        onAspect = { newAspect ->
-                            if (abs(newAspect - aspect) > 0.01f) aspect = newAspect
-                        },
-                        modifier = Modifier.fillMaxWidth().height(260.dp),
-                    )
-                    EditorPanel(
-                        functions = functions,
-                        selected = selected,
-                        selectedIndex = selectedIndex,
-                        editor = editor,
-                        freeVars = freeVars,
-                        params = params,
-                        onEditorChange = ::applyEditor,
-                        onSelect = { selectedId = it },
-                        onInsert = ::insertAtCursor,
-                        onBackspace = ::deleteAtCursor,
-                        onClear = { applyEditor(TextFieldValue("")) },
-                        onToggleVisible = { id -> update(id) { fn -> fn.copy(visible = !fn.visible) } },
-                        onDelete = { removeFunction(it) },
-                        onAdd = { addFunction() },
-                        onParamChange = { name, value -> params = params + (name to value) },
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                    )
+                    plotPane(Modifier.fillMaxWidth().height(240.dp))
+                    editorPanel(Modifier.fillMaxWidth().weight(1f))
                 }
             }
         }
+    }
+
+    // 定义域对话框
+    domainDialogFor?.let { fnId ->
+        val fn = functions.firstOrNull { it.id == fnId }
+        if (fn != null) {
+            DomainDialog(
+                initial = fn.domain,
+                onDismiss = { domainDialogFor = null },
+                onConfirm = { domain ->
+                    update(fnId) { it.copy(domain = domain) }
+                    domainDialogFor = null
+                },
+            )
+        }
+    }
+
+    // 删除仍被表达式使用的滑块前先确认
+    pendingParamDelete?.let { def ->
+        AlertDialog(
+            onDismissRequest = { pendingParamDelete = null },
+            title = { Text("删除滑块？") },
+            text = {
+                Text("「${def.name}」仍出现在表达式里，删除后相关曲线暂时画不出来，可以随时再加回来。")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deleteParam(def)
+                        pendingParamDelete = null
+                    },
+                ) { Text("仍要删除") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingParamDelete = null }) { Text("取消") }
+            },
+        )
     }
 }
 
@@ -382,145 +393,404 @@ private fun EditorPanel(
     selected: PlotFn,
     selectedIndex: Int,
     editor: TextFieldValue,
-    freeVars: List<String>,
-    params: Map<String, Double>,
+    params: List<ParamDef>,
     onEditorChange: (TextFieldValue) -> Unit,
     onSelect: (Int) -> Unit,
-    onInsert: (String) -> Unit,
-    onBackspace: () -> Unit,
-    onClear: () -> Unit,
     onToggleVisible: (Int) -> Unit,
+    onToggleMode: (Int) -> Unit,
     onDelete: (Int) -> Unit,
     onAdd: () -> Unit,
-    onParamChange: (String, Double) -> Unit,
+    onOpenDomain: () -> Unit,
+    onChar: (String) -> Unit,
+    onOperator: (String) -> Unit,
+    onFunction: (String) -> Unit,
+    onPower: () -> Unit,
+    onBackspace: () -> Unit,
+    onClear: () -> Unit,
+    onParamAdd: (ParamDef) -> Unit,
+    onParamUpdate: (ParamDef) -> Unit,
+    onParamDelete: (ParamDef) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val error = if (editor.text.isBlank()) null else
-        runCatching { parseCurve(editor.text) }.exceptionOrNull()?.message
+    val error = if (editor.text.isBlank()) {
+        null
+    } else {
+        runCatching { parseCurve(selected.mode, editor.text) }.exceptionOrNull()?.message
+    }
 
     Column(
-        modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "函数列表",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = "${functions.size}/$MAX_CURVES",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        // 函数切换条：横向一排胶囊，不再用纵向列表吃掉半屏高度
+        FunctionStrip(
+            functions = functions,
+            selectedId = selected.id,
+            onSelect = onSelect,
+            onToggleVisible = onToggleVisible,
+            onAdd = onAdd,
+        )
 
         Spacer(Modifier.height(6.dp))
 
-        // 固定高度 + 独立滚动：函数再多也不会把下面的键盘顶出屏幕
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().heightIn(max = 172.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+        // 表达式编辑卡：模式/定义域/显隐/删除 + 输入框 + 固定报错栏 + 键盘，整块常驻可见
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         ) {
-            itemsIndexed(functions, key = { _, fn -> fn.id }) { index, fn ->
-                FunctionRow(
-                    fn = fn,
-                    index = index,
-                    selected = fn.id == selected.id,
-                    hasError = fn.expr.isNotBlank() && runCatching { parseCurve(fn.expr) }.isFailure,
-                    canDelete = functions.size > 1,
-                    onSelect = { onSelect(fn.id) },
-                    onToggleVisible = { onToggleVisible(fn.id) },
-                    onDelete = { onDelete(fn.id) },
+            Column(modifier = Modifier.padding(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ModeChip(
+                        mode = selected.mode,
+                        index = selectedIndex,
+                        onClick = { onToggleMode(selected.id) },
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    DomainChip(domain = selected.domain, onClick = onOpenDomain)
+                    Spacer(Modifier.weight(1f))
+                    TextButton(
+                        onClick = { onToggleVisible(selected.id) },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        modifier = Modifier.height(28.dp),
+                    ) {
+                        Text(
+                            text = if (selected.visible) "隐藏" else "显示",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    IconButton(
+                        onClick = { onDelete(selected.id) },
+                        enabled = functions.size > 1,
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = "删除 ${fnLabel(selectedIndex, selected.mode)}",
+                            modifier = Modifier.size(15.dp),
+                            tint = if (functions.size > 1) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                            },
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                ExpressionField(
+                    value = editor,
+                    onValueChange = onEditorChange,
+                    label = if (selected.mode == FnMode.EXPLICIT) {
+                        "f${selectedIndex + 1}(x) ="
+                    } else {
+                        "F${selectedIndex + 1}(x,y):"
+                    },
+                    // 隐式模式下如果学生已经写了完整方程（含等号），就不再补「= 0」
+                    suffix = if (selected.mode == FnMode.IMPLICIT && '=' !in editor.text) {
+                        "= 0"
+                    } else {
+                        null
+                    },
+                    isError = error != null,
+                )
+
+                // 报错栏固定占位：出错时只换内容，不改变下方键盘的位置
+                ErrorBar(message = error, mode = selected.mode)
+
+                Spacer(Modifier.height(2.dp))
+
+                MathKeypad(
+                    onChar = onChar,
+                    onOperator = onOperator,
+                    onFunction = onFunction,
+                    onPower = onPower,
+                    onBackspace = onBackspace,
+                    onClear = onClear,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
 
-        Spacer(Modifier.height(4.dp))
-        OutlinedButton(
-            onClick = onAdd,
-            enabled = functions.size < MAX_CURVES,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(if (functions.size < MAX_CURVES) "添加函数" else "最多 $MAX_CURVES 条曲线")
-        }
+        Spacer(Modifier.height(6.dp))
 
-        Spacer(Modifier.height(14.dp))
-
-        ExpressionField(
-            value = editor,
-            onValueChange = onEditorChange,
-            label = if (selectedIndex == 0) "f(x) =" else "f${selectedIndex + 1}(x) =",
-            isError = error != null,
-        )
-        if (error != null) {
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = error,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-        Keypad(onKey = onInsert, onBackspace = onBackspace, onClear = onClear)
-
-        if (freeVars.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "参数（对所有曲线生效）",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            freeVars.take(4).forEach { name ->
-                val value = params[name] ?: 1.0
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                        modifier = Modifier.width(22.dp),
-                    )
-                    Slider(
-                        value = value.toFloat().coerceIn(-5f, 5f),
-                        onValueChange = { onParamChange(name, it.toDouble()) },
-                        valueRange = -5f..5f,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = String.format(Locale.US, "%.2f", value),
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                        modifier = Modifier.width(46.dp),
-                    )
-                }
+        // 剩下的高度全部给滑块，独立滚动；键盘已经固定在上面的卡片里，永远不会被挤掉
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                ParamPanel(
+                    params = params,
+                    onAdd = onParamAdd,
+                    onUpdate = onParamUpdate,
+                    onDelete = onParamDelete,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
             }
         }
+    }
+}
 
-        Spacer(Modifier.height(16.dp))
+/** 函数切换条：一排横向胶囊，显示模式、表达式预览、显隐与语法错误。 */
+@Composable
+private fun FunctionStrip(
+    functions: List<PlotFn>,
+    selectedId: Int,
+    onSelect: (Int) -> Unit,
+    onToggleVisible: (Int) -> Unit,
+    onAdd: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(44.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LazyRow(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            itemsIndexed(functions, key = { _, fn -> fn.id }) { index, fn ->
+                FunctionChip(
+                    fn = fn,
+                    index = index,
+                    selected = fn.id == selectedId,
+                    hasError = fn.expr.isNotBlank() &&
+                        runCatching { parseCurve(fn.mode, fn.expr) }.isFailure,
+                    onSelect = { onSelect(fn.id) },
+                    onToggleVisible = { onToggleVisible(fn.id) },
+                )
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "${functions.size}/$MAX_CURVES",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(8.dp))
+        Surface(
+            onClick = onAdd,
+            enabled = functions.size < MAX_CURVES,
+            modifier = Modifier.size(44.dp),
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = if (functions.size < MAX_CURVES) 1f else 0.4f,
+            ),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = if (functions.size < MAX_CURVES) {
+                        "添加函数"
+                    } else {
+                        "最多 $MAX_CURVES 条曲线"
+                    },
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
+}
+
+/** 一条曲线的胶囊：颜色点（可切换显隐）+ 模式标签 + 表达式预览 + 错误标记。 */
+@Composable
+private fun FunctionChip(
+    fn: PlotFn,
+    index: Int,
+    selected: Boolean,
+    hasError: Boolean,
+    onSelect: () -> Unit,
+    onToggleVisible: () -> Unit,
+) {
+    val color = Color(fn.colorArgb)
+    Surface(
+        onClick = onSelect,
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) color.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(
+            1.dp,
+            if (selected) color.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 4.dp, end = 10.dp, top = 5.dp, bottom = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clickable(
+                        onClickLabel = if (fn.visible) "隐藏该曲线" else "显示该曲线",
+                        onClick = onToggleVisible,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(11.dp)
+                        .clip(CircleShape)
+                        .background(if (fn.visible) color else Color.Transparent)
+                        .border(1.5.dp, if (fn.visible) color else color.copy(alpha = 0.45f), CircleShape),
+                )
+            }
+            Text(
+                text = fnLabel(index, fn.mode),
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                color = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = mathAnnotated(if (fn.expr.isBlank()) "（空）" else fn.expr),
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                color = if (fn.visible) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = 156.dp),
+            )
+            if (hasError) {
+                Spacer(Modifier.width(3.dp))
+                Icon(
+                    Icons.Filled.Warning,
+                    contentDescription = "表达式有错误",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(13.dp),
+                )
+            }
+        }
+    }
+}
+
+/** 显式/隐式切换胶囊：点一下就在 f(x) 与 F(x,y) 之间切换。 */
+@Composable
+private fun ModeChip(
+    mode: FnMode,
+    index: Int,
+    onClick: () -> Unit,
+) {
+    val label = fnLabel(index, mode)
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(9.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+        modifier = Modifier.semantics {
+            contentDescription = if (mode == FnMode.EXPLICIT) {
+                "当前是显式函数，点击切换为隐式方程"
+            } else {
+                "当前是隐式方程，点击切换为显式函数"
+            }
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Monospace),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = "⇄",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+/** 定义域入口：平时显示「全体实数」，设置过之后显示具体区间。 */
+@Composable
+private fun DomainChip(domain: Domain, onClick: () -> Unit) {
+    val accent = if (domain.isAll) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(9.dp),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.semantics { contentDescription = "设置函数定义域" },
+    ) {
+        Text(
+            text = "定义域：${formatDomainLabel(domain)}",
+            style = MaterialTheme.typography.labelMedium,
+            color = accent,
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+        )
     }
 }
 
 /**
- * 表达式输入框。
- *
- * 没有用 OutlinedTextField，是因为要在文字下面自己描上标虚线框：
- * 显示层把 `x^2` 转成「x + 抬高的 2」，这里再按上标 span 的位置把框画出来。
- * 存储始终是 `x^2`，光标位置由 Transformation 的 OffsetMapping 映射回原文本。
+ * 表达式输入框：所见即所得的数学排版（上标、根号横线）都在显示层完成，
+ * 这里只负责把光标位置、聚焦状态和画好的装饰对齐。
  */
 @Composable
 private fun ExpressionField(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     label: String,
+    suffix: String?,
     isError: Boolean,
 ) {
-    val transformation = remember { SuperscriptTransformation() }
+    val transformation = remember { MathVisualTransformation() }
     var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
     var focused by remember { mutableStateOf(false) }
 
-    // 这个工具自带了数学键盘，系统输入法一弹出来就会把键盘和图像盖住，
-    // 所以聚焦时直接收起 IME。外接实体键盘照样能打字（按键事件不依赖 IME 是否显示）。
+    // 拖动光标手柄时，手势协程运行期间值会不断变化，用 rememberUpdatedState 保证读到最新状态
+    val latestValue by rememberUpdatedState(value)
+    val latestLayout by rememberUpdatedState(textLayout)
+    val latestFocused by rememberUpdatedState(focused)
+    val latestOnValueChange by rememberUpdatedState(onValueChange)
+
+    /**
+     * 自绘光标手柄的中心位置（文本布局坐标系）。
+     * 无论光标在基线、上标还是根号里，手柄都固定落在这行文字的下方，方便按住拖动。
+     */
+    fun caretHandleCenter(verticalOffsetPx: Float): Offset? {
+        if (!latestFocused || !latestValue.selection.collapsed) return null
+        val layout = latestLayout ?: return null
+        val display = transformation.display ?: return null
+        val textLength = layout.layoutInput.text.length
+        if (layout.lineCount <= 0) return null
+        val transformed = display.originalToTransformed(latestValue.selection.end)
+            .coerceIn(0, textLength)
+        val line = layout.getLineForOffset(transformed.coerceIn(0, (textLength - 1).coerceAtLeast(0)))
+        return Offset(
+            x = layout.getHorizontalPosition(transformed, usePrimaryDirection = true),
+            y = layout.getLineBottom(line) + verticalOffsetPx,
+        )
+    }
+
+    // 原生光标整行高，会在角标/根号里显得太长；隐藏它，改用自绘光标（高度跟着编辑区走）
+    val caretTransition = rememberInfiniteTransition(label = "caret")
+    val caretAlpha by caretTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "caretAlpha",
+    )
+    val caretColor = MaterialTheme.colorScheme.primary
+
+    // 这个工具自带了数学键盘，系统输入法一弹出来就会把键盘和图像盖住，所以聚焦时直接收起 IME。
     val keyboard = LocalSoftwareKeyboardController.current
 
     val borderColor = when {
@@ -528,7 +798,8 @@ private fun ExpressionField(
         focused -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.outline
     }
-    val slotColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f)
+    val lineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+    val slotColor = MaterialTheme.colorScheme.outline
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -537,8 +808,10 @@ private fun ExpressionField(
         color = Color.Transparent,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            // 上下留白按「手柄区高度 + 行高」对称分配，让文字在圆角框里垂直居中；
+            // 底部额外空间同时作为光标手柄的拖拽热区。
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 20.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.Top,
         ) {
             Text(
                 text = label,
@@ -549,12 +822,62 @@ private fun ExpressionField(
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .pointerInput(Unit) {
+                        // 原生手柄在上标区域不可靠，这里自己接管「按住手柄拖动」：
+                        // 只有按在手柄附近才消费事件，其它位置的点击/长按仍然交给输入框原生处理。
+                        awaitEachGesture {
+                            val down = awaitFirstDown(
+                                requireUnconsumed = false,
+                                pass = PointerEventPass.Initial,
+                            )
+                            val center = caretHandleCenter(verticalOffsetPx = 10.dp.toPx())
+                                ?: return@awaitEachGesture
+                            if ((down.position - center).getDistance() > 26.dp.toPx()) {
+                                return@awaitEachGesture
+                            }
+                            down.consume()
+
+                            fun moveCaretTo(position: Offset) {
+                                val layout = latestLayout ?: return
+                                val display = transformation.display ?: return
+                                val transformed = layout.getOffsetForPosition(position)
+                                val original = display.mapping.transformedToOriginal(transformed)
+                                    .coerceIn(0, latestValue.text.length)
+                                latestOnValueChange(latestValue.copy(selection = TextRange(original)))
+                            }
+
+                            moveCaretTo(down.position)
+                            drag(down.id) { change ->
+                                change.consume()
+                                moveCaretTo(change.position)
+                            }
+                        }
+                    }
+                    .padding(bottom = 16.dp)
                     .drawBehind {
-                        drawSuperscriptSlot(
+                        drawMathDecorations(
                             layout = textLayout,
-                            color = slotColor,
-                            spanIndex = transformation.activeRunIndex(value.selection.end),
+                            display = transformation.display,
+                            caret = value.selection.end,
+                            lineColor = lineColor,
+                            slotColor = slotColor,
                         )
+                        if (focused && value.selection.collapsed) {
+                            drawMathCaret(
+                                layout = textLayout,
+                                display = transformation.display,
+                                originalCaret = value.selection.start,
+                                color = caretColor,
+                                alpha = caretAlpha,
+                            )
+                            // 手柄不跟着闪烁，始终可见、可按住拖动
+                            drawMathCaretHandle(
+                                layout = textLayout,
+                                display = transformation.display,
+                                originalCaret = value.selection.start,
+                                color = caretColor.copy(alpha = 0.85f),
+                            )
+                        }
                     },
             ) {
                 BasicTextField(
@@ -579,13 +902,22 @@ private fun ExpressionField(
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurface,
                     ),
-                    // 允许多行换行而不是横向滚动：横向滚动时上标虚线框会跟着跑到视野外
+                    // 允许多行换行而不是横向滚动：横向滚动时上标/根号装饰会跑到视野外
                     singleLine = false,
                     minLines = 1,
                     maxLines = 3,
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    // 光标由 drawMathCaret 自绘，这里保持透明
+                    cursorBrush = SolidColor(Color.Transparent),
                     visualTransformation = transformation,
                     onTextLayout = { textLayout = it },
+                )
+            }
+            if (suffix != null) {
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = suffix,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -593,259 +925,43 @@ private fun ExpressionField(
 }
 
 /**
- * 只给光标所在的那个上标槽描虚线框。
- * 光标不在指数里时不画——输入完 x^2 继续往后打，表达式就恢复成普通上标小字。
+ * 报错栏：高度固定，出错时只替换文案。
+ * 这样键盘区不会因为报错出现/消失而上下跳动，连续输入的手感才稳定。
  */
-private fun DrawScope.drawSuperscriptSlot(
-    layout: TextLayoutResult?,
-    color: Color,
-    spanIndex: Int?,
-) {
-    if (layout == null || spanIndex == null) return
-    val text = layout.layoutInput.text
-    val span = text.spanStyles
-        .filter { it.item.baselineShift == BaselineShift.Superscript }
-        .getOrNull(spanIndex) ?: return
-    if (span.end <= span.start) return
-
-    val line = layout.getLineForOffset(span.start)
-    val lineTop = layout.getLineTop(line)
-    val lineBottom = layout.getLineBottom(line)
-
-    val left = (layout.getHorizontalPosition(span.start, true) - 2.dp.toPx()).coerceAtLeast(0f)
-    val right = layout.getHorizontalPosition(span.end, true) + 2.dp.toPx()
-    val width = (right - left).coerceAtLeast(14.dp.toPx())
-
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(left, lineTop + 1.dp.toPx()),
-        size = Size(width, (lineBottom - lineTop) * 0.62f),
-        cornerRadius = CornerRadius(3.dp.toPx()),
-        style = Stroke(
-            width = 1.dp.toPx(),
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())),
-        ),
-    )
-}
-
 @Composable
-private fun FunctionRow(
-    fn: PlotFn,
-    index: Int,
-    selected: Boolean,
-    hasError: Boolean,
-    canDelete: Boolean,
-    onSelect: () -> Unit,
-    onToggleVisible: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    val color = Color(fn.colorArgb)
-    Surface(
-        onClick = onSelect,
-        shape = RoundedCornerShape(12.dp),
-        color = if (selected) color.copy(alpha = 0.10f) else Color.Transparent,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 2.dp, top = 2.dp, bottom = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(14.dp)
-                    .clip(CircleShape)
-                    .background(if (fn.visible) color else Color.Transparent)
-                    .border(1.5.dp, if (fn.visible) color else color.copy(alpha = 0.45f), CircleShape)
-                    .clickable(onClickLabel = if (fn.visible) "隐藏该曲线" else "显示该曲线", onClick = onToggleVisible),
-            )
-            Spacer(Modifier.width(9.dp))
-            Text(
-                text = "f${index + 1}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(20.dp),
-            )
-            Text(
-                text = if (fn.expr.isBlank()) AnnotatedString("（空表达式）") else superscriptAnnotated(fn.expr),
-                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                color = if (fn.visible) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            if (hasError) {
-                Text(
-                    text = "语法错误",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-            IconButton(
-                onClick = onDelete,
-                enabled = canDelete,
-                modifier = Modifier.size(30.dp),
-            ) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = "删除 f${index + 1}",
-                    modifier = Modifier.size(15.dp),
-                    tint = if (canDelete) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                    },
-                )
-            }
-        }
+private fun ErrorBar(message: String?, mode: FnMode) {
+    val hint = when (mode) {
+        FnMode.EXPLICIT -> "按 √ 开方、^ 乘方，点 f(x) 可切换为隐式方程"
+        FnMode.IMPLICIT -> "隐式方程 F(x,y)=0，例如 x^2+y^2=25"
     }
-}
-
-@Composable
-private fun Keypad(
-    onKey: (String) -> Unit,
-    onBackspace: () -> Unit,
-    onClear: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        // 数字与基本运算符（+ - × ÷ . =）：中性配色
-        val numberRows = listOf(
-            listOf("7", "8", "9", "÷", "(", ")"),
-            listOf("4", "5", "6", "×", "=", "⌫"),
-            listOf("1", "2", "3", "+", "-", "."),
-        )
-        numberRows.forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                row.forEach { key ->
-                    KeyButton(
-                        label = key,
-                        modifier = Modifier.weight(1f),
-                        accent = false,
-                        onClick = {
-                            when (key) {
-                                "×" -> onKey("*")
-                                "÷" -> onKey("/")
-                                "⌫" -> onBackspace()
-                                else -> onKey(key)
-                            }
-                        },
-                    )
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            KeyButton(
-                label = "0",
-                modifier = Modifier.weight(2f),
-                accent = false,
-                onClick = { onKey("0") },
-            )
-            KeyButton(
-                label = "清空",
-                modifier = Modifier.weight(4f),
-                accent = false,
-                onClick = onClear,
-            )
-        }
-
-        Spacer(Modifier.height(3.dp))
-
-        // 函数与常数（x、y、三角/对数/指数）：强调配色，和数字键明确区分
-        val functionRows = listOf(
-            listOf("x", "y", "sin", "cos", "tan", "log", "lg", "ln"),
-            listOf("a", "b", "c", "^", "√", "π", "e"),
-        )
-        functionRows.forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                row.forEach { key ->
-                    KeyButton(
-                        label = key,
-                        modifier = Modifier.weight(1f),
-                        accent = true,
-                        slot = key == "^",
-                        onClick = {
-                            when (key) {
-                                "√" -> onKey("sqrt(")
-                                "sin", "cos", "tan", "log", "lg", "ln" -> onKey("$key(")
-                                else -> onKey(key)
-                            }
-                        },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun KeyButton(
-    label: String,
-    modifier: Modifier = Modifier,
-    accent: Boolean = false,
-    slot: Boolean = false,
-    onClick: () -> Unit,
-) {
-    val contentColor = if (accent) {
-        MaterialTheme.colorScheme.onSecondaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(40.dp),
-        shape = RoundedCornerShape(9.dp),
-        color = if (accent) {
-            MaterialTheme.colorScheme.secondaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        },
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (slot) {
-                SuperscriptSlotIcon(color = contentColor)
-            } else {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = contentColor,
-                )
-            }
-        }
-    }
-}
-
-/** ^ 键的图标：x 右上角一个空的上标槽，和输入框里按 ^ 之后长出来的框是同一个形象。 */
-@Composable
-private fun SuperscriptSlotIcon(color: Color) {
     Row(
-        modifier = Modifier.semantics { contentDescription = "上标" },
+        modifier = Modifier.fillMaxWidth().height(20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "x",
-            style = MaterialTheme.typography.bodyLarge,
-            color = color,
-        )
-        Spacer(Modifier.width(1.dp))
-        Box(
-            modifier = Modifier
-                .offset(y = (-6).dp)
-                .size(11.dp)
-                .drawBehind {
-                    drawRoundRect(
-                        color = color.copy(alpha = 0.75f),
-                        cornerRadius = CornerRadius(2.dp.toPx()),
-                        style = Stroke(
-                            width = 1.dp.toPx(),
-                            pathEffect = PathEffect.dashPathEffect(
-                                floatArrayOf(2.dp.toPx(), 1.5.dp.toPx()),
-                            ),
-                        ),
-                    )
-                },
-        )
+        if (message != null) {
+            Icon(
+                Icons.Filled.Warning,
+                contentDescription = "错误",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(13.dp),
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        } else {
+            Text(
+                text = hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -910,8 +1026,13 @@ private fun PlotPane(
                                     .background(Color(item.colorArgb)),
                             )
                             Spacer(Modifier.width(6.dp))
+                            val prefix = if (item.mode == FnMode.EXPLICIT) {
+                                "f${item.number}"
+                            } else {
+                                "F${item.number}"
+                            }
                             Text(
-                                text = superscriptAnnotated("f${item.number} = ${item.expr.ifBlank { "—" }}"),
+                                text = mathAnnotated("$prefix = ${item.expr.ifBlank { "—" }}"),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontFamily = FontFamily.Monospace,
                                 ),
@@ -959,6 +1080,7 @@ private fun PlotPane(
  *
  * 显式函数按 x 采样，能正确处理渐近线；带等号的方程走 marching squares 提等值线。
  * 解析失败的曲线直接跳过——学生正打到一半的表达式不该让整张图消失。
+ * 每条曲线的定义域在采样前裁剪，所以「只在某段画」不需要额外的遮罩。
  */
 internal fun composePlot(
     curves: List<PlotFn>,
@@ -969,7 +1091,7 @@ internal fun composePlot(
     aspect: Double,
 ): PlotData? {
     val parsed = curves.filter { it.visible }.mapNotNull { fn ->
-        runCatching { parseCurve(fn.expr) }.getOrNull()?.let { fn to it }
+        runCatching { parseCurve(fn.mode, fn.expr) }.getOrNull()?.let { fn to it }
     }
     if (parsed.isEmpty()) return null
 
@@ -988,15 +1110,20 @@ internal fun composePlot(
         yMin = yMin,
         yMax = yMax,
         series = parsed.map { (fn, def) ->
-            val segments = when (def) {
-                is CurveDef.Explicit -> def.f.sampleSegments(xMin, xMax, 700, params, yMin, yMax)
-                is CurveDef.Implicit -> sampleImplicit(
-                    f = { x, y -> def.f.eval(x, params, y) },
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                )
+            val (drawMin, drawMax) = fn.domain.xRange(xMin, xMax)
+            val segments = if (drawMax <= drawMin) {
+                emptyList()
+            } else {
+                when (def) {
+                    is CurveDef.Explicit -> def.f.sampleSegments(drawMin, drawMax, 700, params, yMin, yMax)
+                    is CurveDef.Implicit -> sampleImplicit(
+                        f = { x, y -> def.f.eval(x, params, y) },
+                        xMin = drawMin,
+                        xMax = drawMax,
+                        yMin = yMin,
+                        yMax = yMax,
+                    )
+                }
             }
             Series(fn.colorArgb, segments)
         },

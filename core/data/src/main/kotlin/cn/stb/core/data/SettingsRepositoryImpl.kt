@@ -42,6 +42,7 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         val hiddenTools = stringPreferencesKey("hidden_tools")
         val schema = intPreferencesKey("schema_version")
         val seeded = booleanPreferencesKey("seeded")
+        val lastSeenVersion = stringPreferencesKey("last_seen_version")
     }
 
     override val settings: Flow<AppSettings> =
@@ -59,6 +60,7 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
             prefs[Keys.hiddenTools] = next.visibility.hiddenToolIds.joinToString(SEP)
             prefs[Keys.schema] = next.schemaVersion
             prefs[Keys.seeded] = next.seeded
+            prefs[Keys.lastSeenVersion] = next.lastSeenVersion
         }
     }
 
@@ -84,6 +86,7 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
             visibility = visibility,
             schemaVersion = this[Keys.schema] ?: AppSettings.CURRENT_SCHEMA,
             seeded = this[Keys.seeded] ?: false,
+            lastSeenVersion = this[Keys.lastSeenVersion] ?: "",
         )
     }
 
