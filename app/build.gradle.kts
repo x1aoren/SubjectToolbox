@@ -71,6 +71,7 @@ dependencies {
     implementation(project(":feature:home"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:chinese-poetry"))
+    implementation(project(":feature:chinese-dictionary"))
     implementation(project(":feature:math-function"))
     implementation(project(":feature:english-dictionary"))
     implementation(project(":feature:chemistry-equation"))

@@ -49,6 +49,16 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 `app/src/main/assets/content/english/dict.db` 由 [skywind3000/ECDICT](https://github.com/skywind3000/ECDICT)
 的 `ecdict.csv` 派生，生成脚本见 `tools/dictionary/`。
 
+## 汉语词库：ModernChineseDict（仅供学习交流，禁止商用）
+
+`app/src/main/assets/content/chinese/zhdict.db` 由
+[pampas9000/ModernChineseDict](https://github.com/pampas9000/ModernChineseDict)
+的 `dict.mdx` 解包文本派生，生成脚本见 `tools/dictionary/build_zh_dict_db.py`。
+
+该仓库是《现代汉语词典》第 7 版的 mdx 重制资源，README 明确写明「此资源仅供学习和交流，
+禁止商用，请务必于下载试用后 24 小时内删除」。本项目只在非商业校园场景随包分发；
+若要商用、公开上架或对外发行，必须先替换为已获得授权的词库，代码与数据集接口不需要改。
+
 ## 公式数据：HuiTurn/Formula（MIT License）
 
 `app/src/main/assets/content/formula/formulas.json` 的数据整理自

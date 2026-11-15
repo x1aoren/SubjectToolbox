@@ -1,12 +1,18 @@
 {
-  "contentVersion": 3,
-  "builtAt": "2026-11-08T12:00:00+08:00",
+  "contentVersion": 4,
+  "builtAt": "2026-11-15T12:00:00+08:00",
   "datasets": [
     {
       "id": "chinese.poetry",
       "version": 1,
       "path": "content/chinese/poems.json",
       "bytes": 0
+    },
+    {
+      "id": "chinese.dict",
+      "version": 1,
+      "path": "content/chinese/zhdict.db",
+      "bytes": 15183872
     },
     {
       "id": "english.dict",

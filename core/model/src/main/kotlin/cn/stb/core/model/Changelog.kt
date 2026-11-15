@@ -56,8 +56,16 @@ object Changelog {
             versionName = "1.1.0",
             versionCode = 3,
             date = "2026-11-14",
-            headline = "函数编辑器大更新：键盘、定义域与光标全面翻新",
+            headline = "函数编辑器大更新，语文新增汉语词典",
             changes = listOf(
+                ChangeItem(
+                    ChangeKind.NEW,
+                    "语文·汉语词典：收录《现代汉语词典》第 7 版 70,113 条词条，支持汉字、词语、拼音与释义检索；繁体和异体写法会自动跳到对应词条。",
+                ),
+                ChangeItem(
+                    ChangeKind.NEW,
+                    "汉语词条页展示拼音、繁体、异体和分段释义，义项序号与词性单独标色；本地生词本可收藏常查词条，词库升级时自动保留。",
+                ),
                 ChangeItem(
                     ChangeKind.NEW,
                     "「更新日志」页与版本升级提示上线：每个版本只提示一次，设置 → 关于可随时回看。",
@@ -76,15 +84,11 @@ object Changelog {
                 ),
                 ChangeItem(
                     ChangeKind.IMPROVE,
+                    "主页工具卡片只保留工具名，去掉下方的小字描述，卡片高度更紧凑，三栏学科区不再因为描述行数不同而高低不齐。",
+                ),
+                ChangeItem(
+                    ChangeKind.IMPROVE,
                     "函数编辑器整体翻新：显式 / 隐式手动切换、参数滑块可增删并单独设范围与步进、开方所见即所得、2x 这类隐式乘号直接认。",
-                ),
-                ChangeItem(
-                    ChangeKind.IMPROVE,
-                    "键盘回到 1.0.0 键位，新增 { } , 三个定义域符号；乘方键显示成「x + 右上角虚线框」，和按下后长出来的上标槽一致。",
-                ),
-                ChangeItem(
-                    ChangeKind.IMPROVE,
-                    "函数列表竖排：一条曲线一行，颜色点切显隐、右侧一键删除，面板整体可上下滑动。",
                 ),
                 ChangeItem(
                     ChangeKind.IMPROVE,

@@ -16,6 +16,7 @@
 | 学科 | 工具    | 能力                                                                                          |
 | -- | ----- | ------------------------------------------------------------------------------------------- |
 | 语文 | 古诗词   | **61 篇新课标必背**（含沁园春·长沙）、按册选择、目录-正文双栏（目录可收起）、注释与赏析、**背诵模式**（点句显示）                             |
+| 语文 | 汉语词典  | **现代汉语词典第 7 版 7 万词条**、精确/前缀/拼音/释义检索、繁体与异体写法跳转、拼音与词性排版、**本地生词本**                          |
 | 数学 | 函数编辑器 | **最多 6 条曲线同坐标系**、**显式 / 隐式方程手动切换**（圆、椭圆等如 `x^2+y^2=25`）、**每条曲线可单独设置定义域**、参数滑块可增删并设范围与步进、**开方所见即所得**、上标输入提示（输入指数时 x 右上角显示虚线框）、键盘按光标插入、报错栏固定占位、逐条配色与显隐、缩放平移 |
 | 英语 | 词典    | **ECDICT 77 万词条（含 36.6 万短语）**、精确/前缀/中文反查、音标·考试标签·词形变化·英文释义、**本地生词本**  |
 | 化学 | 化学方程式 | **165 条方程式**、类型筛选检索、化学式下标排版、**自动配平**（高斯消元）+ 一键复制、**118 元素周期表**（可点查详情）                       |
@@ -40,7 +41,7 @@
 | UI   | Jetpack Compose + Material 3，`GridCells.Adaptive` 平板自适应 |
 | 架构   | 多模块 + 单向数据流（MVVM）+ 工具注册表（Tool Registry）                 |
 | 配置   | Preferences DataStore                                   |
-| 用户数据 | SQLite（`usage.db`）+ 预置词库（`dict.db`，ECDICT 派生）           |
+| 用户数据 | SQLite（`usage.db`）+ 预置词库（英汉 `dict.db`、汉语 `zhdict.db`）           |
 | 内容   | `assets/content/`（JSON / SQLite 词库 / 交互页）                |
 | 构建   | Gradle 8.9 + AGP 8.7.3 + JDK 17                         |
 | 版本   | compileSdk 35 / targetSdk 34 / **minSdk 26**            |
@@ -59,13 +60,13 @@ sdk.dir=你的SDK路径
 
 ```bash
 gradle assembleDebug
-# 产物：app/build/outputs/apk/debug/app-debug.apk（约 50MB，含调试符号与压缩后约 40MB 的词库）
+# 产物：app/build/outputs/apk/debug/app-debug.apk（约 58MB，含调试符号与压缩后的英汉、汉语词库）
 
 gradle assembleRelease
-# 产物：app/build/outputs/apk/release/app-release.apk（约 40MB，已签名）
+# 产物：app/build/outputs/apk/release/app-release.apk（约 47MB，已签名）
 ```
 
-release 已开启 R8 代码压缩 + 资源收缩；当前包体积主体是词库（86.1MB SQLite，压缩后约 38MB）。
+release 已开启 R8 代码压缩 + 资源收缩；当前包体积主体是两份词库（英汉 86.1MB、汉语 14.5MB SQLite，压缩后合计约 46MB）。
 签名信息放在 `local.properties`（`stb.storeFile` / `stb.storePassword` / `stb.keyAlias` / `stb.keyPassword`），
 密钥文件为 `keystore/subjecttoolbox-release.jks`；两者都已 gitignore，换机器时必须一起搬走，
 否则新包无法覆盖安装。`dist/` 里保留可直接安装的 debug 包，release 包构建后同样归档到这里。
@@ -89,6 +90,7 @@ core/data/                DataStore 配置、使用记录、assets 读取
 feature/home/             主页
 feature/settings/         设置 + 显示管理
 feature/chinese-poetry/   语文·古诗词
+feature/chinese-dictionary/ 语文·汉语词典
 feature/math-function/    数学·函数编辑器
 feature/english-dictionary/ 英语·词典
 feature/chemistry-equation/ 化学·方程式
@@ -122,6 +124,7 @@ feature/formula/          通用·公式大全
 app/src/main/assets/content/
 ├── manifest.json            内容版本清单
 ├── chinese/poems.json       古诗词（按册组织）
+├── chinese/zhdict.db        汉语词库（现代汉语词典第 7 版，70,113 条，15.2MB，首启复制到 databases/）
 ├── english/dict.db          预置词库（ECDICT 全量派生，86.1MB，首启复制到 databases/）
 ├── chemistry/equations.json 方程式（165 条，构建期逐条校验配平）
 ├── chemistry/elements.json  118 元素数据
@@ -130,7 +133,7 @@ app/src/main/assets/content/
 └── formula/                  公式库（formulas.json 116 条 + KaTeX 渲染页与本地字体）
 ```
 
-当前内置：**61 篇古诗文**（新课标必背 60 篇全部收录 + 沁园春·长沙，按统编版六册归类，含注释与赏析）、**ECDICT 77 万词条（含 36.6 万条短语，86.1MB SQLite，APK 内压缩约 40MB）**、**165 条方程式**（构建期逐条校验配平）、**118 元素周期表**、**116 条初高中数理化公式**（逐条含变量说明与适用条件，数据整理自 HuiTurn/Formula，MIT License）；「电子教材」在线访问人教社官网查看各科电子课本。
+当前内置：**61 篇古诗文**（新课标必背 60 篇全部收录 + 沁园春·长沙，按统编版六册归类，含注释与赏析）、**现代汉语词典第 7 版 70,113 条**（繁体、异体与重定向别名共 4,686 条，15.2MB SQLite）、**ECDICT 77 万词条（含 36.6 万条短语，86.1MB SQLite，APK 内压缩约 40MB）**、**165 条方程式**（构建期逐条校验配平）、**118 元素周期表**、**116 条初高中数理化公式**（逐条含变量说明与适用条件，数据整理自 HuiTurn/Formula，MIT License）；「电子教材」在线访问人教社官网查看各科电子课本。
 正式部署时替换为教研组校对/授权的内容即可，接口不变。
 
 词库由脚本生成，不要手改 assets：
@@ -139,6 +142,10 @@ app/src/main/assets/content/
 # 数据源：https://github.com/skywind3000/ECDICT 的 ecdict.csv（MIT License）
 python tools/dictionary/build_dict_db.py --source H:/tools/ecdict/ecdict.csv
 python tools/dictionary/verify_dict_db.py
+
+# 数据源：https://github.com/pampas9000/ModernChineseDict 的 dict.mdx
+# 先 `mdict -x dict.mdx -d ./mdx` 解包，再指向解包出来的文本
+python tools/dictionary/build_zh_dict_db.py --source H:/tools/zhdict/mdx/dict.mdx.txt
 ```
 
 收录规则是**全量**：只排除空词 / 超 60 字符 / 大小写重复 / 完全无释义的词，
@@ -154,6 +161,8 @@ python tools/dictionary/verify_dict_db.py
 学科与工具图标取自 [Lucide](https://lucide.dev)（ISC License），15 枚矢量图放在
 `core/designsystem/src/main/res/drawable/`，只做了 SVG → Android vector drawable 的等价转换，
 单色描边、由 `Icon(tint = 学科色)` 染色，因此天然适配深浅色与字号档位。
+汉语词库派生自 [pampas9000/ModernChineseDict](https://github.com/pampas9000/ModernChineseDict)，
+源仓库注明仅供学习和交流、禁止商用，本项目仅在非商业校园场景使用。
 完整清单与许可原文见 [`docs/THIRD_PARTY_LICENSES.md`](docs/THIRD_PARTY_LICENSES.md)。
 
 ***

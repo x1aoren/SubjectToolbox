@@ -13,6 +13,7 @@ import cn.stb.feature.geography.GeographyDiagramToolProvider
 import cn.stb.feature.math.MathToolProvider
 import cn.stb.feature.poetry.PoetryToolProvider
 import cn.stb.feature.textbook.TextbookToolProvider
+import cn.stb.feature.zhdict.ChineseDictionaryToolProvider
 
 /**
  * 唯一的装配点。
@@ -34,6 +35,7 @@ object ToolRegistrations {
 
     val tools: List<ToolProvider> = listOf(
         PoetryToolProvider(),
+        ChineseDictionaryToolProvider(),
         MathToolProvider(),
         DictionaryToolProvider(),
         ChemistryToolProvider(),

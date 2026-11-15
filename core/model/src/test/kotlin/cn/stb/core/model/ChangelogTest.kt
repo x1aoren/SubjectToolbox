@@ -42,7 +42,7 @@ class ChangelogTest {
     }
 
     @Test
-    fun `内置日志只有 1_1_0 与 1_0_0`() {
+    fun `内置日志按新到旧排列`() {
         assertEquals(listOf("1.1.0", "1.0.0"), Changelog.releases.map { it.versionName })
         assertEquals(2, Changelog.releases.size)
 
@@ -95,28 +95,37 @@ class ChangelogTest {
     }
 
     @Test
-    fun `当前版本日志覆盖三类变更且文案非空`() {
+    fun `当前版本日志覆盖三类变更且包含汉语词典`() {
         val changes = Changelog.current().changes
         assertTrue(changes.isNotEmpty())
         assertEquals(
             setOf(ChangeKind.NEW, ChangeKind.IMPROVE, ChangeKind.FIX),
             changes.map { it.kind }.toSet(),
         )
+        assertTrue(
+            "1.1.0 更新日志应包含汉语词典",
+            changes.any { it.kind == ChangeKind.NEW && it.text.contains("汉语词典") },
+        )
+        assertTrue(
+            "1.1.0 更新日志应包含主页卡片调整",
+            changes.any { it.kind == ChangeKind.IMPROVE && it.text.contains("工具卡片") },
+        )
         assertTrue(changes.all { it.text.isNotBlank() })
         assertTrue(Changelog.releases.all { release -> release.changes.isNotEmpty() })
-        // 合并后的 1.1.0 应该把本次键盘/光标/提示的修复都写进去
+
+        // 原有 1.1.0 条目仍然保留
+        val v110 = Changelog.releases.first { it.versionName == "1.1.0" }
         assertTrue(
             "1.1.0 更新日志应包含键盘排版修复",
-            changes.any { it.text.contains("键盘") },
+            v110.changes.any { it.text.contains("键盘") },
         )
         assertTrue(
             "1.1.0 更新日志应包含更新提示",
-            changes.any { it.text.contains("更新提示") || it.text.contains("升级提示") },
+            v110.changes.any { it.text.contains("更新提示") || it.text.contains("升级提示") },
         )
-        // 切换曲线串函数 / 光标失灵的修复是这次发版的主因，必须在日志里留痕
         assertTrue(
             "1.1.0 更新日志应记录切换曲线的修复",
-            changes.any { it.kind == ChangeKind.FIX && it.text.contains("切换") },
+            v110.changes.any { it.kind == ChangeKind.FIX && it.text.contains("切换") },
         )
     }
 }

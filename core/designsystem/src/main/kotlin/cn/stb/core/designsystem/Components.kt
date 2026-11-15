@@ -183,7 +183,7 @@ fun ToolCard(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 92.dp),
+        modifier = modifier.heightIn(min = 64.dp),
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -191,28 +191,19 @@ fun ToolCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 14.dp, end = 4.dp, top = 14.dp, bottom = 14.dp),
+                .padding(start = 12.dp, end = 2.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ToolBadge(spec = spec, accent = accent, size = 46.dp)
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = spec.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = spec.summary,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            ToolBadge(spec = spec, accent = accent, size = 40.dp)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = spec.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
             IconButton(onClick = onTogglePin) {
                 Icon(
                     imageVector = Icons.Filled.Star,
