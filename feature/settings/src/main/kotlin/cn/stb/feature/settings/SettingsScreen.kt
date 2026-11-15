@@ -1,5 +1,6 @@
 package cn.stb.feature.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -30,13 +32,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +67,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val manifest = remember(context) { runCatching { AssetReader(context).manifest() }.getOrNull() }
     val catalog = AppGraph.catalog
+    var showContact by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -104,7 +112,31 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(10.dp))
-                    Text("作者：2025届2班 胡城玮", style = MaterialTheme.typography.bodyMedium)
+                    val faintLine = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                    Row {
+                        Text("作者：2025届2班 ", style = MaterialTheme.typography.bodyMedium)
+                        // 下划线用 drawBehind 单独画，能比正文更淡；点击弹出联系方式
+                        Text(
+                            text = "胡城玮",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier
+                                .clickable { showContact = true }
+                                .drawBehind {
+                                    drawLine(
+                                        color = faintLine,
+                                        start = Offset(0f, size.height * 0.94f),
+                                        end = Offset(size.width, size.height * 0.94f),
+                                        strokeWidth = 1.dp.toPx(),
+                                    )
+                                },
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Logo 设计：2025届2班 杨朔懿 李睿之",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     HorizontalDivider(Modifier.padding(vertical = 14.dp))
                     // 版本号运行时从 PackageManager 读取，和 build.gradle.kts 永远一致；
                     // 「更新日志」做成版本行右侧的小胶囊，不再单独占一整行。
@@ -231,6 +263,23 @@ fun SettingsScreen(
             }
             }
         }
+    }
+
+    if (showContact) {
+        AlertDialog(
+            onDismissRequest = { showContact = false },
+            title = { Text("联系方式") },
+            text = {
+                Column {
+                    Text("QQ：2314764772", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(Modifier.height(6.dp))
+                    Text("微信：ys_xiaoren", style = MaterialTheme.typography.bodyLarge)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showContact = false }) { Text("知道了") }
+            },
+        )
     }
 }
 
