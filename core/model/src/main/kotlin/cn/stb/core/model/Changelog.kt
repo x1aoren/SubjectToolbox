@@ -54,7 +54,7 @@ object Changelog {
     val releases: List<ReleaseNote> = listOf(
         ReleaseNote(
             versionName = "1.1.0",
-            versionCode = 3,
+            versionCode = 2,
             date = "2026-11-14",
             headline = "函数编辑器大更新，语文新增汉语词典",
             changes = listOf(
@@ -104,15 +104,11 @@ object Changelog {
                 ),
                 ChangeItem(
                     ChangeKind.FIX,
-                    "修复根号后按退格「看着没反应」却提示括号没有闭合；乘方 / 开方里的光标高度也与角标、根号对齐。",
-                ),
-                ChangeItem(
-                    ChangeKind.FIX,
                     "修复两条曲线偶尔共用同一个编号、改一条两条一起变；报错栏固定占位，键盘不再被顶来顶去。",
                 ),
                 ChangeItem(
                     ChangeKind.FIX,
-                    "修复词典只输入一个汉字查不到内容的问题（如「水」）；列表也不再卡在 60 条，生词本全量展示，搜索结果可以「加载更多」。",
+                    "修复英语词典只输入一个汉字查不到内容的问题（如「水」）；列表也不再卡在 60 条，生词本全量展示，搜索结果可以「加载更多」。",
                 ),
             ),
         ),

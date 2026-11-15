@@ -247,7 +247,11 @@ fun MathScreen(onBack: () -> Unit) {
         params = params.map { if (it.name == def.name) def else it }
     }
 
-    // 表达式里新出现的自由变量自动生成滑块；用户删过的变量不再自动塞回来
+    // 表达式里新出现的自由变量自动生成滑块；用户删过的变量不再自动塞回来。
+    // 反过来，自动滑块对应的字母已经从所有可见曲线里消失时也一并销毁。
+    // 判断用原始文本而不是解析结果：输入到一半的「a*」解析会失败，但字母 a 还在，
+    // 这时不能把滑块删掉，否则重新输入完整表达式后滑块的取值和范围全丢了。
+    // 手动添加的滑块不动，它们可能是为还没输完的表达式预留的。
     val activeCurves = remember(functions) {
         functions.filter { it.visible }.mapNotNull { fn ->
             runCatching { parseCurve(fn.mode, fn.expr) }.getOrNull()?.let { fn to it }
@@ -256,16 +260,24 @@ fun MathScreen(onBack: () -> Unit) {
     val freeVars = remember(activeCurves) {
         activeCurves.flatMap { it.second.variables() }.filter { it != "x" && it != "y" }.distinct()
     }
-    LaunchedEffect(freeVars, dismissedVars, params.size) {
+    val visibleExprs = remember(functions) {
+        functions.filter { it.visible }.map { DomainSuffix.strip(it.expr) }
+    }
+    LaunchedEffect(freeVars, visibleExprs, dismissedVars, params.size) {
+        val kept = params.filterNot { param ->
+            param.auto && visibleExprs.none { expr -> containsVariable(expr, param.name) }
+        }
         val missing = freeVars.filter { name ->
-            params.none { it.name == name } && name !in dismissedVars && validateParamName(name, params) == null
+            kept.none { it.name == name } && name !in dismissedVars && validateParamName(name, kept) == null
         }
-        if (missing.isNotEmpty()) {
-            val room = MAX_SLIDERS - params.size
-            if (room > 0) {
-                params = params + missing.take(room).map { ParamDef(name = it, value = 1.0, auto = true) }
-            }
+        val room = MAX_SLIDERS - kept.size
+        val added = if (missing.isNotEmpty() && room > 0) {
+            missing.take(room).map { ParamDef(name = it, value = 1.0, auto = true) }
+        } else {
+            emptyList()
         }
+        val next = kept + added
+        if (next != params) params = next
     }
 
     val paramsMap = remember(params) { params.associate { it.name to it.value } }
@@ -1479,4 +1491,11 @@ private fun formatTick(value: Double, step: Double): String {
     }
     val text = String.format(Locale.US, "%.${decimals}f", value)
     return if (text == "-0") "0" else text
+}
+
+/** 表达式文本里是否还有名为 [name] 的独立标识符，用来判断自动滑块对应的字母是否已经删掉。 */
+private fun containsVariable(expr: String, name: String): Boolean {
+    if (name.isEmpty()) return false
+    val pattern = Regex("(?<![\\p{L}\\p{N}_])${Regex.escape(name)}(?![\\p{L}\\p{N}_])")
+    return pattern.containsMatchIn(expr)
 }

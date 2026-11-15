@@ -142,27 +142,28 @@ fun HomeScreen(
             Spacer(Modifier.height(24.dp))
         }
 
-        // 横屏下把学科分三栏铺开：每个学科只有一两个工具时，单列会让右侧空出大片留白
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(18.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            repeat(SECTION_COLUMNS) { column ->
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
+        // 按行铺开学科：同一行的学科标题从同一条基线开始，避免三列各自堆叠后错位。
+        val pinnedIds = content.pinned.map { it.id }.toSet()
+        Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            shown.sections.chunked(SECTION_COLUMNS).forEach { rowSections ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(18.dp),
+                    verticalAlignment = Alignment.Top,
                 ) {
-                    shown.sections
-                        .filterIndexed { index, _ -> index % SECTION_COLUMNS == column }
-                        .forEach { section ->
-                            SubjectBlock(
-                                section = section,
-                                viewModel = viewModel,
-                                onOpenTool = onOpenTool,
-                                pinnedIds = content.pinned.map { it.id }.toSet(),
-                            )
-                        }
+                    rowSections.forEach { section ->
+                        SubjectBlock(
+                            section = section,
+                            viewModel = viewModel,
+                            onOpenTool = onOpenTool,
+                            pinnedIds = pinnedIds,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    // 最后一行不足三栏时补空位，保持每栏等宽，不把剩下的学科拉宽
+                    repeat(SECTION_COLUMNS - rowSections.size) {
+                        Spacer(Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -208,8 +209,9 @@ private fun SubjectBlock(
     viewModel: HomeViewModel,
     onOpenTool: (ToolId) -> Unit,
     pinnedIds: Set<ToolId>,
+    modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionHeader(
             title = section.subject.name,
             accent = Color(section.subject.accent),
