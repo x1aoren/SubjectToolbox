@@ -80,7 +80,7 @@ class GrammarToolProvider : ToolProvider {
         id = ToolId("english.grammar"),
         subjectId = SubjectId("english"),
         title = "语法",
-        summary = "薄冰大学英语语法 · 50 篇专题 · 全文检索",
+        summary = "薄冰大学英语语法 · 49 篇专题 · 全文检索",
         glyph = "法",
         icon = ToolIcon.GRAMMAR,
         keywords = listOf("语法", "英语", "时态", "从句", "冠词", "虚拟语气", "薄冰", "grammar"),

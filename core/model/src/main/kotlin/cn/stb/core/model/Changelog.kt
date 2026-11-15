@@ -68,7 +68,7 @@ object Changelog {
                 ),
                 ChangeItem(
                     ChangeKind.NEW,
-                    "英语·语法：薄冰大学英语语法 50 篇专题，按 24 类目录排列；标题、表格和例句全部原生 Compose 排版，不套网页，支持全文检索并高亮命中。",
+                    "英语·语法：薄冰大学英语语法 49 篇专题，按 24 类目录排列；标题、表格和例句全部原生 Compose 排版，不套网页，支持全文检索并高亮命中。",
                 ),
                 ChangeItem(
                     ChangeKind.NEW,
@@ -85,6 +85,14 @@ object Changelog {
                 ChangeItem(
                     ChangeKind.NEW,
                     "双击表达式输入框可以唤起系统键盘：方便粘贴内容、输入键位上没有的符号；点一下空白处就退出。",
+                ),
+                ChangeItem(
+                    ChangeKind.IMPROVE,
+                    "化学·方程式从 165 条扩到 508 条：按碱金属、常见金属、卤族、氮族、碳族、氧族与有机反应补齐，逐条校验原子守恒。",
+                ),
+                ChangeItem(
+                    ChangeKind.IMPROVE,
+                    "方程式卡片的反应条件移到箭头（等号、可逆号）上方，化学式与箭头按基线对齐；搜索框和类型筛选条收窄，一屏能多放几条方程式。",
                 ),
                 ChangeItem(
                     ChangeKind.IMPROVE,

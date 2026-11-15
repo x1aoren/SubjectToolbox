@@ -21,6 +21,9 @@ from pathlib import Path
 TITLE = "薄冰大学英语语法"
 SOURCE_URL = "https://github.com/oldwestenglish/grammar"
 
+# 不随讲义一起打包的篇目：这类附录只是罗列网站域名，早已失效，还会混进全文检索
+EXCLUDED_ARTICLES = {"附录/英语学习网站资源域名.md"}
+
 LINK_RE = re.compile(r"\[([^\]]*)\]\((<[^>]+>|[^)]+)\)")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 SEPARATOR_RE = re.compile(r"^:?-{2,}:?$")
@@ -222,6 +225,8 @@ def build(source: Path) -> tuple[dict, list[str]]:
             if not article_path.is_file():
                 raise SystemExit(f"目录里的文章不存在：{entry['path']}")
             used.add(article_path)
+            if entry["path"] in EXCLUDED_ARTICLES:
+                continue
 
             lines = article_path.read_text(encoding="utf-8").replace("\r\n", "\n").split("\n")
             blocks = parse_blocks(lines)

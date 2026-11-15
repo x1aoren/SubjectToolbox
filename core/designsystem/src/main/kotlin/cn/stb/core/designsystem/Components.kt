@@ -274,6 +274,7 @@ fun SectionHeader(
  *
  * 窗口变矮或者变窄时（手机横屏、分屏、小窗），整套尺寸自动收一档：
  * 高度、内边距、字号都缩，免得搜索框在本来就局促的屏幕上占掉太多地方。
+ * 设置 dense 后再收一档，给下方的列表多留些可视区域。
  */
 @Composable
 fun SearchField(
@@ -282,17 +283,40 @@ fun SearchField(
     placeholder: String,
     modifier: Modifier = Modifier,
     showClearButton: Boolean = false,
+    dense: Boolean = false,
 ) {
     val config = LocalConfiguration.current
     val compact = config.screenHeightDp < 480 || config.screenWidthDp < 600
 
-    val minHeight = if (compact) 42.dp else 54.dp
-    val horizontalPadding = if (compact) 12.dp else 16.dp
-    val iconSize = if (compact) 17.dp else 20.dp
-    val shape = RoundedCornerShape(if (compact) 12.dp else 14.dp)
+    val minHeight = when {
+        dense -> 34.dp
+        compact -> 42.dp
+        else -> 54.dp
+    }
+    val horizontalPadding = when {
+        dense -> 10.dp
+        compact -> 12.dp
+        else -> 16.dp
+    }
+    val iconSize = when {
+        dense -> 15.dp
+        compact -> 17.dp
+        else -> 20.dp
+    }
+    val shape = RoundedCornerShape(
+        when {
+            dense -> 10.dp
+            compact -> 12.dp
+            else -> 14.dp
+        },
+    )
     val textStyle = MaterialTheme.typography.bodyLarge.copy(
         color = MaterialTheme.colorScheme.onSurface,
-        fontSize = if (compact) 14.sp else 16.sp,
+        fontSize = when {
+            dense -> 13.sp
+            compact -> 14.sp
+            else -> 16.sp
+        },
     )
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -350,7 +374,13 @@ fun SearchField(
             Spacer(Modifier.width(4.dp))
             Box(
                 modifier = Modifier
-                    .size(if (compact) 26.dp else 30.dp)
+                    .size(
+                        when {
+                            dense -> 22.dp
+                            compact -> 26.dp
+                            else -> 30.dp
+                        },
+                    )
                     .clip(CircleShape)
                     .clickable { onValueChange("") },
                 contentAlignment = Alignment.Center,
@@ -359,7 +389,13 @@ fun SearchField(
                     Icons.Filled.Close,
                     contentDescription = "清空",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(if (compact) 14.dp else 16.dp),
+                    modifier = Modifier.size(
+                        when {
+                            dense -> 12.dp
+                            compact -> 14.dp
+                            else -> 16.dp
+                        },
+                    ),
                 )
             }
         }

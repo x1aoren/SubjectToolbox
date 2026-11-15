@@ -29,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -40,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,13 +50,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.layout.FirstBaseline
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,7 +79,7 @@ class ChemistryToolProvider : ToolProvider {
         id = ToolId("chemistry.equation"),
         subjectId = SubjectId("chemistry"),
         title = "化学方程式",
-        summary = "165 条方程式 · 检索 · 自动配平",
+        summary = "508 条方程式 · 检索 · 自动配平",
         glyph = "式",
         icon = ToolIcon.ATOM,
         keywords = listOf("化学", "方程式", "配平", "反应", "氧化"),
@@ -173,22 +180,26 @@ private fun LibraryTab(
     equations: List<ChemEquation>,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
             SearchField(
                 value = query,
                 onValueChange = onQueryChange,
                 placeholder = "搜反应物、生成物或条件，如 Fe、点燃",
                 modifier = Modifier.fillMaxWidth(),
                 showClearButton = true,
+                dense = true,
             )
-            Spacer(Modifier.height(10.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(listOf("全部") + types) { t ->
-                    FilterChip(
-                        selected = t == type,
-                        onClick = { onTypeChange(t) },
-                        label = { Text(t, fontSize = 12.sp) },
-                    )
+            Spacer(Modifier.height(6.dp))
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(listOf("全部") + types) { t ->
+                        FilterChip(
+                            selected = t == type,
+                            onClick = { onTypeChange(t) },
+                            modifier = Modifier.height(28.dp),
+                            label = { Text(t, fontSize = 11.sp) },
+                        )
+                    }
                 }
             }
         }
@@ -203,8 +214,8 @@ private fun LibraryTab(
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(equations, key = { it.reactantText + "->" + it.productText + it.condition }) { eq ->
                     EquationCard(eq)
@@ -227,30 +238,16 @@ private fun EquationCard(eq: ChemEquation) {
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = eq.type,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = ChemAccent,
-                )
-                if (eq.condition.isNotBlank()) {
-                    Text(
-                        text = " · ${eq.condition}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(Modifier.height(8.dp))
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
             Text(
-                text = buildEquation(coefficients, eq.reactants, eq.products, eq.arrow),
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Serif),
-                color = MaterialTheme.colorScheme.onSurface,
-                lineHeight = 26.sp,
+                text = eq.type,
+                style = MaterialTheme.typography.labelMedium,
+                color = ChemAccent,
             )
+            Spacer(Modifier.height(6.dp))
+            EquationLine(eq, coefficients)
             if (eq.note.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(6.dp))
                 Text(
                     text = eq.note,
                     style = MaterialTheme.typography.bodySmall,
@@ -258,6 +255,110 @@ private fun EquationCard(eq: ChemEquation) {
                     lineHeight = 19.sp,
                 )
             }
+        }
+    }
+}
+
+/** 方程式按项排进 FlowRow，过长时整段换行，各项仍按文字基线对齐。 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EquationLine(eq: ChemEquation, coefficients: List<Int>?) {
+    val style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Serif)
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+
+    @Composable
+    fun term(index: Int, formula: String, terminalModifier: Modifier) {
+        val coefficient = coefficients?.getOrNull(index) ?: 1
+        Text(
+            text = buildAnnotatedString {
+                if (coefficient != 1) append(coefficient.toString())
+                append(subscripted(formula))
+            },
+            style = style,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = terminalModifier,
+        )
+    }
+
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        eq.reactants.forEachIndexed { index, formula ->
+            if (index > 0) {
+                Text("+", style = style, color = muted, modifier = Modifier.alignByBaseline())
+            }
+            term(index, formula, Modifier.alignByBaseline())
+        }
+        ArrowWithCondition(
+            condition = eq.condition,
+            symbol = eq.arrow,
+            modifier = Modifier.alignByBaseline(),
+        )
+        eq.products.forEachIndexed { index, formula ->
+            if (index > 0) {
+                Text("+", style = style, color = muted, modifier = Modifier.alignByBaseline())
+            }
+            term(eq.reactants.size + index, formula, Modifier.alignByBaseline())
+        }
+    }
+}
+
+/**
+ * 箭头（等号、可逆号）与上方的反应条件。
+ *
+ * 条件换行会改变整块高度，所以不能用 Column 直接叠——那样箭头会被压到基线以下。
+ * 这里自行测量两块文字，把箭头的基线报给 FlowRow，两侧化学式才能和箭头对齐。
+ */
+@Composable
+private fun ArrowWithCondition(
+    condition: String,
+    symbol: String,
+    modifier: Modifier = Modifier,
+) {
+    val arrowStyle = MaterialTheme.typography.titleMedium.copy(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Medium,
+    )
+    if (condition.isBlank()) {
+        Text(text = symbol, style = arrowStyle, color = ChemAccent, modifier = modifier)
+        return
+    }
+
+    val conditionStyle = MaterialTheme.typography.labelSmall.copy(
+        fontSize = 10.sp,
+        lineHeight = 13.sp,
+    )
+
+    Layout(
+        modifier = modifier,
+        content = {
+            Text(
+                text = condition,
+                style = conditionStyle,
+                color = ChemAccent,
+                textAlign = TextAlign.Center,
+            )
+            Text(text = symbol, style = arrowStyle, color = ChemAccent)
+        },
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val conditionPlaceable = measurables[0].measure(loose)
+        val arrowPlaceable = measurables[1].measure(loose)
+        val gap = 1.dp.roundToPx()
+        val width = maxOf(conditionPlaceable.width, arrowPlaceable.width)
+        val height = conditionPlaceable.height + gap + arrowPlaceable.height
+        val arrowBaseline = arrowPlaceable[FirstBaseline]
+            .takeIf { it != AlignmentLine.Unspecified }
+            ?: arrowPlaceable.height
+
+        layout(
+            width = width,
+            height = height,
+            alignmentLines = mapOf(FirstBaseline to conditionPlaceable.height + gap + arrowBaseline),
+        ) {
+            conditionPlaceable.place((width - conditionPlaceable.width) / 2, 0)
+            arrowPlaceable.place((width - arrowPlaceable.width) / 2, conditionPlaceable.height + gap)
         }
     }
 }
@@ -439,26 +540,5 @@ private fun subscripted(formula: String): AnnotatedString = buildAnnotatedString
             append(c)
             i++
         }
-    }
-}
-
-private fun buildEquation(
-    coefficients: List<Int>?,
-    reactants: List<String>,
-    products: List<String>,
-    arrow: String = "→",
-): AnnotatedString = buildAnnotatedString {
-    reactants.forEachIndexed { index, formula ->
-        if (index > 0) append("  +  ")
-        val coefficient = coefficients?.getOrNull(index) ?: 1
-        if (coefficient != 1) append(coefficient.toString())
-        append(subscripted(formula))
-    }
-    append("   $arrow   ")
-    products.forEachIndexed { index, formula ->
-        if (index > 0) append("  +  ")
-        val coefficient = coefficients?.getOrNull(reactants.size + index) ?: 1
-        if (coefficient != 1) append(coefficient.toString())
-        append(subscripted(formula))
     }
 }

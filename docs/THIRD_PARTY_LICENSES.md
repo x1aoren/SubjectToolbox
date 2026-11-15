@@ -59,6 +59,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 禁止商用，请务必于下载试用后 24 小时内删除」。本项目只在非商业校园场景随包分发；
 若要商用、公开上架或对外发行，必须先替换为已获得授权的词库，代码与数据集接口不需要改。
 
+## 化学方程式内容
+
+`app/src/main/assets/content/chemistry/equations.json` 的扩充条目参考
+[ChemSVG 方程库](https://chemsvg.cn/templates) 与
+[《最全高中化学方程式分类汇总》](https://www.hxzxs.cn/uploads/soft/%E6%9C%80%E5%85%A8%E9%AB%98%E4%B8%AD%E5%8C%96%E5%AD%A6%E6%96%B9%E7%A8%8B%E5%BC%8F%E5%88%86%E7%B1%BB%E6%B1%87%E6%80%BB.pdf)
+整理，只保留分子方程式，并逐条校验原子守恒。两个来源均未声明可再分发许可，
+公开分发前请替换为教研组校对或已获授权的数据。
+
 ## 公式数据：HuiTurn/Formula（MIT License）与 drhuang.com 公式大全
 
 `app/src/main/assets/content/formula/formulas.json` 的基础数据整理自
