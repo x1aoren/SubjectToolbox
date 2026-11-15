@@ -4,7 +4,8 @@ import cn.stb.core.data.AssetReader
 
 /**
  * 公式库由页面里的 KaTeX 直接渲染，Kotlin 侧只需要条数。
- * 数据格式见 assets/content/formula/formulas.json，由 HuiTurn/Formula 整理而来。
+ * 数据格式见 assets/content/formula/formulas.json，基础数据由 HuiTurn/Formula 整理，
+ * 补充条目参考 drhuang.com 数理化公式大全。
  */
 class FormulaRepository(private val assets: AssetReader) {
 

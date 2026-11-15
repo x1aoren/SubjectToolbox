@@ -59,10 +59,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 禁止商用，请务必于下载试用后 24 小时内删除」。本项目只在非商业校园场景随包分发；
 若要商用、公开上架或对外发行，必须先替换为已获得授权的词库，代码与数据集接口不需要改。
 
-## 公式数据：HuiTurn/Formula（MIT License）
+## 公式数据：HuiTurn/Formula（MIT License）与 drhuang.com 公式大全
 
-`app/src/main/assets/content/formula/formulas.json` 的数据整理自
+`app/src/main/assets/content/formula/formulas.json` 的基础数据整理自
 [HuiTurn/Formula](https://github.com/HuiTurn/Formula)。
+
+高中数学、物理、化学的补充条目参考
+[drhuang.com 数理化公式大全](https://drhuang.com/chinese/science/%E5%88%9D%E4%B8%AD%E9%AB%98%E4%B8%AD%E6%95%B0%E7%90%86%E5%8C%96%E5%85%AC%E5%BC%8F%E5%A4%A7%E5%85%A8/)
+的章节结构，公式文本按教材通用形式重新录入。该站点未声明开源许可，仅作目录与选条参考。
 
 ## KaTeX（MIT License）
 
