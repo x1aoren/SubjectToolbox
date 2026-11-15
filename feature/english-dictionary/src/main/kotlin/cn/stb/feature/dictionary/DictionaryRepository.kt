@@ -161,7 +161,7 @@ class DictionaryRepository(private val context: Context) {
         val database = db ?: return emptyList()
         val query = rawQuery.trim()
         if (query.isEmpty()) {
-            return if (savedOnly) savedEntries(limit) else browse(limit)
+            return if (savedOnly) savedEntries() else browse(limit)
         }
 
         val key = query.lowercase()
@@ -197,7 +197,9 @@ class DictionaryRepository(private val context: Context) {
         }
 
         // 3. 兜底：包含匹配，兼顾中文反查（"光合作用" → photosynthesis）
-        if (out.size < limit && query.length >= 2) {
+        // 单个汉字同样是有效查询（"水" → water），只有单个 ASCII 字母才跳过：前缀已经覆盖，
+        // 再做全表包含匹配只会让输入变卡。
+        if (out.size < limit && (query.length >= 2 || query.any { it.code > 0x7F })) {
             runCatching {
                 database.rawQuery(
                     """
@@ -274,13 +276,14 @@ class DictionaryRepository(private val context: Context) {
         }.getOrDefault(false)
     }
 
-    private fun savedEntries(limit: Int): List<DictEntry> = query(
+    /** 生词本是用户自己攒的词，不设条数上限，全量列出。 */
+    private fun savedEntries(): List<DictEntry> = query(
         """
         SELECT d.word, d.phonetic, d.translation, d.definition, d.tag, d.exchange
         FROM wordbook w JOIN entry d ON d.word = w.headword COLLATE NOCASE
-        ORDER BY w.added_at DESC LIMIT ?
+        ORDER BY w.added_at DESC
         """.trimIndent(),
-        arrayOf(limit.toString()),
+        emptyArray(),
     )
 
     private fun query(sql: String, args: Array<String>): List<DictEntry> {

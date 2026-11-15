@@ -260,7 +260,10 @@ sealed interface CurveDef {
  * - 含等号 → 移项成 F = 左 − 右 = 0，学生可以直接照书写方程
  */
 internal fun parseCurve(mode: FnMode, raw: String): CurveDef {
-    val text = raw.trim()
+    // 末尾的 {0,10} 是定义域，不是表达式的一部分；写坏了在这里就报错
+    val suffix = DomainSuffix.parse(raw)
+    suffix.error?.let { throw ParseException(it, suffix.expr.length) }
+    val text = suffix.expr.trim()
     if (mode == FnMode.IMPLICIT) {
         if (text.isEmpty()) throw ParseException("还没有输入表达式", 0)
         val eq = text.indexOf('=')

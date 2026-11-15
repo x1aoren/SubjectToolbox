@@ -52,11 +52,20 @@ internal data class PlotFn(
     val domain: Domain = Domain(),
 )
 
+/** 实际生效的定义域：表达式末尾写了 `{…}` 就以它为准，否则用对话框里设的那个。 */
+internal fun PlotFn.effectiveDomain(): Domain = DomainSuffix.parse(expr).domain ?: domain
+
 /** 图例行号用真实序号：隐藏某条曲线后 f2 仍然叫 f2。 */
 internal fun fnLabel(index: Int, mode: FnMode): String =
     if (mode == FnMode.EXPLICIT) "f${index + 1}(x)" else "F${index + 1}(x,y)"
 
-internal data class LegendItem(val colorArgb: Long, val expr: String, val number: Int, val mode: FnMode)
+internal data class LegendItem(
+    val colorArgb: Long,
+    val expr: String,
+    val number: Int,
+    val mode: FnMode,
+    val domain: Domain = Domain(),
+)
 
 /* ------------------------------------------------------------------
  * 参数滑块模型
@@ -203,6 +212,67 @@ internal fun parseDomainBound(raw: String): Result<Double?> {
         val value = expression.eval(0.0, emptyMap())
         require(value.isFinite()) { "这里需要一个确定的数值" }
         value
+    }
+}
+
+/**
+ * 表达式末尾的 `{左,右}` 定义域后缀。
+ *
+ * 学生可以不加地写在函数后面：`sin(x){0,10}`、`sqrt(x){0,}`、`1/x{,0}`，
+ * 一条边留空表示该侧无界。它和对话框设置的是同一个 [Domain]：
+ * - 输入框里改这一段，模型里的 domain 立刻跟着变；
+ * - 对话框点确定时，把它写回表达式末尾（不会出现「框里写着 {0,10}、实际画的是别的区间」）。
+ *
+ * 只认**末尾**那一段：表达式中间出现的 `{}` 不当作定义域，交给解析器报错。
+ */
+internal object DomainSuffix {
+
+    /** [expr] 是摘掉后缀后的表达式；[domain] 为 null 表示没写或写坏了。 */
+    data class Parsed(val expr: String, val domain: Domain?, val error: String?)
+
+    fun parse(raw: String): Parsed {
+        val open = raw.lastIndexOf('{')
+        if (open < 0) return Parsed(raw, null, null)
+
+        val close = raw.lastIndexOf('}')
+        // 还没写完（只打了左花括号）：先当没写，别在输入中途报错
+        if (close < open) return Parsed(raw.substring(0, open).trimEnd(), null, null)
+        // 花括号必须是结尾，后面还有内容就说明不是定义域
+        if (raw.substring(close + 1).isNotBlank()) return Parsed(raw, null, null)
+
+        val expr = raw.substring(0, open).trimEnd()
+        if (expr.isEmpty()) return Parsed(raw, null, "定义域要跟在表达式后面，例如 sin(x){0,10}")
+
+        val parts = raw.substring(open + 1, close).split(',', '，')
+        if (parts.size > 2) return Parsed(expr, null, "定义域最多两个端点，例如 {0,10}")
+
+        val start = parseDomainBound(parts.getOrElse(0) { "" })
+        if (start.isFailure) {
+            val reason = start.exceptionOrNull()?.message ?: "端点看不懂"
+            return Parsed(expr, null, "定义域左端点：$reason")
+        }
+        val end = parseDomainBound(parts.getOrElse(1) { "" })
+        if (end.isFailure) {
+            val reason = end.exceptionOrNull()?.message ?: "端点看不懂"
+            return Parsed(expr, null, "定义域右端点：$reason")
+        }
+
+        val domain = Domain(start.getOrNull(), end.getOrNull())
+        if (domain.isInvalid) return Parsed(expr, null, "定义域的左端要小于右端")
+        return Parsed(expr, domain, null)
+    }
+
+    /** 摘掉表达式末尾的 `{…}`（没写就原样返回）。 */
+    fun strip(raw: String): String = parse(raw).expr
+
+    /** `{0,10}` / `{0,}` / `{,10}`；全体实数返回空串。 */
+    fun label(domain: Domain): String = when {
+        domain.start != null && domain.end != null ->
+            "{${formatMathNumber(domain.start)},${formatMathNumber(domain.end)}}"
+
+        domain.start != null -> "{${formatMathNumber(domain.start)},}"
+        domain.end != null -> "{,${formatMathNumber(domain.end)}}"
+        else -> ""
     }
 }
 

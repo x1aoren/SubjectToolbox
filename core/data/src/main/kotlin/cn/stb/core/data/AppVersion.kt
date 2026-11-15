@@ -18,7 +18,7 @@ object AppVersion {
     /** 读不到包信息时的版本名兜底（正常情况下不会发生）。 */
     const val UNKNOWN_NAME = "未知"
 
-    /** 当前版本名，如 "1.0.1"。 */
+    /** 当前版本名，如 "1.1.0"。 */
     fun name(context: Context): String =
         packageInfo(context)?.versionName?.takeIf { it.isNotBlank() } ?: UNKNOWN_NAME
 

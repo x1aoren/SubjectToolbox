@@ -12,8 +12,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
@@ -48,11 +52,35 @@ internal data class MathScriptSpan(
     val origEnd: Int,
 )
 
+/**
+ * 光标所处的编辑区域。
+ *
+ * 排版把 `^指数` 缩到右上角、把 `sqrt(…)` 画成根号之后，这三种位置在屏幕上挨得很近，
+ * 拖光标时很难判断「现在到底在角标里还是在根号里」。整条编辑链路都用这个枚举说话：
+ * 光标颜色、区域高亮、拖动时的浮标签，全都由它决定。
+ */
+internal enum class MathEditRegion(
+    /** 拖动光标手柄时浮在手柄旁边的提示。 */
+    val label: String,
+) {
+    /** 基线：普通表达式位置。 */
+    BASE("基线"),
+
+    /** 右上角角标（乘方的指数）。 */
+    SCRIPT("上标"),
+
+    /** 根号内部（被开方数）。 */
+    RADICAL("根号内"),
+}
+
 /** 一根根号：√ 在显示文本中的下标、被开方内容范围，以及嵌套层级。 */
 internal data class MathRadicalSpan(
     val sqrtIndex: Int,
     val start: Int,
     val end: Int,
+    /** 被开方内容在原始文本里的范围（含两端）：判断光标是不是在根号里要用它。 */
+    val origStart: Int,
+    val origEnd: Int,
     val depth: Int,
     val raised: Boolean,
     val placeholder: Boolean,
@@ -69,6 +97,24 @@ internal class MathDisplay(
     private val origToTrans: IntArray,
 ) {
     fun originalToTransformed(offset: Int): Int = origToTrans[offset.coerceIn(0, raw.length)]
+
+    /**
+     * 光标（原始文本偏移）落在哪个编辑区。
+     *
+     * 必须按原始偏移算，不能先映射到显示文本：根号收尾的 `)` 是隐藏的，
+     * 「被开方数末尾」和「根号后面」在屏幕上同一个位置，映射会把两者都算到根号外面，
+     * 于是刚在根号里打完字，光标反而显示成基线。
+     *
+     * 角标优先于根号：`sqrt(x)^2` 这种角标套在根号后面时，角标里才是更小的那一层。
+     */
+    fun regionAt(originalOffset: Int): MathEditRegion {
+        val offset = originalOffset.coerceIn(0, raw.length)
+        return when {
+            scripts.any { offset >= it.origStart && offset <= it.origEnd } -> MathEditRegion.SCRIPT
+            radicals.any { offset >= it.origStart && offset <= it.origEnd } -> MathEditRegion.RADICAL
+            else -> MathEditRegion.BASE
+        }
+    }
 }
 
 /** 指数、根号内容等比缩小的字号：用 em，跟随设置里的字号缩放走。 */
@@ -78,6 +124,9 @@ private val superscriptStyle = SpanStyle(
     baselineShift = BaselineShift.Superscript,
     fontSize = SUPERSCRIPT_SIZE,
 )
+
+/** 末尾 `{0,10}` 这类定义域注解的字号：比正文小一点，但仍是可编辑的正文内容。 */
+private val DOMAIN_SUFFIX_STYLE = SpanStyle(fontSize = 0.82.em)
 
 /** 真正的 VisualTransformation 实现；同时把最近一次排版结果留给画布描根号横线。 */
 internal class MathVisualTransformation : VisualTransformation {
@@ -94,6 +143,33 @@ internal class MathVisualTransformation : VisualTransformation {
 
 /** 只读场景（函数列表、图例）直接用富文本，和输入框显示一致。 */
 internal fun mathAnnotated(raw: String): AnnotatedString = buildMathDisplay(raw).annotated
+
+/**
+ * 这个 `)` 是不是某个 `sqrt(` 的收尾括号。
+ *
+ * 根号的收尾括号在显示层是被隐藏的（学生只看到「√ + 被开方内容」），
+ * 所以退格如果直接删掉它，界面上什么都不会变，紧接着还会满屏提示「括号没有闭合」。
+ */
+internal fun isRadicalCloseParen(text: String, index: Int): Boolean {
+    if (index !in text.indices || text[index] != ')') return false
+    var depth = 0
+    for (i in index downTo 0) {
+        when (text[i]) {
+            ')' -> depth += 1
+            '(' -> {
+                depth -= 1
+                if (depth == 0) {
+                    // 和排版层一致：前面紧贴字母的 sqrt( 不算函数（如 asqrt(x)）
+                    val start = i - 4
+                    return start >= 0 &&
+                        text.startsWith("sqrt(", start) &&
+                        (start == 0 || !text[start - 1].isLetter())
+                }
+            }
+        }
+    }
+    return false
+}
 
 /* ------------------------------------------------------------------
  * 排版实现
@@ -118,6 +194,13 @@ private class MathDisplayBuilder(private val src: String) {
         var last = origToTrans[0]
         for (o in origToTrans.indices) {
             if (origToTrans[o] < 0) origToTrans[o] = last else last = origToTrans[o]
+        }
+
+        // 末尾的 {0,10} 只是定义域注解：比公式本体小一号，一眼能看出「这不是函数的一部分」
+        if (DomainSuffix.parse(src).domain != null) {
+            val open = src.lastIndexOf('{')
+            val startT = origToTrans.getOrElse(open) { out.length }.coerceIn(0, out.length)
+            if (out.length > startT) styles += Triple(startT, out.length, DOMAIN_SUFFIX_STYLE)
         }
 
         val text = out.toString()
@@ -256,6 +339,8 @@ private class MathDisplayBuilder(private val src: String) {
             sqrtIndex = displayStart - 1,
             start = displayStart,
             end = displayEnd,
+            origStart = contentStart,
+            origEnd = contentEnd,
             depth = radicalDepth,
             raised = scriptDepth > 0,
             placeholder = contentEnd == contentStart,
@@ -347,17 +432,25 @@ private class MathDisplayBuilder(private val src: String) {
  *
  * 根号用文本里的 √ 字形做钩子，横线从 √ 右上角向右延伸盖住被开方内容，
  * 高度按行高估算；嵌套根号逐层下移一点，避免两条横线糊在一起。
+ *
+ * 光标落在角标或根号里时，还会把那一整块罩上一层淡色 + 细边框（见 [drawActiveRegion]），
+ * 拖动光标时就能看清「现在编辑的是哪一层」。
  */
 internal fun DrawScope.drawMathDecorations(
     layout: TextLayoutResult?,
     display: MathDisplay?,
     caret: Int,
+    region: MathEditRegion,
+    regionColor: Color,
     lineColor: Color,
     slotColor: Color,
 ) {
     if (layout == null || display == null) return
     val textLength = layout.layoutInput.text.length
     if (textLength <= 0) return
+
+    // 先铺区域底色，再画根号横线：横线不会被底色盖住
+    drawActiveRegion(layout, display, caret, region, regionColor, textLength)
 
     val fontPx = layout.layoutInput.style.fontSize.let {
         if (it.isSp) it.toPx() else 16.sp.toPx()
@@ -423,6 +516,84 @@ internal fun DrawScope.drawMathDecorations(
 }
 
 /**
+ * 把光标所在的编辑区整块罩一层淡色。
+ *
+ * 这是「上标 / 根号内 / 基线」最直观的区分：上标是一小块抬高的框，根号内是横线底下的整块，
+ * 形状和位置本来就不同，再配上各自的颜色，扫一眼就知道光标在哪一层。
+ * 空的上标槽不画（它已经有虚线框），基线也不画（整行罩色没有信息量）。
+ */
+private fun DrawScope.drawActiveRegion(
+    layout: TextLayoutResult,
+    display: MathDisplay,
+    caret: Int,
+    region: MathEditRegion,
+    color: Color,
+    textLength: Int,
+) {
+    if (region == MathEditRegion.BASE) return
+
+    val spanStart: Int
+    val spanEnd: Int
+    val topFactor: Float
+    val bottomFactor: Float
+    when (region) {
+        MathEditRegion.SCRIPT -> {
+            val script = display.scripts
+                .firstOrNull { caret >= it.origStart && caret <= it.origEnd }
+                ?: return
+            if (script.placeholder) return
+            spanStart = script.start
+            spanEnd = script.end
+            topFactor = 0.10f
+            bottomFactor = 0.56f
+        }
+
+        MathEditRegion.RADICAL -> {
+            val radical = display.radicals
+                .firstOrNull { caret >= it.origStart && caret <= it.origEnd }
+                ?: return
+            spanStart = radical.start
+            spanEnd = radical.end
+            // 从根号横线下面一点开始，到基线附近收尾
+            topFactor = 0.16f
+            bottomFactor = 0.94f
+        }
+
+        else -> return
+    }
+
+    if (spanEnd <= spanStart) return
+    val line = layout.getLineForOffset(spanStart.coerceIn(0, textLength - 1))
+    if (layout.getLineForOffset(spanEnd.coerceIn(0, textLength - 1)) != line) return
+
+    val lineTop = layout.getLineTop(line)
+    val lineHeight = (layout.getLineBottom(line) - lineTop).coerceAtLeast(1f)
+    val left = (layout.getHorizontalPosition(spanStart, usePrimaryDirection = false) - 2.dp.toPx())
+        .coerceAtLeast(0f)
+    val right = (layout.getHorizontalPosition(spanEnd, usePrimaryDirection = true) + 2.dp.toPx())
+        .coerceAtMost(size.width)
+    val top = lineTop + lineHeight * topFactor
+    val bottom = lineTop + lineHeight * bottomFactor
+    if (right - left < 2.dp.toPx() || bottom - top < 2.dp.toPx()) return
+
+    val corner = CornerRadius(4.dp.toPx())
+    val boxSize = Size(right - left, bottom - top)
+    drawRoundRect(
+        color = color.copy(alpha = 0.13f),
+        topLeft = Offset(left, top),
+        size = boxSize,
+        cornerRadius = corner,
+    )
+    drawRoundRect(
+        color = color.copy(alpha = 0.55f),
+        topLeft = Offset(left, top),
+        size = boxSize,
+        cornerRadius = corner,
+        style = Stroke(1.dp.toPx()),
+    )
+}
+
+/**
  * 自绘光标。
  *
  * 原生 BasicTextField 的光标总是整行高，在右上角角标 / 根号内容里编辑时会明显偏高、
@@ -433,12 +604,14 @@ internal fun DrawScope.drawMathDecorations(
  * - 普通位置 → 正常文字高度。
  *
  * @param originalCaret 原始文本（未排版）里的光标偏移
+ * @param region 光标所在编辑区，决定光标高度与颜色（颜色由调用方按区域传入）
  * @param alpha 闪烁透明度，由调用方的动画驱动
  */
 internal fun DrawScope.drawMathCaret(
     layout: TextLayoutResult?,
     display: MathDisplay?,
     originalCaret: Int,
+    region: MathEditRegion,
     color: Color,
     alpha: Float,
 ) {
@@ -452,23 +625,21 @@ internal fun DrawScope.drawMathCaret(
     val lineHeight = (layout.getLineBottom(lineIndex) - lineTop).coerceAtLeast(1f)
     val x = layout.getHorizontalPosition(displayCaret, usePrimaryDirection = true)
 
-    val inScript = display.scripts.any { displayCaret >= it.start && displayCaret <= it.end }
-    // 根号内容：光标在内容范围内。end 位置在映射里优先给到「根号外」，所以这里用开区间
-    val inRadical = display.radicals.any { displayCaret >= it.start && displayCaret < it.end }
-
     val top: Float
     val height: Float
-    when {
-        inScript -> {
+    when (region) {
+        MathEditRegion.SCRIPT -> {
             top = lineTop + lineHeight * 0.12f
             height = lineHeight * 0.44f
         }
-        inRadical -> {
+
+        MathEditRegion.RADICAL -> {
             // 根号横线画在 lineTop + 10% 行高的位置，光标从它下面开始
             top = lineTop + lineHeight * 0.20f
             height = lineHeight * 0.60f
         }
-        else -> {
+
+        MathEditRegion.BASE -> {
             top = lineTop + lineHeight * 0.08f
             height = lineHeight * 0.84f
         }
@@ -490,6 +661,9 @@ internal fun DrawScope.drawMathCaret(
  * 系统原生手柄在「右上角上标」「根号内容」这类被排版抬高/缩小的区域里经常不出现，
  * 或者出现后拖不动。这里自己画一个位置固定的手柄：无论光标在基线、上标还是根号里，
  * 手柄都落在同一行的下方，配合 [MathScreen] 里的拖动逻辑就能一直按住拖动光标。
+ *
+ * 拖动时手柄旁边还会浮出一个小标签（基线 / 上标 / 根号内），
+ * 手指压着手柄也能一眼看出这一次会落在哪一层——那个标签由 [drawMathDragLabel] 画在最上层。
  */
 internal fun DrawScope.drawMathCaretHandle(
     layout: TextLayoutResult?,
@@ -514,7 +688,61 @@ internal fun DrawScope.drawMathCaretHandle(
         close()
     }
     drawPath(stem, color)
+    // 手柄画在输入框「之上」：外框已经不裁剪内容，圆点可以正常探出边框，不必再缩小抬高
     drawCircle(color = color, radius = radius, center = Offset(x, topY + radius * 1.75f))
+}
+
+/**
+ * 拖动光标时浮在手柄旁边的胶囊：「基线 / 上标 / 根号内」。
+ *
+ * 必须画在文字**上面**（调用方用 `drawWithContent` + `drawContent()` 之后画），
+ * 否则会被表达式盖住、糊成一片。
+ */
+internal fun DrawScope.drawMathDragLabel(
+    layout: TextLayoutResult?,
+    display: MathDisplay?,
+    originalCaret: Int,
+    region: MathEditRegion,
+    color: Color,
+    surfaceColor: Color,
+    measurer: TextMeasurer,
+) {
+    if (layout == null || display == null) return
+    val textLength = layout.layoutInput.text.length
+    if (layout.lineCount <= 0) return
+
+    val displayCaret = display.originalToTransformed(originalCaret).coerceIn(0, textLength)
+    val lineIndex = layout.getLineForOffset(displayCaret.coerceIn(0, (textLength - 1).coerceAtLeast(0)))
+    val x = layout.getHorizontalPosition(displayCaret, usePrimaryDirection = true)
+    val anchor = Offset(x, layout.getLineBottom(lineIndex) + 1.dp.toPx() + 5.dp.toPx() * 1.75f)
+
+    val textLayout = measurer.measure(
+        text = AnnotatedString(region.label),
+        style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Medium, color = color),
+    )
+    val padH = 7.dp.toPx()
+    val padV = 3.dp.toPx()
+    val width = textLayout.size.width + padH * 2
+    val height = textLayout.size.height + padV * 2
+
+    // 默认放右边，右边放不下就翻到左边，再不行就贴边
+    var left = anchor.x + 14.dp.toPx()
+    if (left + width > size.width - 2.dp.toPx()) {
+        left = (anchor.x - 14.dp.toPx() - width).coerceAtLeast(2.dp.toPx())
+    }
+    val top = (anchor.y - height / 2f).coerceIn(0f, (size.height - height).coerceAtLeast(0f))
+
+    val corner = CornerRadius(height / 2f)
+    val boxSize = Size(width, height)
+    drawRoundRect(color = surfaceColor, topLeft = Offset(left, top), size = boxSize, cornerRadius = corner)
+    drawRoundRect(
+        color = color.copy(alpha = 0.55f),
+        topLeft = Offset(left, top),
+        size = boxSize,
+        cornerRadius = corner,
+        style = Stroke(1.dp.toPx()),
+    )
+    drawText(textLayout, topLeft = Offset(left + padH, top + padV))
 }
 
 /* ------------------------------------------------------------------
@@ -542,12 +770,18 @@ internal object MathEdit {
     /** 普通插入：有选区则替换选区，光标落在插入内容之后。 */
     fun insert(text: String, selection: TextRange, token: String): Edit {
         val range = normalize(selection, text.length)
-        // 右括号：函数/开方键已经自动补了括号，学生再按一次应该「跳过」已有的右括号，
-        // 而不是又插入一个，变成 sqrt()) 这种多一层括号的样子。
-        if (range.first == range.last && token == ")" &&
-            range.first < text.length && text[range.first] == ')'
-        ) {
-            return Edit(text, range.first + 1)
+        // 右括号 / 右花括号：函数键和 { 键已经自动补了配对，学生再按一次应该「跳过」，
+        // 而不是又插入一个，变成 sqrt()) / {0,10}} 这种多一层的样子。
+        if (range.first == range.last && range.first < text.length) {
+            val next = text[range.first]
+            if ((token == ")" && next == ')') || (token == "}" && next == '}')) {
+                return Edit(text, range.first + 1)
+            }
+        }
+        // 左花括号成对补上，光标落在里面：{0,10} 只要按「{ 0 , 10 }」五下
+        if (token == "{") {
+            val newText = text.substring(0, range.first) + "{}" + text.substring(range.last)
+            return Edit(newText, range.first + 1)
         }
         val newText = text.substring(0, range.first) + token + text.substring(range.last)
         return Edit(newText, range.first + token.length)
@@ -629,6 +863,25 @@ internal object MathEdit {
                     return Edit(text.removeRange(nameStart, caret + 1), nameStart)
                 }
             }
+        }
+
+        // 光标停在根号的收尾括号后面：这个 ')' 屏幕上不显示，直接删它等于「点了没反应」，
+        // 还会立刻报「括号没有闭合」。跳过它，去删前面那个看得见的字符；
+        // 连着的多层根号一起跳过（sqrt(sqrt(6)) 退格应该先吃掉 6）。
+        var cut = caret
+        while (cut > 0 && isRadicalCloseParen(text, cut - 1)) cut -= 1
+        if (cut < caret) {
+            val openIndex = cut - 1
+            if (openIndex >= 0 && text[openIndex] == '(') {
+                // 空的被开方数：整段 sqrt() 一起删掉，不留孤零零的 sqrt(
+                val callStart = openIndex - 4
+                return if (callStart >= 0 && text.startsWith("sqrt(", callStart)) {
+                    Edit(text.removeRange(callStart, cut + 1), callStart)
+                } else {
+                    Edit(text.substring(0, openIndex) + text.substring(cut), openIndex)
+                }
+            }
+            return Edit(text.substring(0, cut - 1) + text.substring(cut), cut - 1)
         }
 
         return Edit(text.substring(0, caret - 1) + text.substring(caret), caret - 1)

@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.sp
 import cn.stb.core.data.AssetReader
 import cn.stb.core.designsystem.SearchField
 import cn.stb.core.model.SubjectId
+import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
 import cn.stb.core.registry.ToolHost
@@ -73,6 +74,7 @@ class ChemistryToolProvider : ToolProvider {
         title = "化学方程式",
         summary = "165 条方程式 · 配平 · 元素周期表",
         glyph = "式",
+        icon = ToolIcon.ATOM,
         keywords = listOf("化学", "方程式", "配平", "反应", "氧化", "元素周期表", "元素"),
     )
 

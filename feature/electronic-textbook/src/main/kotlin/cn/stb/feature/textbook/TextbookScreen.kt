@@ -103,6 +103,7 @@ class TextbookToolProvider : cn.stb.core.registry.ToolProvider {
         title = "电子教材",
         summary = "人教社官网 · 各科电子课本 · 需联网",
         glyph = "材",
+        icon = cn.stb.core.model.ToolIcon.LIBRARY,
         keywords = listOf("电子教材", "课本", "教材", "人教", "在线"),
     )
 

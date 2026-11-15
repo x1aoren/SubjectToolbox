@@ -149,6 +149,15 @@ python tools/dictionary/verify_dict_db.py
 
 ***
 
+## 第三方资源
+
+学科与工具图标取自 [Lucide](https://lucide.dev)（ISC License），15 枚矢量图放在
+`core/designsystem/src/main/res/drawable/`，只做了 SVG → Android vector drawable 的等价转换，
+单色描边、由 `Icon(tint = 学科色)` 染色，因此天然适配深浅色与字号档位。
+完整清单与许可原文见 [`docs/THIRD_PARTY_LICENSES.md`](docs/THIRD_PARTY_LICENSES.md)。
+
+***
+
 ## 两个刻意的取舍
 
 **只申请一个** **`INTERNET`** **权限，且只为电子教材。** 打开电子教材时用 WebView 访问人教社官网，其余工具全程不发起网络请求——这是「离线」可验证的兑现方式，比在隐私政策里写一句承诺有用得多。代价是任何需要联网的第三方 SDK 都进不来，包括崩溃上报和统计。

@@ -17,7 +17,24 @@ value class ToolId(val value: String)
  * ---------------------------------------------------------------- */
 
 /**
- * 一个学科。[short] 用单个汉字做图标字形，避免为每个学科准备一套图标资源。
+ * 学科图标的语义标识。
+ *
+ * 只存语义、不存 drawable 资源 id：core:model 是纯 Kotlin 模块，不引 Android 依赖，
+ * 具体映射到哪张图由 core:designsystem 决定（见 IconBadge）。
+ */
+enum class SubjectIcon {
+    BOOK_OPEN, CHART_SPLINE, LANGUAGES, FLASK, DNA, EARTH, GRID,
+}
+
+/** 工具图标的语义标识，理由同 [SubjectIcon]。 */
+enum class ToolIcon {
+    SCROLL, FUNCTION, DICTIONARY, ATOM, MICROSCOPE, ORBIT, LIBRARY, SIGMA,
+}
+
+/**
+ * 一个学科。
+ *
+ * [short] 是单字缩写，图标化之后不再用于展示，保留给无障碍描述与图标缺失时的降级。
  * [accent] 为 ARGB 值，模型层不依赖 Compose，由 UI 层转成 Color。
  */
 data class Subject(
@@ -26,6 +43,7 @@ data class Subject(
     val short: String,
     val accent: Long,
     val order: Int,
+    val icon: SubjectIcon? = null,
 )
 
 /**
@@ -38,6 +56,7 @@ data class ToolSpec(
     val title: String,
     val summary: String,
     val glyph: String,
+    val icon: ToolIcon? = null,
     val keywords: List<String> = emptyList(),
     val defaultPinned: Boolean = false,
 )

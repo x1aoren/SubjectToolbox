@@ -10,6 +10,7 @@ import cn.stb.core.designsystem.DiagramEntry
 import cn.stb.core.designsystem.DiagramGalleryScreen
 import cn.stb.core.designsystem.HtmlDiagramScreen
 import cn.stb.core.model.SubjectId
+import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
 import cn.stb.core.registry.ToolHost
@@ -22,6 +23,7 @@ class BiologyDiagramToolProvider : ToolProvider {
         title = "交互示意图",
         summary = "细胞分裂等交互动画",
         glyph = "图",
+        icon = ToolIcon.MICROSCOPE,
         keywords = listOf("生物", "细胞", "细胞分裂", "有丝分裂", "减数分裂", "染色体", "示意图"),
     )
 

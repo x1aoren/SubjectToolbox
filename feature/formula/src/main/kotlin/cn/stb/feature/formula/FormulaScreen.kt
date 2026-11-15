@@ -47,6 +47,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import cn.stb.core.data.AssetReader
 import cn.stb.core.designsystem.SearchField
 import cn.stb.core.model.SubjectId
+import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
 import cn.stb.core.registry.ToolHost
@@ -62,6 +63,7 @@ class FormulaToolProvider : ToolProvider {
         title = "公式大全",
         summary = "初高中数理化 · 变量说明 · 万能搜索",
         glyph = "公",
+        icon = ToolIcon.SIGMA,
         keywords = listOf("公式", "数学", "物理", "化学", "初中", "高中", "速查", "定理"),
     )
 

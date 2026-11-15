@@ -34,11 +34,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cn.stb.core.designsystem.GlyphBadge
+import cn.stb.core.designsystem.SubjectBadge
 import cn.stb.core.model.AppGraph
 import cn.stb.core.model.AppSettings
 import cn.stb.core.model.Subject
@@ -124,7 +123,6 @@ private fun SubjectBlock(
     onToolHidden: (ToolSpec, Boolean) -> Unit,
 ) {
     val subjectVisible = subject.id.value !in settings.visibility.hiddenSubjectIds
-    val accent = Color(subject.accent)
     val tools = AppGraph.catalog.toolsOf(subject.id)
 
     Surface(
@@ -137,7 +135,7 @@ private fun SubjectBlock(
                 modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                GlyphBadge(glyph = subject.short, accent = accent, size = 38.dp)
+                SubjectBadge(subject = subject, size = 38.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(subject.name, style = MaterialTheme.typography.titleMedium)

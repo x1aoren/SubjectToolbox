@@ -159,7 +159,7 @@ private fun UpdateNoticeDialog(
         modifier = Modifier.width(dialogWidth),
         shape = RoundedCornerShape(18.dp),
         title = {
-            // 标题格式有严格要求：无空格，v 前缀，例：已从v1.0.0更新至v1.0.1
+            // 标题格式有严格要求：无空格，v 前缀，例：已从v1.0.0更新至v1.1.0
             Text(text = "已从v${oldVersion}更新至v${currentVersion}")
         },
         text = {

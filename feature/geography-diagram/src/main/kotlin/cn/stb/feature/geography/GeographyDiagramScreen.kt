@@ -10,6 +10,7 @@ import cn.stb.core.designsystem.DiagramEntry
 import cn.stb.core.designsystem.DiagramGalleryScreen
 import cn.stb.core.designsystem.HtmlDiagramScreen
 import cn.stb.core.model.SubjectId
+import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
 import cn.stb.core.registry.ToolHost
@@ -22,6 +23,7 @@ class GeographyDiagramToolProvider : ToolProvider {
         title = "交互示意图",
         summary = "地球自转 · 昼夜交替与线速度",
         glyph = "图",
+        icon = ToolIcon.ORBIT,
         keywords = listOf(
             "地理", "地球", "自转", "地轴", "昼夜交替", "线速度", "角速度", "示意图",
         ),

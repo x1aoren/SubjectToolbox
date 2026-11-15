@@ -42,15 +42,15 @@ class ChangelogTest {
     }
 
     @Test
-    fun `内置日志只有 1_0_1 与 1_0_0`() {
-        assertEquals(listOf("1.0.1", "1.0.0"), Changelog.releases.map { it.versionName })
+    fun `内置日志只有 1_1_0 与 1_0_0`() {
+        assertEquals(listOf("1.1.0", "1.0.0"), Changelog.releases.map { it.versionName })
         assertEquals(2, Changelog.releases.size)
 
         val current = Changelog.current()
-        assertEquals("1.0.1", current.versionName)
-        assertEquals(2, current.versionCode)
-        assertEquals("2026-11-10", current.date)
-        assertEquals("1.0.1", Changelog.currentVersionName())
+        assertEquals("1.1.0", current.versionName)
+        assertEquals(3, current.versionCode)
+        assertEquals("2026-11-14", current.date)
+        assertEquals("1.1.0", Changelog.currentVersionName())
 
         val oldest = Changelog.releases.last()
         assertEquals("1.0.0", oldest.versionName)
@@ -60,7 +60,7 @@ class ChangelogTest {
 
     @Test
     fun `上一版版本号用于没有记录时的升级提示`() {
-        assertEquals("1.0.0", Changelog.previousVersionName("1.0.1"))
+        assertEquals("1.0.0", Changelog.previousVersionName("1.1.0"))
         assertNull("最老的版本没有更早的版本", Changelog.previousVersionName("1.0.0"))
         assertNull("比最老版本还旧也找不到", Changelog.previousVersionName("0.9"))
         assertNull("脏数据返回 null", Changelog.previousVersionName("未知"))
@@ -68,15 +68,18 @@ class ChangelogTest {
 
     @Test
     fun `升级提示只包含比旧版本新的版本`() {
-        // 1.0.0 → 1.0.1：只提示 1.0.1 的内容
+        // 1.0.0 → 1.1.0：只提示 1.1.0 的内容
         val newer = Changelog.releasesNewerThan("1.0.0")
         assertEquals(1, newer.size)
-        assertEquals("1.0.1", newer.first().versionName)
+        assertEquals("1.1.0", newer.first().versionName)
+
+        // 学校版装着 1.0.1 的设备升级上来，同样只看到 1.1.0 的内容
+        assertEquals(1, Changelog.releasesNewerThan("1.0.1").size)
 
         // 同版本、更高版本、以及补齐 0 的等价写法：都没有新内容
-        assertTrue(Changelog.releasesNewerThan("1.0.1").isEmpty())
-        assertTrue(Changelog.releasesNewerThan("v1.0.1").isEmpty())
-        assertTrue(Changelog.releasesNewerThan("1.0.2").isEmpty())
+        assertTrue(Changelog.releasesNewerThan("1.1.0").isEmpty())
+        assertTrue(Changelog.releasesNewerThan("v1.1.0").isEmpty())
+        assertTrue(Changelog.releasesNewerThan("1.1.1").isEmpty())
         assertEquals(1, Changelog.releasesNewerThan("1.0.0.0").size)
 
         // 跨版本升级不遗漏中间版本
@@ -101,14 +104,19 @@ class ChangelogTest {
         )
         assertTrue(changes.all { it.text.isNotBlank() })
         assertTrue(Changelog.releases.all { release -> release.changes.isNotEmpty() })
-        // 合并后的 1.0.1 应该把本次键盘/光标/提示的修复都写进去
+        // 合并后的 1.1.0 应该把本次键盘/光标/提示的修复都写进去
         assertTrue(
-            "1.0.1 更新日志应包含键盘排版修复",
+            "1.1.0 更新日志应包含键盘排版修复",
             changes.any { it.text.contains("键盘") },
         )
         assertTrue(
-            "1.0.1 更新日志应包含更新提示",
+            "1.1.0 更新日志应包含更新提示",
             changes.any { it.text.contains("更新提示") || it.text.contains("升级提示") },
+        )
+        // 切换曲线串函数 / 光标失灵的修复是这次发版的主因，必须在日志里留痕
+        assertTrue(
+            "1.1.0 更新日志应记录切换曲线的修复",
+            changes.any { it.kind == ChangeKind.FIX && it.text.contains("切换") },
         )
     }
 }

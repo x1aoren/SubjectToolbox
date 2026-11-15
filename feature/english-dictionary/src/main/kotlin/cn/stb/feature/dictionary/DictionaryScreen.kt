@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import cn.stb.core.designsystem.EmptyState
 import cn.stb.core.designsystem.SearchField
 import cn.stb.core.model.SubjectId
+import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
 import cn.stb.core.registry.ToolHost
@@ -67,6 +68,7 @@ class DictionaryToolProvider : ToolProvider {
         title = "词典",
         summary = "英汉释义 · 音标例句 · 本地生词本",
         glyph = "词",
+        icon = ToolIcon.DICTIONARY,
         keywords = listOf("英语", "单词", "词汇", "英汉", "生词本"),
         defaultPinned = true,
     )
@@ -78,6 +80,9 @@ class DictionaryToolProvider : ToolProvider {
 }
 
 private val DictAccent = Color(0xFF2E7D6F)
+
+/** 每次点击「加载更多」多取的条数。全量库前缀命中动辄几万条，一次全查出来会占住内存。 */
+private const val PAGE_SIZE = 60
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,22 +97,27 @@ fun DictionaryScreen(onBack: () -> Unit) {
     var savedWords by remember { mutableStateOf<Set<String>>(emptySet()) }
     var total by remember { mutableStateOf(0) }
     var loading by remember { mutableStateOf(true) }
+    var hasMore by remember { mutableStateOf(false) }
+    // 换关键词或切换生词本时重置回第一页。
+    var limit by remember(query, savedOnly) { mutableStateOf(PAGE_SIZE) }
 
-    LaunchedEffect(query, savedOnly) {
+    LaunchedEffect(query, savedOnly, limit) {
         loading = true
         // 全量 77 万条下，中文反查的兜底 LIKE 要扫全表；防抖 300ms 避免每敲一个字都触发一次。
         delay(300)
         val result = withContext(Dispatchers.IO) {
             val list = when {
                 savedOnly && query.isBlank() -> repository.search("", savedOnly = true)
-                query.isBlank() -> repository.browse()
-                else -> repository.search(query, savedOnly)
+                query.isBlank() -> repository.browse(limit)
+                else -> repository.search(query, savedOnly, limit)
             }
             Triple(list, repository.savedWords(), repository.totalCount())
         }
         entries = result.first
         savedWords = result.second
         total = result.third
+        // 生词本不限条数；其余列表取满一页就再露出「加载更多」。
+        hasMore = !(savedOnly && query.isBlank()) && entries.size >= limit
         if (selected == null || entries.none { it.headword == selected?.headword }) {
             selected = entries.firstOrNull()
         }
@@ -164,7 +174,11 @@ fun DictionaryScreen(onBack: () -> Unit) {
                         },
                     )
                     Text(
-                        text = if (loading) "检索中…" else "命中 ${entries.size} 条",
+                        text = when {
+                            loading -> "检索中…"
+                            hasMore -> "已显示 ${entries.size} 条"
+                            else -> "命中 ${entries.size} 条"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.CenterVertically),
@@ -193,6 +207,8 @@ fun DictionaryScreen(onBack: () -> Unit) {
                             entries = entries,
                             selected = selected,
                             savedWords = savedWords,
+                            hasMore = hasMore,
+                            onLoadMore = { limit += PAGE_SIZE },
                             onSelect = { selected = it },
                             modifier = Modifier.width(300.dp).fillMaxHeight(),
                         )
@@ -219,6 +235,8 @@ fun DictionaryScreen(onBack: () -> Unit) {
                             entries = entries,
                             selected = null,
                             savedWords = savedWords,
+                            hasMore = hasMore,
+                            onLoadMore = { limit += PAGE_SIZE },
                             onSelect = { selected = it },
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -251,6 +269,8 @@ private fun EntryList(
     entries: List<DictEntry>,
     selected: DictEntry?,
     savedWords: Set<String>,
+    hasMore: Boolean,
+    onLoadMore: () -> Unit,
     onSelect: (DictEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -295,6 +315,14 @@ private fun EntryList(
                         )
                     }
                 }
+            }
+        }
+        if (hasMore) {
+            item {
+                androidx.compose.material3.TextButton(
+                    onClick = onLoadMore,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("加载更多") }
             }
         }
     }

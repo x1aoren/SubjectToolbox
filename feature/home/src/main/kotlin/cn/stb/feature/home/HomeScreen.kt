@@ -214,6 +214,7 @@ private fun SubjectBlock(
             title = section.subject.name,
             accent = Color(section.subject.accent),
             count = section.tools.size,
+            icon = section.subject.icon,
         )
         section.tools.forEach { tool ->
             ToolRow(

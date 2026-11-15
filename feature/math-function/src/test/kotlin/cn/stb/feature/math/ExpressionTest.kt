@@ -301,6 +301,77 @@ class ExpressionTest {
     }
 
     @Test
+    fun `退格不吃根号那个看不见的收尾括号`() {
+        // sqrt(6986) 显示成 √6986，收尾的 ) 是隐藏的：退格应该吃掉 6，而不是删掉一个看不见的字符、
+        // 留下 sqrt(6986 然后提示括号没有闭合
+        val radicand = MathEdit.backspace("sqrt(6986)", TextRange(10))
+        assertEquals("sqrt(698)", radicand.text)
+        // 光标停在被开方内容里（收尾括号之前），接着输入还在根号内
+        assertEquals(8, radicand.caret)
+
+        // 光标落在收尾括号后面、根号里又已经空了：整段 √ 一起退掉
+        val empty = MathEdit.backspace("sqrt()", TextRange(6))
+        assertEquals("", empty.text)
+        assertEquals(0, empty.caret)
+
+        // 根号后面还有东西时，只吃掉根号内容，闭括号保留
+        val trailing = MathEdit.backspace("sqrt(x)+1", TextRange(7))
+        assertEquals("sqrt()+1", trailing.text)
+        assertEquals(5, trailing.caret)
+
+        // 嵌套根号：连着跳过两层隐藏括号，先删里面的 6
+        val nested = MathEdit.backspace("sqrt(sqrt(6))", TextRange(13))
+        assertEquals("sqrt(sqrt())", nested.text)
+        assertEquals(10, nested.caret)
+
+        // 可见的右括号照常删掉：sin(x) 的括号、以及 asqrt(1) 这种不算根号的写法
+        val visible = MathEdit.backspace("sin(x)", TextRange(6))
+        assertEquals("sin(x", visible.text)
+        assertEquals(5, visible.caret)
+
+        val notRadical = MathEdit.backspace("asqrt(1)", TextRange(8))
+        assertEquals("asqrt(1", notRadical.text)
+        assertEquals(7, notRadical.caret)
+    }
+
+    @Test
+    fun `花括号键成对补全并能跳过右花括号`() {
+        // 按一下 { ：自动补 {}，光标落在里面
+        val opened = MathEdit.insert("sin(x)", TextRange(6), "{")
+        assertEquals("sin(x){}", opened.text)
+        assertEquals(7, opened.caret)
+
+        // 在 {} 里打完 0,10 后按 }：跳过已有的右花括号，不会变成 }}
+        val typed = MathEdit.insert("sin(x){0,10}", TextRange(11), "}")
+        assertEquals("sin(x){0,10}", typed.text)
+        assertEquals(12, typed.caret)
+    }
+
+    @Test
+    fun `光标所在编辑区按原始偏移判断`() {
+        // 根号：被开方数两端都算「根号内」，根号后面才是基线。
+        // 这里必须按原始文本算——收尾括号是隐藏的，映射到显示文本会把末尾算成根号外。
+        val radical = buildMathDisplay("sqrt(1234)")
+        assertEquals(MathEditRegion.RADICAL, radical.regionAt(5))
+        assertEquals(MathEditRegion.RADICAL, radical.regionAt(9))
+        assertEquals(MathEditRegion.BASE, radical.regionAt(10))
+
+        // 上标：指数内容两端都是上标，^ 之前是基线
+        val script = buildMathDisplay("x^2")
+        assertEquals(MathEditRegion.SCRIPT, script.regionAt(2))
+        assertEquals(MathEditRegion.SCRIPT, script.regionAt(3))
+        assertEquals(MathEditRegion.BASE, script.regionAt(0))
+
+        // 刚按下 ^ 还没输指数：空槽也算上标
+        assertEquals(MathEditRegion.SCRIPT, buildMathDisplay("x^").regionAt(2))
+
+        // 角标套在根号后面：角标优先，根号里仍是根号
+        val mixed = buildMathDisplay("sqrt(2)^2")
+        assertEquals(MathEditRegion.RADICAL, mixed.regionAt(5))
+        assertEquals(MathEditRegion.SCRIPT, mixed.regionAt(8))
+    }
+
+    @Test
     fun `定义域端点只接受常数表达式`() {
         assertTrue("x 这种变量不能当端点", parseDomainBound("x").isFailure)
         assertTrue("1/0 无意义", parseDomainBound("1/0").isFailure)

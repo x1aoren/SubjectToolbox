@@ -1,6 +1,7 @@
 package cn.stb.app
 
 import cn.stb.core.model.Subject
+import cn.stb.core.model.SubjectIcon
 import cn.stb.core.model.SubjectId
 import cn.stb.core.registry.ToolCatalog
 import cn.stb.core.registry.ToolProvider
@@ -22,13 +23,13 @@ import cn.stb.feature.textbook.TextbookToolProvider
 object ToolRegistrations {
 
     val subjects: List<Subject> = listOf(
-        Subject(SubjectId("chinese"), "语文", "语", 0xFF9C4438, 0),
-        Subject(SubjectId("math"), "数学", "数", 0xFF34558B, 1),
-        Subject(SubjectId("english"), "英语", "英", 0xFF2E7D6F, 2),
-        Subject(SubjectId("chemistry"), "化学", "化", 0xFF6B4A8F, 3),
-        Subject(SubjectId("biology"), "生物", "生", 0xFF2E7D32, 4),
-        Subject(SubjectId("geography"), "地理", "地", 0xFF9A6B1F, 5),
-        Subject(SubjectId("other"), "通用", "通", 0xFF546E7A, 6),
+        Subject(SubjectId("chinese"), "语文", "语", 0xFF9C4438, 0, SubjectIcon.BOOK_OPEN),
+        Subject(SubjectId("math"), "数学", "数", 0xFF34558B, 1, SubjectIcon.CHART_SPLINE),
+        Subject(SubjectId("english"), "英语", "英", 0xFF2E7D6F, 2, SubjectIcon.LANGUAGES),
+        Subject(SubjectId("chemistry"), "化学", "化", 0xFF6B4A8F, 3, SubjectIcon.FLASK),
+        Subject(SubjectId("biology"), "生物", "生", 0xFF2E7D32, 4, SubjectIcon.DNA),
+        Subject(SubjectId("geography"), "地理", "地", 0xFF9A6B1F, 5, SubjectIcon.EARTH),
+        Subject(SubjectId("other"), "通用", "通", 0xFF546E7A, 6, SubjectIcon.GRID),
     )
 
     val tools: List<ToolProvider> = listOf(

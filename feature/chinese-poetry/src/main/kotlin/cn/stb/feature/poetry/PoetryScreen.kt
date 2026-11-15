@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import cn.stb.core.data.AssetReader
 import cn.stb.core.model.AppGraph
 import cn.stb.core.model.SubjectId
+import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
 import cn.stb.core.registry.ToolHost
@@ -76,6 +77,7 @@ class PoetryToolProvider : ToolProvider {
         title = "古诗词",
         summary = "必背篇目 · 注释赏析 · 背诵模式",
         glyph = "诗",
+        icon = ToolIcon.SCROLL,
         keywords = listOf("古诗", "词", "背诵", "文言文", "教材"),
         defaultPinned = true,
     )

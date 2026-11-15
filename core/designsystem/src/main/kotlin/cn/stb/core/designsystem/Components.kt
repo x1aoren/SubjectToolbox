@@ -41,7 +41,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -50,9 +52,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cn.stb.core.model.Subject
+import cn.stb.core.model.SubjectIcon
+import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolSpec
 
-/** 用单个汉字做字形图标，省掉一整套图片资源，也让五科有一致的识别方式。 */
+/**
+ * 用单个汉字做字形徽章。
+ *
+ * 学科与工具都有图标之后，它退居两处兜底：图标未配置时降级，以及「空状态」这类
+ * 临时文案图。保留它也让整块 UI 在没有新资源时仍然可用。
+ */
 @Composable
 fun GlyphBadge(
     glyph: String,
@@ -74,6 +84,92 @@ fun GlyphBadge(
             fontWeight = FontWeight.Medium,
         )
     }
+}
+
+/**
+ * 图标徽章：与 [GlyphBadge] 同一套底板，图形换成矢量图标。
+ *
+ * 图标边长取徽章的 48%，和原来汉字 40% 字号加字面留白的观感相当；
+ * 描边图标用 tint 染色，深浅色模式与学科色都能跟着走。
+ */
+@Composable
+fun IconBadge(
+    icon: Painter,
+    accent: Color,
+    size: Dp = 44.dp,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(RoundedCornerShape(size * 0.3f))
+            .background(accent.copy(alpha = 0.13f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = icon,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier.size(size * 0.48f),
+        )
+    }
+}
+
+/** 学科徽章：有图标用图标，没有就退回单字。 */
+@Composable
+fun SubjectBadge(
+    subject: Subject,
+    size: Dp = 44.dp,
+    modifier: Modifier = Modifier,
+) {
+    val accent = Color(subject.accent)
+    val icon = subject.icon
+    if (icon == null) {
+        GlyphBadge(glyph = subject.short, accent = accent, size = size, modifier = modifier)
+    } else {
+        IconBadge(icon = painterResource(icon.resId()), accent = accent, size = size, modifier = modifier)
+    }
+}
+
+/** 工具徽章：有图标用图标，没有就退回单字。 */
+@Composable
+fun ToolBadge(
+    spec: ToolSpec,
+    accent: Color,
+    size: Dp = 46.dp,
+    modifier: Modifier = Modifier,
+) {
+    val icon = spec.icon
+    if (icon == null) {
+        GlyphBadge(glyph = spec.glyph, accent = accent, size = size, modifier = modifier)
+    } else {
+        IconBadge(icon = painterResource(icon.resId()), accent = accent, size = size, modifier = modifier)
+    }
+}
+
+/**
+ * 语义图标 → 资源。放在 designsystem 而不是 model，
+ * 是为了让 core:model 保持纯 Kotlin（不引 R 与 Android）。
+ */
+private fun SubjectIcon.resId(): Int = when (this) {
+    SubjectIcon.BOOK_OPEN -> R.drawable.ic_subject_chinese
+    SubjectIcon.CHART_SPLINE -> R.drawable.ic_subject_math
+    SubjectIcon.LANGUAGES -> R.drawable.ic_subject_english
+    SubjectIcon.FLASK -> R.drawable.ic_subject_chemistry
+    SubjectIcon.DNA -> R.drawable.ic_subject_biology
+    SubjectIcon.EARTH -> R.drawable.ic_subject_geography
+    SubjectIcon.GRID -> R.drawable.ic_subject_other
+}
+
+private fun ToolIcon.resId(): Int = when (this) {
+    ToolIcon.SCROLL -> R.drawable.ic_tool_poetry
+    ToolIcon.FUNCTION -> R.drawable.ic_tool_math_function
+    ToolIcon.DICTIONARY -> R.drawable.ic_tool_dictionary
+    ToolIcon.ATOM -> R.drawable.ic_tool_chemistry
+    ToolIcon.MICROSCOPE -> R.drawable.ic_tool_biology
+    ToolIcon.ORBIT -> R.drawable.ic_tool_geography
+    ToolIcon.LIBRARY -> R.drawable.ic_tool_textbook
+    ToolIcon.SIGMA -> R.drawable.ic_tool_formula
 }
 
 @Composable
@@ -98,7 +194,7 @@ fun ToolCard(
                 .padding(start = 14.dp, end = 4.dp, top = 14.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            GlyphBadge(glyph = spec.glyph, accent = accent, size = 46.dp)
+            ToolBadge(spec = spec, accent = accent, size = 46.dp)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -135,8 +231,14 @@ fun SectionHeader(
     accent: Color,
     modifier: Modifier = Modifier,
     count: Int? = null,
+    icon: SubjectIcon? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
+    // 图标尺寸从标题字号推导，这样「设置 → 字号」调到 1.3× 时图标跟着变大，
+    // 不会出现文字放大、图标原地不动的错位。
+    val titleSize = MaterialTheme.typography.titleMedium.fontSize
+    val iconSize = if (titleSize.isSp) (titleSize.value * 1.05f).dp else 17.dp
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -148,6 +250,15 @@ fun SectionHeader(
                 .background(accent),
         )
         Spacer(Modifier.width(8.dp))
+        if (icon != null) {
+            Icon(
+                painter = painterResource(icon.resId()),
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(iconSize),
+            )
+            Spacer(Modifier.width(6.dp))
+        }
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,

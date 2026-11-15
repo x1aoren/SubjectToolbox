@@ -11,6 +11,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,12 +33,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -49,6 +51,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,19 +60,25 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -84,17 +93,23 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import cn.stb.core.model.SubjectId
+import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
 import cn.stb.core.model.niceStep
@@ -111,6 +126,7 @@ class MathToolProvider : ToolProvider {
         title = "函数编辑器",
         summary = "多曲线 · 显隐式切换 · 滑块与定义域",
         glyph = "函",
+        icon = ToolIcon.FUNCTION,
         keywords = listOf("函数", "图像", "绘图", "表达式", "坐标", "曲线", "圆", "方程", "隐函数", "开方", "滑块", "定义域"),
     )
 
@@ -138,7 +154,11 @@ fun MathScreen(onBack: () -> Unit) {
         mutableStateOf(listOf(PlotFn(1, "sin(x)", curvePalette[0])))
     }
     var selectedId by rememberSaveable { mutableIntStateOf(1) }
-    var nextId by remember { mutableIntStateOf(2) }
+
+    // 输入框此刻是否持有焦点；切换曲线时据此决定要不要把焦点交给新曲线的输入框，
+    // 否则一切换光标就「消失」，得再点一下才能继续拖。
+    var editorFocused by remember { mutableStateOf(false) }
+    var focusOnSwitch by remember { mutableStateOf(false) }
 
     var xCenter by rememberSaveable { mutableStateOf(0.0) }
     var xSpan by rememberSaveable { mutableStateOf(20.0) }
@@ -160,19 +180,49 @@ fun MathScreen(onBack: () -> Unit) {
 
     // 输入框自己持有光标位置；切到另一条曲线时重新装载
     var editor by remember(selected.id) {
-        mutableStateOf(TextFieldValue(selected.expr, TextRange(selected.expr.length)))
+        // 表达式里若还带着 {…}（老状态或粘贴进来的），这里先摘掉：定义域单独用尾部小字显示
+        val base = DomainSuffix.strip(selected.expr)
+        mutableStateOf(TextFieldValue(base, TextRange(base.length)))
     }
 
     fun update(id: Int, transform: (PlotFn) -> PlotFn) {
         functions = functions.map { if (it.id == id) transform(it) else it }
     }
 
-    fun applyEditor(value: TextFieldValue) {
+    /**
+     * 写入某条曲线的表达式。
+     *
+     * [id] 是「这个输入框创建时属于哪条曲线」，必须显式带上：切换曲线的那一刻，
+     * 旧输入框还可能回调一次（点击、松开手柄都会触发），只认当前 selectedId 的话，
+     * 就会把上一条曲线的文字写进新选中的曲线——看起来就像「函数被换成了另一个函数」。
+     */
+    fun applyEditor(id: Int, value: TextFieldValue) {
+        if (id != selectedId) return
         editor = value
-        update(selected.id) { it.copy(expr = value.text) }
+        // 只是挪光标、文字没变时不要动模型：否则每拖一下光标都要重算整张图。
+        // 这里读 functions 里的当前值（而不是本次组合捕获的 selected），不会因为回调晚到而误判。
+        val current = functions.firstOrNull { it.id == id } ?: return
+        // 在末尾写完 {0,10} 就当场「提交」：从正文里摘掉，存进 domain，用尾部小字显示。
+        // 留在正文里会有两个毛病：公式里夹着一串花括号，退格时还容易连带删掉。
+        val suffix = DomainSuffix.parse(value.text)
+        if (suffix.domain != null && !suffix.domain.isAll && value.selection.end == value.text.length) {
+            editor = TextFieldValue(suffix.expr, TextRange(suffix.expr.length))
+            update(id) { it.copy(expr = suffix.expr, domain = suffix.domain) }
+            return
+        }
+        if (current.expr != value.text) {
+            update(id) { it.copy(expr = value.text) }
+        }
     }
 
-    fun applyEdit(edit: MathEdit.Edit) = applyEditor(edit.toTextFieldValue())
+    fun applyEdit(edit: MathEdit.Edit) = applyEditor(selected.id, edit.toTextFieldValue())
+
+    /** 切换曲线：记住「刚才是不是正在输入」，新曲线的输入框据此决定要不要接住焦点。 */
+    fun selectFunction(id: Int) {
+        if (id == selectedId) return
+        focusOnSwitch = editorFocused
+        selectedId = id
+    }
 
     fun deleteParam(def: ParamDef) {
         params = params.filterNot { it.name == def.name }
@@ -224,7 +274,7 @@ fun MathScreen(onBack: () -> Unit) {
         functions.mapIndexedNotNull { index, fn ->
             if (!fn.visible) return@mapIndexedNotNull null
             if (runCatching { parseCurve(fn.mode, fn.expr) }.isFailure) return@mapIndexedNotNull null
-            LegendItem(fn.colorArgb, fn.expr, index + 1, fn.mode)
+            LegendItem(fn.colorArgb, DomainSuffix.strip(fn.expr), index + 1, fn.mode, fn.effectiveDomain())
         }
     }
 
@@ -234,8 +284,9 @@ fun MathScreen(onBack: () -> Unit) {
 
     fun addFunction() {
         if (functions.size >= MAX_CURVES) return
-        val id = nextId
-        nextId += 1
+        // 用现有最大 id + 1：nextId 只活在内存里，进程被回收后从 0 重来，
+        // 会和恢复出来的曲线撞 id，撞了就会「改一条、两条一起变」。
+        val id = (functions.maxOfOrNull { it.id } ?: 0) + 1
         // 优先挑一个还没用过的颜色，删改之后也不会两条曲线撞色
         val usedColors = functions.map { it.colorArgb }.toSet()
         val color = curvePalette.firstOrNull { it !in usedColors }
@@ -247,14 +298,14 @@ fun MathScreen(onBack: () -> Unit) {
             else -> PlotFn(id, "x", color)
         }
         functions = functions + seed
-        selectedId = id
+        selectFunction(id)
     }
 
     fun removeFunction(id: Int) {
         if (functions.size <= 1) return
         val remaining = functions.filterNot { it.id == id }
         functions = remaining
-        if (selectedId == id) selectedId = remaining.first().id
+        if (selectedId == id) selectFunction(remaining.first().id)
     }
 
     Scaffold(
@@ -286,7 +337,20 @@ fun MathScreen(onBack: () -> Unit) {
             )
         },
     ) { padding ->
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
+        val focusManager = LocalFocusManager.current
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                // 点空白处（图像区、面板空地）就退出编辑：光标和手柄一起收起来。
+                // 键盘、胶囊、滑块这些可点组件会消费事件，所以不会误触发。
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus()
+                        editorFocused = false
+                    })
+                },
+        ) {
             val wide = maxWidth >= 720.dp
             val panelWidth = if (maxWidth >= 1160.dp) 468.dp else 412.dp
 
@@ -297,8 +361,11 @@ fun MathScreen(onBack: () -> Unit) {
                     selectedIndex = selectedIndex,
                     editor = editor,
                     params = params,
-                    onEditorChange = ::applyEditor,
-                    onSelect = { selectedId = it },
+                    editing = editorFocused,
+                    autoFocus = focusOnSwitch,
+                    onEditorChange = { value -> applyEditor(selected.id, value) },
+                    onEditingChange = { editorFocused = it },
+                    onSelect = ::selectFunction,
                     onToggleVisible = { id -> update(id) { fn -> fn.copy(visible = !fn.visible) } },
                     onToggleMode = { id -> update(id) { fn -> fn.copy(mode = fn.mode.toggled()) } },
                     onDelete = ::removeFunction,
@@ -309,7 +376,7 @@ fun MathScreen(onBack: () -> Unit) {
                     onFunction = { name -> applyEdit(MathEdit.insertFunction(editor.text, editor.selection, name)) },
                     onPower = { applyEdit(MathEdit.insertPower(editor.text, editor.selection)) },
                     onBackspace = { applyEdit(MathEdit.backspace(editor.text, editor.selection)) },
-                    onClear = { applyEditor(TextFieldValue("", TextRange(0))) },
+                    onClear = { applyEditor(selected.id, TextFieldValue("", TextRange(0))) },
                     onParamAdd = ::addParam,
                     onParamUpdate = ::updateParam,
                     onParamDelete = ::requestDeleteParam,
@@ -354,10 +421,16 @@ fun MathScreen(onBack: () -> Unit) {
         val fn = functions.firstOrNull { it.id == fnId }
         if (fn != null) {
             DomainDialog(
-                initial = fn.domain,
+                initial = fn.effectiveDomain(),
                 onDismiss = { domainDialogFor = null },
                 onConfirm = { domain ->
-                    update(fnId) { it.copy(domain = domain) }
+                    // 定义域只是模型里的一个字段，不再写进表达式正文（正文里保持干净公式）
+                    val newExpr = DomainSuffix.strip(fn.expr)
+                    update(fnId) { it.copy(expr = newExpr, domain = domain) }
+                    // 正在编辑的就是这条曲线：把输入框里的文字一起换掉，否则下次敲键盘会用旧文字覆盖
+                    if (fnId == selectedId) {
+                        editor = TextFieldValue(newExpr, TextRange(newExpr.length))
+                    }
                     domainDialogFor = null
                 },
             )
@@ -394,7 +467,10 @@ private fun EditorPanel(
     selectedIndex: Int,
     editor: TextFieldValue,
     params: List<ParamDef>,
+    editing: Boolean,
+    autoFocus: Boolean,
     onEditorChange: (TextFieldValue) -> Unit,
+    onEditingChange: (Boolean) -> Unit,
     onSelect: (Int) -> Unit,
     onToggleVisible: (Int) -> Unit,
     onToggleMode: (Int) -> Unit,
@@ -420,28 +496,70 @@ private fun EditorPanel(
 
     Column(
         modifier = modifier
-            .fillMaxHeight()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .fillMaxSize()
+            // 整块面板可滚动：曲线多了、窗口矮了都能滑到底，键盘不会被裁掉
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
-        // 函数切换条：横向一排胶囊，不再用纵向列表吃掉半屏高度
-        FunctionStrip(
-            functions = functions,
-            selectedId = selected.id,
-            onSelect = onSelect,
-            onToggleVisible = onToggleVisible,
-            onAdd = onAdd,
-        )
+        // 函数列表：和 1.0.0 一样竖着排，一条曲线一行
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "函数列表",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = "${functions.size}/$MAX_CURVES",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(2.dp))
 
-        // 表达式编辑卡：模式/定义域/显隐/删除 + 输入框 + 固定报错栏 + 键盘，整块常驻可见
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            functions.forEachIndexed { index, fn ->
+                FunctionRow(
+                    fn = fn,
+                    index = index,
+                    selected = fn.id == selected.id,
+                    hasError = fn.expr.isNotBlank() &&
+                        runCatching { parseCurve(fn.mode, fn.expr) }.isFailure,
+                    canDelete = functions.size > 1,
+                    onSelect = { onSelect(fn.id) },
+                    onToggleVisible = { onToggleVisible(fn.id) },
+                    onDelete = { onDelete(fn.id) },
+                )
+            }
+        }
+
+        Spacer(Modifier.height(2.dp))
+
+        OutlinedButton(
+            onClick = onAdd,
+            enabled = functions.size < MAX_CURVES,
+            modifier = Modifier.fillMaxWidth().height(34.dp),
+            shape = RoundedCornerShape(10.dp),
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = if (functions.size < MAX_CURVES) "添加函数" else "最多 $MAX_CURVES 条曲线",
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // 当前曲线的编辑卡：模式/定义域/显隐/删除 + 输入框 + 固定报错栏
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column(modifier = Modifier.padding(6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ModeChip(
                         mode = selected.mode,
@@ -449,12 +567,12 @@ private fun EditorPanel(
                         onClick = { onToggleMode(selected.id) },
                     )
                     Spacer(Modifier.width(6.dp))
-                    DomainChip(domain = selected.domain, onClick = onOpenDomain)
+                    DomainChip(domain = selected.effectiveDomain(), onClick = onOpenDomain)
                     Spacer(Modifier.weight(1f))
                     TextButton(
                         onClick = { onToggleVisible(selected.id) },
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                        modifier = Modifier.height(28.dp),
+                        modifier = Modifier.height(26.dp),
                     ) {
                         Text(
                             text = if (selected.visible) "隐藏" else "显示",
@@ -465,7 +583,7 @@ private fun EditorPanel(
                     IconButton(
                         onClick = { onDelete(selected.id) },
                         enabled = functions.size > 1,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(26.dp),
                     ) {
                         Icon(
                             Icons.Filled.Delete,
@@ -480,9 +598,10 @@ private fun EditorPanel(
                     }
                 }
 
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(2.dp))
 
-                ExpressionField(
+                KeyedExpressionField(
+                    fnId = selected.id,
                     value = editor,
                     onValueChange = onEditorChange,
                     label = if (selected.mode == FnMode.EXPLICIT) {
@@ -490,142 +609,81 @@ private fun EditorPanel(
                     } else {
                         "F${selectedIndex + 1}(x,y):"
                     },
-                    // 隐式模式下如果学生已经写了完整方程（含等号），就不再补「= 0」
-                    suffix = if (selected.mode == FnMode.IMPLICIT && '=' !in editor.text) {
-                        "= 0"
-                    } else {
-                        null
-                    },
+                    // 尾部装饰：定义域不是全体实数时，在输入框右端显示 {0,10} 这样的标记。
+                    // （正文里不再夹着花括号，公式保持干净，定义域也不会被误删改）
+                    suffix = selected.effectiveDomain()
+                        .takeIf { !it.isAll }
+                        ?.let { DomainSuffix.label(it) },
                     isError = error != null,
+                    editing = editing,
+                    autoFocus = autoFocus,
+                    onEditingChange = onEditingChange,
                 )
 
                 // 报错栏固定占位：出错时只换内容，不改变下方键盘的位置
                 ErrorBar(message = error, mode = selected.mode)
-
-                Spacer(Modifier.height(2.dp))
-
-                MathKeypad(
-                    onChar = onChar,
-                    onOperator = onOperator,
-                    onFunction = onFunction,
-                    onPower = onPower,
-                    onBackspace = onBackspace,
-                    onClear = onClear,
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
 
         Spacer(Modifier.height(6.dp))
 
-        // 剩下的高度全部给滑块，独立滚动；键盘已经固定在上面的卡片里，永远不会被挤掉
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                ParamPanel(
-                    params = params,
-                    onAdd = onParamAdd,
-                    onUpdate = onParamUpdate,
-                    onDelete = onParamDelete,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(10.dp))
-            }
-        }
-    }
-}
-
-/** 函数切换条：一排横向胶囊，显示模式、表达式预览、显隐与语法错误。 */
-@Composable
-private fun FunctionStrip(
-    functions: List<PlotFn>,
-    selectedId: Int,
-    onSelect: (Int) -> Unit,
-    onToggleVisible: (Int) -> Unit,
-    onAdd: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().height(44.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        LazyRow(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            itemsIndexed(functions, key = { _, fn -> fn.id }) { index, fn ->
-                FunctionChip(
-                    fn = fn,
-                    index = index,
-                    selected = fn.id == selectedId,
-                    hasError = fn.expr.isNotBlank() &&
-                        runCatching { parseCurve(fn.mode, fn.expr) }.isFailure,
-                    onSelect = { onSelect(fn.id) },
-                    onToggleVisible = { onToggleVisible(fn.id) },
-                )
-            }
-        }
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = "${functions.size}/$MAX_CURVES",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        // 键盘和 1.0.0 一样直接铺在面板上，不塞进卡片里
+        MathKeypad(
+            onChar = onChar,
+            onOperator = onOperator,
+            onFunction = onFunction,
+            onPower = onPower,
+            onBackspace = onBackspace,
+            onClear = onClear,
+            modifier = Modifier.fillMaxWidth(),
         )
-        Spacer(Modifier.width(8.dp))
-        Surface(
-            onClick = onAdd,
-            enabled = functions.size < MAX_CURVES,
-            modifier = Modifier.size(44.dp),
-            shape = RoundedCornerShape(10.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = if (functions.size < MAX_CURVES) 1f else 0.4f,
-            ),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = if (functions.size < MAX_CURVES) {
-                        "添加函数"
-                    } else {
-                        "最多 $MAX_CURVES 条曲线"
-                    },
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
+
+        Spacer(Modifier.height(10.dp))
+
+        ParamPanel(
+            params = params,
+            onAdd = onParamAdd,
+            onUpdate = onParamUpdate,
+            onDelete = onParamDelete,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(10.dp))
     }
 }
 
-/** 一条曲线的胶囊：颜色点（可切换显隐）+ 模式标签 + 表达式预览 + 错误标记。 */
+/** 光标手柄的命中半径：比画出来的水滴（5dp）稍大一点，手指按住不容易滑掉。 */
+private val handleHitRadius = 12.dp
+
+/**
+ * 一条曲线占一行：颜色点（点一下切换显隐）+ 编号 + 表达式预览 + 定义域小字 + 错误标记 + 删除。
+ */
 @Composable
-private fun FunctionChip(
+private fun FunctionRow(
     fn: PlotFn,
     index: Int,
     selected: Boolean,
     hasError: Boolean,
+    canDelete: Boolean,
     onSelect: () -> Unit,
     onToggleVisible: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val color = Color(fn.colorArgb)
     Surface(
         onClick = onSelect,
         shape = RoundedCornerShape(12.dp),
-        color = if (selected) color.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
-        border = BorderStroke(
-            1.dp,
-            if (selected) color.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant,
-        ),
+        color = if (selected) color.copy(alpha = 0.10f) else Color.Transparent,
     ) {
         Row(
-            modifier = Modifier.padding(start = 4.dp, end = 10.dp, top = 5.dp, bottom = 5.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 6.dp, end = 10.dp, top = 2.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(26.dp)
+                    .size(28.dp)
                     .clickable(
                         onClickLabel = if (fn.visible) "隐藏该曲线" else "显示该曲线",
                         onClick = onToggleVisible,
@@ -634,7 +692,7 @@ private fun FunctionChip(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(11.dp)
+                        .size(12.dp)
                         .clip(CircleShape)
                         .background(if (fn.visible) color else Color.Transparent)
                         .border(1.5.dp, if (fn.visible) color else color.copy(alpha = 0.45f), CircleShape),
@@ -642,14 +700,17 @@ private fun FunctionChip(
             }
             Text(
                 text = fnLabel(index, fn.mode),
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
                 color = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                modifier = Modifier.widthIn(min = 52.dp),
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = mathAnnotated(if (fn.expr.isBlank()) "（空）" else fn.expr),
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                text = mathAnnotated(
+                    if (fn.expr.isBlank()) "（空）" else DomainSuffix.strip(fn.expr),
+                ),
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                 color = if (fn.visible) {
                     MaterialTheme.colorScheme.onSurface
                 } else {
@@ -657,15 +718,41 @@ private fun FunctionChip(
                 },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 156.dp),
+                modifier = Modifier.weight(1f),
             )
+            // 定义域不是全体实数时，跟在表达式后面用 {…} 标出来（对话框设的、自己输入的都算）
+            if (!fn.effectiveDomain().isAll) {
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = DomainSuffix.label(fn.effectiveDomain()),
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
             if (hasError) {
-                Spacer(Modifier.width(3.dp))
+                Spacer(Modifier.width(4.dp))
                 Icon(
                     Icons.Filled.Warning,
                     contentDescription = "表达式有错误",
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(13.dp),
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+            IconButton(
+                onClick = onDelete,
+                enabled = canDelete,
+                modifier = Modifier.size(28.dp),
+            ) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = "删除 ${fnLabel(index, fn.mode)}",
+                    modifier = Modifier.size(15.dp),
+                    tint = if (canDelete) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                    },
                 )
             }
         }
@@ -737,6 +824,49 @@ private fun DomainChip(domain: Domain, onClick: () -> Unit) {
 }
 
 /**
+ * 给输入框套一层 [key]：换曲线就整块重建。
+ *
+ * BasicTextField 内部还存着一份自己的文本、光标、输入法会话和手势节点，光把外面的
+ * TextFieldValue 换掉是换不干净的：切换曲线后旧的光标位置、旧的手势回调会留下来，
+ * 表现就是「切完曲线，点输入框光标不动，还会把另一条曲线的表达式写坏」。
+ * 按曲线 id 重建是最省事也最彻底的做法——新曲线永远是一个干净的输入框。
+ */
+@Composable
+private fun KeyedExpressionField(
+    fnId: Int,
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    label: String,
+    suffix: String?,
+    isError: Boolean,
+    editing: Boolean,
+    autoFocus: Boolean,
+    onEditingChange: (Boolean) -> Unit,
+) {
+    key(fnId) {
+        // 把系统原生的选区高亮和光标手柄设成透明：它们比自绘的大一圈，
+        // 会盖住角标/根号，圆点还会伸出输入框边框。拖动光标统一用自绘的那个。
+        CompositionLocalProvider(
+            LocalTextSelectionColors provides TextSelectionColors(
+                handleColor = Color.Transparent,
+                backgroundColor = Color.Transparent,
+            ),
+        ) {
+            ExpressionField(
+                value = value,
+                onValueChange = onValueChange,
+                label = label,
+                suffix = suffix,
+                isError = isError,
+                editing = editing,
+                autoFocus = autoFocus,
+                onEditingChange = onEditingChange,
+            )
+        }
+    }
+}
+
+/**
  * 表达式输入框：所见即所得的数学排版（上标、根号横线）都在显示层完成，
  * 这里只负责把光标位置、聚焦状态和画好的装饰对齐。
  */
@@ -747,23 +877,63 @@ private fun ExpressionField(
     label: String,
     suffix: String?,
     isError: Boolean,
+    editing: Boolean,
+    autoFocus: Boolean,
+    onEditingChange: (Boolean) -> Unit,
 ) {
     val transformation = remember { MathVisualTransformation() }
     var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    var focused by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+
+    // 双击输入框 = 唤起系统键盘（粘贴、输入键位上没有的符号）；点空白处退出编辑时一并收回。
+    // 平时字段是禁用的（原生光标手柄/放大镜/工具条都不出现），只有 IME 模式才临时启用它。
+    var imeMode by remember { mutableStateOf(false) }
+    var lastTapAt by remember { mutableStateOf(0L) }
+    var lastTapPos by remember { mutableStateOf(Offset.Zero) }
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(imeMode) {
+        if (imeMode) {
+            withFrameNanos { }
+            runCatching { focusRequester.requestFocus() }
+            keyboard?.show()
+        }
+    }
+
+    // 退出编辑（点空白、切走）时把系统键盘一并收回
+    LaunchedEffect(editing) {
+        if (!editing && imeMode) {
+            imeMode = false
+            keyboard?.hide()
+        }
+    }
+
+    // 切换曲线时输入框是新建的，编辑状态本来会掉；等这一帧排完版再接回来，
+    // 光标就一直停在正在编辑的那条曲线上，不用每次切换都点一下输入框。
+    LaunchedEffect(Unit) {
+        if (autoFocus) {
+            withFrameNanos { }
+            onEditingChange(true)
+        }
+    }
 
     // 拖动光标手柄时，手势协程运行期间值会不断变化，用 rememberUpdatedState 保证读到最新状态
     val latestValue by rememberUpdatedState(value)
     val latestLayout by rememberUpdatedState(textLayout)
-    val latestFocused by rememberUpdatedState(focused)
+    val latestEditing by rememberUpdatedState(editing)
     val latestOnValueChange by rememberUpdatedState(onValueChange)
 
     /**
-     * 自绘光标手柄的中心位置（文本布局坐标系）。
-     * 无论光标在基线、上标还是根号里，手柄都固定落在这行文字的下方，方便按住拖动。
+     * 光标手柄圆心（输入框坐标系），与 drawMathCaretHandle 画圆用的坐标保持一致：
+     * 光标 x、行底 + 10dp。手势命中判定以此为中心，热区半径取 handleTouchSize 的一半。
+     *
+     * 读的是 rememberUpdatedState 的最新值：pointerInput(Unit) 的协程不会随重组重启，
+     * 直接捕获 composed 的 value / focused / textLayout 会一直停在首帧。
+     * 没聚焦、有选区、还没排版时返回 null。
      */
-    fun caretHandleCenter(verticalOffsetPx: Float): Offset? {
-        if (!latestFocused || !latestValue.selection.collapsed) return null
+    fun currentHandleCenter(): Offset? {
+        if (!latestEditing || !latestValue.selection.collapsed) return null
         val layout = latestLayout ?: return null
         val display = transformation.display ?: return null
         val textLength = layout.layoutInput.text.length
@@ -773,7 +943,7 @@ private fun ExpressionField(
         val line = layout.getLineForOffset(transformed.coerceIn(0, (textLength - 1).coerceAtLeast(0)))
         return Offset(
             x = layout.getHorizontalPosition(transformed, usePrimaryDirection = true),
-            y = layout.getLineBottom(line) + verticalOffsetPx,
+            y = layout.getLineBottom(line) + with(density) { 10.dp.toPx() },
         )
     }
 
@@ -788,29 +958,45 @@ private fun ExpressionField(
         ),
         label = "caretAlpha",
     )
-    val caretColor = MaterialTheme.colorScheme.primary
 
-    // 这个工具自带了数学键盘，系统输入法一弹出来就会把键盘和图像盖住，所以聚焦时直接收起 IME。
-    val keyboard = LocalSoftwareKeyboardController.current
+    // 三个编辑区各一套颜色：光标、手柄、区域高亮都用同一色，看到颜色就知道在哪一层。
+    // 基线用中性色（和正文同色，最不抢眼），上标用 tertiary、根号内用 primary，色相拉开。
+    val caretColor = MaterialTheme.colorScheme.onSurface
+    val scriptColor = MaterialTheme.colorScheme.tertiary
+    val radicalColor = MaterialTheme.colorScheme.primary
+    val labelSurface = MaterialTheme.colorScheme.surface
+    val labelMeasurer = rememberTextMeasurer()
+
+    // 是否正在按住手柄拖动：只在拖动时浮出「基线 / 上标 / 根号内」提示
+    var draggingHandle by remember { mutableStateOf(false) }
 
     val borderColor = when {
         isError -> MaterialTheme.colorScheme.error
-        focused -> MaterialTheme.colorScheme.primary
+        editing -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.outline
     }
     val lineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
     val slotColor = MaterialTheme.colorScheme.outline
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, borderColor),
-        color = Color.Transparent,
+    // 这里故意不用 Surface：Surface 会按圆角把内容裁掉，光标手柄就只能憋在框里、
+    // 被输入框的高度牵着走。改成手动画一圈边框，内容不裁剪——手柄可以「浮」在框外，
+    // 大小和位置只由文字行高决定。
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            // 边框自己画，不用 Modifier.border：那是画在内容「之上」的，
+            // 手柄探出框外时会被这条线横切一刀。
+            .drawBehind {
+                drawRoundRect(
+                    color = borderColor,
+                    cornerRadius = CornerRadius(14.dp.toPx()),
+                    style = Stroke(width = 1.dp.toPx()),
+                )
+            },
     ) {
         Row(
-            // 上下留白按「手柄区高度 + 行高」对称分配，让文字在圆角框里垂直居中；
-            // 底部额外空间同时作为光标手柄的拖拽热区。
-            modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 20.dp, bottom = 4.dp),
+            // 上下留白对称：上面 11dp、下面 11dp + 2dp，公式在框里垂直居中
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 11.dp, bottom = 2.dp),
             verticalAlignment = Alignment.Top,
         ) {
             Text(
@@ -818,24 +1004,32 @@ private fun ExpressionField(
                 style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(5.dp))
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .pointerInput(Unit) {
-                        // 原生手柄在上标区域不可靠，这里自己接管「按住手柄拖动」：
-                        // 只有按在手柄附近才消费事件，其它位置的点击/长按仍然交给输入框原生处理。
+                        // 输入框自己接管全部触摸：文本字段收不到手势，就不会长按选词、弹系统放大镜和
+                        // 浮动工具条（在数学排版里它们只会盖住角标和根号）。点哪里就把光标放哪里。
                         awaitEachGesture {
-                            val down = awaitFirstDown(
-                                requireUnconsumed = false,
-                                pass = PointerEventPass.Initial,
-                            )
-                            val center = caretHandleCenter(verticalOffsetPx = 10.dp.toPx())
-                                ?: return@awaitEachGesture
-                            if ((down.position - center).getDistance() > 26.dp.toPx()) {
-                                return@awaitEachGesture
-                            }
+                            val down = awaitFirstDown(requireUnconsumed = false)
                             down.consume()
+                            onEditingChange(true)
+
+                            val handle = currentHandleCenter()
+                            val onHandle = handle != null &&
+                                (down.position - handle).getDistance() <= handleHitRadius.toPx()
+                            draggingHandle = onHandle
+                            // 双击（不要按在手柄上）= 唤起/收回系统键盘
+                            if (!onHandle) {
+                                val now = System.currentTimeMillis()
+                                if (now - lastTapAt < 400 && (down.position - lastTapPos).getDistance() <= 40.dp.toPx()) {
+                                    imeMode = !imeMode
+                                    if (!imeMode) keyboard?.hide()
+                                }
+                                lastTapAt = now
+                                lastTapPos = down.position
+                            }
 
                             fun moveCaretTo(position: Offset) {
                                 val layout = latestLayout ?: return
@@ -846,58 +1040,99 @@ private fun ExpressionField(
                                 latestOnValueChange(latestValue.copy(selection = TextRange(original)))
                             }
 
-                            moveCaretTo(down.position)
-                            drag(down.id) { change ->
-                                change.consume()
-                                moveCaretTo(change.position)
+                            try {
+                                // 按在手柄上属于「拖光标」，不要把光标先跳到手指位置
+                                if (!onHandle) moveCaretTo(down.position)
+                                drag(down.id) { change ->
+                                    change.consume()
+                                    moveCaretTo(change.position)
+                                }
+                            } finally {
+                                draggingHandle = false
                             }
                         }
                     }
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 11.dp)
                     .drawBehind {
+                        val display = transformation.display
+                        // 没聚焦（或选了区间）时不摆出区域高亮：那是「光标在哪」的提示，没有光标就没有意义
+                        val region = if (editing && value.selection.collapsed) {
+                            display?.regionAt(value.selection.end) ?: MathEditRegion.BASE
+                        } else {
+                            MathEditRegion.BASE
+                        }
+                        val regionColor = when (region) {
+                            MathEditRegion.BASE -> caretColor
+                            MathEditRegion.SCRIPT -> scriptColor
+                            MathEditRegion.RADICAL -> radicalColor
+                        }
+
                         drawMathDecorations(
                             layout = textLayout,
-                            display = transformation.display,
+                            display = display,
                             caret = value.selection.end,
+                            region = region,
+                            regionColor = regionColor,
                             lineColor = lineColor,
                             slotColor = slotColor,
                         )
-                        if (focused && value.selection.collapsed) {
+                        if (editing && value.selection.collapsed) {
                             drawMathCaret(
                                 layout = textLayout,
-                                display = transformation.display,
+                                display = display,
                                 originalCaret = value.selection.start,
-                                color = caretColor,
+                                region = region,
+                                color = regionColor,
                                 alpha = caretAlpha,
                             )
                             // 手柄不跟着闪烁，始终可见、可按住拖动
                             drawMathCaretHandle(
                                 layout = textLayout,
-                                display = transformation.display,
+                                display = display,
                                 originalCaret = value.selection.start,
-                                color = caretColor.copy(alpha = 0.85f),
+                                color = regionColor.copy(alpha = 0.85f),
                             )
                         }
+                    }
+                    // 拖动时才浮出的「基线 / 上标 / 根号内」提示，必须画在文字上面
+                    .drawWithContent {
+                        drawContent()
+                        if (!draggingHandle || !editing || !value.selection.collapsed) return@drawWithContent
+                        val display = transformation.display ?: return@drawWithContent
+                        val region = display.regionAt(value.selection.end)
+                        drawMathDragLabel(
+                            layout = textLayout,
+                            display = display,
+                            originalCaret = value.selection.start,
+                            region = region,
+                            color = when (region) {
+                                MathEditRegion.BASE -> caretColor
+                                MathEditRegion.SCRIPT -> scriptColor
+                                MathEditRegion.RADICAL -> radicalColor
+                            },
+                            surfaceColor = labelSurface,
+                            measurer = labelMeasurer,
+                        )
                     },
             ) {
                 BasicTextField(
                     value = value,
+                    // 平时字段禁用：触摸与输入全部由外层接管（数学键盘 + 自绘光标），
+                    // 原生光标手柄/放大镜/浮动工具条都不会出现；
+                    // 双击进入 IME 模式后才临时启用，让系统键盘能往里打字。
+                    enabled = imeMode,
                     onValueChange = { newValue ->
                         // 换行会把表达式拆成两行文本，直接吞掉（软键盘已隐藏，只有实体键盘会发 Enter）
-                        if ('\n' in newValue.text) {
-                            val cleaned = newValue.text.replace("\n", "")
-                            val caret = newValue.selection.end.coerceIn(0, cleaned.length)
-                            onValueChange(TextFieldValue(cleaned, TextRange(caret)))
-                        } else {
-                            onValueChange(newValue)
-                        }
+                        val text = if ('\n' in newValue.text) newValue.text.replace("\n", "") else newValue.text
+                        val caret = newValue.selection.end.coerceIn(0, text.length)
+                        // 关掉系统原生的选区拖动：它的高亮块和两个大圆手柄会把角标、根号盖住，
+                        // 而且数学表达式里选一段再整体替换的用处不大。光标一律收成一点，
+                        // 想移动就拖我们自绘的手柄。
+                        onValueChange(TextFieldValue(text, TextRange(caret), newValue.composition))
                     },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { state ->
-                            focused = state.isFocused
-                            if (state.isFocused) keyboard?.hide()
-                        },
+                    .focusRequester(focusRequester)
+                    .fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -911,6 +1146,7 @@ private fun ExpressionField(
                     visualTransformation = transformation,
                     onTextLayout = { textLayout = it },
                 )
+
             }
             if (suffix != null) {
                 Spacer(Modifier.width(6.dp))
@@ -931,7 +1167,7 @@ private fun ExpressionField(
 @Composable
 private fun ErrorBar(message: String?, mode: FnMode) {
     val hint = when (mode) {
-        FnMode.EXPLICIT -> "按 √ 开方、^ 乘方，点 f(x) 可切换为隐式方程"
+        FnMode.EXPLICIT -> "按 √ 开方、^ 乘方，双击输入框可唤起系统键盘，点 f(x) 可切换为隐式方程"
         FnMode.IMPLICIT -> "隐式方程 F(x,y)=0，例如 x^2+y^2=25"
     }
     Row(
@@ -1040,6 +1276,18 @@ private fun PlotPane(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            // 定义域跟着函数一起显示，和函数列表、输入框里的 {…} 是同一份信息
+                            if (!item.domain.isAll) {
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = DomainSuffix.label(item.domain),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontFamily = FontFamily.Monospace,
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                    maxLines = 1,
+                                )
+                            }
                         }
                         if (index != legend.lastIndex) Spacer(Modifier.height(3.dp))
                     }
@@ -1110,7 +1358,7 @@ internal fun composePlot(
         yMin = yMin,
         yMax = yMax,
         series = parsed.map { (fn, def) ->
-            val (drawMin, drawMax) = fn.domain.xRange(xMin, xMax)
+            val (drawMin, drawMax) = fn.effectiveDomain().xRange(xMin, xMax)
             val segments = if (drawMax <= drawMin) {
                 emptyList()
             } else {

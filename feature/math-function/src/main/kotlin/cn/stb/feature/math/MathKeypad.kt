@@ -30,13 +30,12 @@ import androidx.compose.ui.unit.dp
 /**
  * 函数编辑器的数学键盘。
  *
- * 统一用 **7 列 × 5 行** 的网格排版：每行都是 7 个等宽键、每行间距一致，
- * 所以 1～9 与 0 的大小和列位置完全对齐（不再出现不同行按键宽度不一样、
- * 数字错位的问题）。第 1～4 行的前 3 列都是数字，第 4 列是四则运算符，
- * 其余位置放括号、清空、函数与常数。
+ * 排版沿用 1.0.0 的键位（学生已经用惯这一套）：
+ * - 前 3 行是 6 列的数字与四则运算，第 4 行「0」占两格、「清空」占四格；
+ * - 空一行之后是变量 / 函数 / 常数两行，分别 8 列、7 列；
+ * - 数字与运算是中性色，变量与函数用强调色，和输入框里「普通文字 vs 数学符号」的区分一致。
  *
- * 按键分两类配色：数字/运算符用中性色，变量、函数、常数用强调色，
- * 和输入框里「普通文字 vs 数学符号」的视觉区分保持一致。
+ * 每个键只表达「按下去插入什么」，具体插入规则在 [MathEdit] 里，键盘本身不碰文本。
  */
 @Composable
 internal fun MathKeypad(
@@ -48,78 +47,99 @@ internal fun MathKeypad(
     onClear: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 7 列 × 5 行 = 35 个键，正好铺满、没有空格子
-    val rows: List<List<KeySpec>> = listOf(
-        listOf(
-            KeySpec("7", KeyAction.Char("7")),
-            KeySpec("8", KeyAction.Char("8")),
-            KeySpec("9", KeyAction.Char("9")),
-            KeySpec("÷", KeyAction.Operator("/"), description = "除"),
-            KeySpec("(", KeyAction.Char("("), description = "左括号"),
-            KeySpec(")", KeyAction.Char(")"), description = "右括号"),
-            KeySpec("⌫", KeyAction.Backspace, description = "退格"),
-        ),
-        listOf(
-            KeySpec("4", KeyAction.Char("4")),
-            KeySpec("5", KeyAction.Char("5")),
-            KeySpec("6", KeyAction.Char("6")),
-            KeySpec("×", KeyAction.Operator("*"), description = "乘"),
-            KeySpec("^", KeyAction.Power, accent = true, slot = true, description = "乘方"),
-            KeySpec("√", KeyAction.Function("sqrt"), accent = true, description = "开方"),
-            KeySpec("π", KeyAction.Char("π"), accent = true, description = "圆周率"),
-        ),
-        listOf(
-            KeySpec("1", KeyAction.Char("1")),
-            KeySpec("2", KeyAction.Char("2")),
-            KeySpec("3", KeyAction.Char("3")),
-            KeySpec("-", KeyAction.Operator("-")),
-            KeySpec("=", KeyAction.Operator("="), description = "等号"),
-            KeySpec("e", KeyAction.Char("e"), accent = true),
-            KeySpec("x", KeyAction.Char("x"), accent = true),
-        ),
-        listOf(
-            KeySpec("0", KeyAction.Char("0")),
-            KeySpec(".", KeyAction.Char(".")),
-            KeySpec("y", KeyAction.Char("y"), accent = true),
-            KeySpec("+", KeyAction.Operator("+")),
-            KeySpec("a", KeyAction.Char("a"), accent = true),
-            KeySpec("b", KeyAction.Char("b"), accent = true),
-            KeySpec("c", KeyAction.Char("c"), accent = true),
-        ),
-        listOf(
-            KeySpec("sin", KeyAction.Function("sin"), accent = true),
-            KeySpec("cos", KeyAction.Function("cos"), accent = true),
-            KeySpec("tan", KeyAction.Function("tan"), accent = true),
-            KeySpec("log", KeyAction.Function("log"), accent = true),
-            KeySpec("lg", KeyAction.Function("lg"), accent = true),
-            KeySpec("ln", KeyAction.Function("ln"), accent = true),
-            KeySpec("清空", KeyAction.Clear, description = "清空表达式"),
-        ),
-    )
+    val dispatch: (KeyAction) -> Unit = { action ->
+        when (action) {
+            is KeyAction.Char -> onChar(action.text)
+            is KeyAction.Operator -> onOperator(action.symbol)
+            is KeyAction.Function -> onFunction(action.name)
+            KeyAction.Power -> onPower()
+            KeyAction.Backspace -> onBackspace()
+            KeyAction.Clear -> onClear()
+        }
+    }
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        rows.forEach { row ->
-            Row(
-                modifier = Modifier.height(40.dp),
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                row.forEach { spec ->
-                    MathKeyButton(
-                        spec = spec,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            when (val action = spec.action) {
-                                is KeyAction.Char -> onChar(action.text)
-                                is KeyAction.Operator -> onOperator(action.symbol)
-                                is KeyAction.Function -> onFunction(action.name)
-                                KeyAction.Power -> onPower()
-                                KeyAction.Backspace -> onBackspace()
-                                KeyAction.Clear -> onClear()
-                            }
-                        },
-                    )
-                }
-            }
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        NUMBER_ROWS.forEach { row -> KeyRow(keys = row, dispatch = dispatch) }
+        // 0 占两格；后面三个是定义域用的符号（{0,10} 这种写法要能打得出来）
+        KeyRow(
+            keys = listOf(
+                KeySpec("0", KeyAction.Char("0"), weight = 2f),
+                KeySpec(",", KeyAction.Char(","), description = "逗号"),
+                KeySpec("{", KeyAction.Char("{"), description = "定义域左花括号"),
+                KeySpec("}", KeyAction.Char("}"), description = "定义域右花括号"),
+                KeySpec("清空", KeyAction.Clear, description = "清空表达式"),
+            ),
+            dispatch = dispatch,
+        )
+
+        Spacer(Modifier.height(2.dp))
+
+        FUNCTION_ROWS.forEach { row -> KeyRow(keys = row, dispatch = dispatch) }
+    }
+}
+
+/** 数字与四则运算：6 列对齐，0 在左下角。 */
+private val NUMBER_ROWS: List<List<KeySpec>> = listOf(
+    listOf(
+        KeySpec("7", KeyAction.Char("7")),
+        KeySpec("8", KeyAction.Char("8")),
+        KeySpec("9", KeyAction.Char("9")),
+        KeySpec("÷", KeyAction.Operator("/"), description = "除"),
+        KeySpec("(", KeyAction.Char("("), description = "左括号"),
+        KeySpec(")", KeyAction.Char(")"), description = "右括号"),
+    ),
+    listOf(
+        KeySpec("4", KeyAction.Char("4")),
+        KeySpec("5", KeyAction.Char("5")),
+        KeySpec("6", KeyAction.Char("6")),
+        KeySpec("×", KeyAction.Operator("*"), description = "乘"),
+        KeySpec("=", KeyAction.Operator("="), description = "等号"),
+        KeySpec("⌫", KeyAction.Backspace, description = "退格"),
+    ),
+    listOf(
+        KeySpec("1", KeyAction.Char("1")),
+        KeySpec("2", KeyAction.Char("2")),
+        KeySpec("3", KeyAction.Char("3")),
+        KeySpec("+", KeyAction.Operator("+")),
+        KeySpec("-", KeyAction.Operator("-")),
+        KeySpec(".", KeyAction.Char(".")),
+    ),
+)
+
+/** 变量、函数与常数：8 列 / 7 列，用强调色。 */
+private val FUNCTION_ROWS: List<List<KeySpec>> = listOf(
+    listOf(
+        KeySpec("x", KeyAction.Char("x"), accent = true),
+        KeySpec("y", KeyAction.Char("y"), accent = true),
+        KeySpec("sin", KeyAction.Function("sin"), accent = true),
+        KeySpec("cos", KeyAction.Function("cos"), accent = true),
+        KeySpec("tan", KeyAction.Function("tan"), accent = true),
+        KeySpec("log", KeyAction.Function("log"), accent = true),
+        KeySpec("lg", KeyAction.Function("lg"), accent = true),
+        KeySpec("ln", KeyAction.Function("ln"), accent = true),
+    ),
+    listOf(
+        KeySpec("a", KeyAction.Char("a"), accent = true),
+        KeySpec("b", KeyAction.Char("b"), accent = true),
+        KeySpec("c", KeyAction.Char("c"), accent = true),
+        // ^ 键画成「x + 右上角空上标槽」，和输入框里按完 ^ 长出来的虚线框是同一个形象
+        KeySpec("^", KeyAction.Power, accent = true, slot = true, description = "乘方"),
+        KeySpec("√", KeyAction.Function("sqrt"), accent = true, description = "开方"),
+        KeySpec("π", KeyAction.Char("π"), accent = true, description = "圆周率"),
+        KeySpec("e", KeyAction.Char("e"), accent = true),
+    ),
+)
+
+/** 一行键：按 [KeySpec.weight] 分宽度，间距统一 4dp。 */
+@Composable
+private fun KeyRow(keys: List<KeySpec>, dispatch: (KeyAction) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        keys.forEach { spec ->
+            MathKeyButton(
+                spec = spec,
+                modifier = Modifier.weight(spec.weight),
+                onClick = { dispatch(spec.action) },
+            )
         }
     }
 }
@@ -129,6 +149,9 @@ private data class KeySpec(
     val label: String,
     val action: KeyAction,
     val accent: Boolean = false,
+    /** 相对宽度：0 占两格、清空占四格，其余都是一格。 */
+    val weight: Float = 1f,
+    /** 用「x + 空上标槽」图标代替文字（乘方键）。 */
     val slot: Boolean = false,
     val description: String? = null,
 )
@@ -156,7 +179,7 @@ private fun MathKeyButton(
     Surface(
         onClick = onClick,
         modifier = modifier
-            .height(40.dp)
+            .height(36.dp)
             .then(
                 if (spec.description != null) {
                     Modifier.semantics { contentDescription = spec.description }
@@ -174,24 +197,20 @@ private fun MathKeyButton(
         Box(contentAlignment = Alignment.Center) {
             when {
                 spec.slot -> SuperscriptSlotIcon(color = contentColor)
-                spec.label == "清空" -> Text(
+                spec.label.length <= 2 -> Text(
+                    text = spec.label,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+                    color = contentColor,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                )
+
+                else -> Text(
                     text = spec.label,
                     style = MaterialTheme.typography.labelLarge,
                     color = contentColor,
                     maxLines = 1,
                     textAlign = TextAlign.Center,
-                )
-                spec.action is KeyAction.Function -> Text(
-                    text = spec.label,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                    color = contentColor,
-                    maxLines = 1,
-                )
-                else -> Text(
-                    text = spec.label,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
-                    color = contentColor,
-                    maxLines = 1,
                 )
             }
         }
