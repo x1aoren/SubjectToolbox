@@ -118,8 +118,8 @@ internal fun categoryLabel(cat: String): String = when (cat) {
 
 private val CELL_W = 56.dp
 private val CELL_H = 62.dp
-private const val COLS = 18
-private const val ROWS = 10
+internal const val COLS = 18
+internal const val ROWS = 10
 private const val LANTHANIDE_ROW = 9
 private const val ACTINIDE_ROW = 10
 
@@ -136,6 +136,17 @@ private fun seriesOf(row: Int): Series? = when (row) {
 }
 
 /**
+ * 按 x/y 坐标把元素摆进 (ROWS+1) × (COLS+1) 的网格，第 0 行/列留空。
+ * 越界坐标直接忽略，脏数据不会把表格撑坏。
+ */
+internal fun layoutElements(elements: List<ChemElement>): List<List<ChemElement?>> =
+    List(ROWS + 1) { row ->
+        List(COLS + 1) { col ->
+            if (row == 0 || col == 0) null else elements.firstOrNull { it.y == row && it.x == col }
+        }
+    }
+
+/**
  * 元素周期表。
  *
  * 按数据的 x/y 坐标排 18 列 × 10 行：第 8 行是分隔空行，镧系（57–71）在第 9 行、
@@ -149,11 +160,7 @@ fun PeriodicTable(
     modifier: Modifier = Modifier,
 ) {
     var selected by remember { mutableStateOf<ChemElement?>(null) }
-    val grid = remember(elements) {
-        Array(ROWS + 1) { arrayOfNulls<ChemElement>(COLS + 1) }.apply {
-            elements.forEach { if (it.y in 1..ROWS && it.x in 1..COLS) this[it.y][it.x] = it }
-        }
-    }
+    val grid = remember(elements) { layoutElements(elements) }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         // 算格子尺寸时必须把间距和内边距都扣掉，否则最后一列/最后一行会被挤出屏幕
