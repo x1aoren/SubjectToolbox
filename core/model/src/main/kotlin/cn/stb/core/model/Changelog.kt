@@ -55,8 +55,8 @@ object Changelog {
         ReleaseNote(
             versionName = "1.1.0",
             versionCode = 2,
-            date = "2026-11-14",
-            headline = "函数编辑器大更新，语文新增汉语词典",
+            date = "2026-11-15",
+            headline = "函数编辑器大更新，新增汉语词典与英语语法",
             changes = listOf(
                 ChangeItem(
                     ChangeKind.NEW,
@@ -65,6 +65,10 @@ object Changelog {
                 ChangeItem(
                     ChangeKind.NEW,
                     "汉语词条页展示拼音、繁体、异体和分段释义，义项序号与词性单独标色；本地生词本可收藏常查词条，词库升级时自动保留。",
+                ),
+                ChangeItem(
+                    ChangeKind.NEW,
+                    "英语·语法：薄冰大学英语语法 50 篇专题，按 24 类目录排列；标题、表格和例句全部原生 Compose 排版，不套网页，支持全文检索并高亮命中。",
                 ),
                 ChangeItem(
                     ChangeKind.NEW,
@@ -97,6 +101,10 @@ object Changelog {
                 ChangeItem(
                     ChangeKind.IMPROVE,
                     "学科分区标题、工具卡片和显隐管理里的单字徽章换成 Lucide 图标，共 15 枚，随字号一起缩放。",
+                ),
+                ChangeItem(
+                    ChangeKind.IMPROVE,
+                    "公式大全从 116 条扩充到 281 条（数学 143 · 物理 99 · 化学 39），高中部分按教材章节补齐，每条都带变量说明、适用条件和备注。",
                 ),
                 ChangeItem(
                     ChangeKind.FIX,
