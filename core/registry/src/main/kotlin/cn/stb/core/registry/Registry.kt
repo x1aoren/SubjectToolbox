@@ -95,8 +95,12 @@ object HomeComposer {
         catalog: ToolCatalogView,
         settings: AppSettings,
         recents: List<String>,
+        cloudDisabledToolIds: Set<String> = emptySet(),
     ): HomeContent {
+        // 云端可以按设备停用工具；这里只影响主页呈现，不改本地显隐配置，
+        // 重新启用后用户的置顶与隐藏状态原样恢复。
         val visible = VisibilityResolver.visibleTools(catalog, settings)
+            .filterNot { it.id.value in cloudDisabledToolIds }
         val visibleById = visible.associateBy { it.id.value }
 
         // 置顶顺序就是用户拖拽出的顺序；被隐藏或被下线的 id 会被静默跳过，但保留在存储中

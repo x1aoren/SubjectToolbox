@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -39,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +57,7 @@ import cn.stb.core.data.AssetReader
 import cn.stb.core.data.manifest
 import cn.stb.core.model.AppGraph
 import cn.stb.core.model.DarkMode
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +71,26 @@ fun SettingsScreen(
     val context = LocalContext.current
     val manifest = remember(context) { runCatching { AssetReader(context).manifest() }.getOrNull() }
     val catalog = AppGraph.catalog
+    val cloud by AppGraph.cloud.snapshot.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     var showContact by remember { mutableStateOf(false) }
+    var syncing by remember { mutableStateOf(false) }
+    var syncMessage by remember { mutableStateOf("") }
+
+    fun triggerSync() {
+        if (syncing) return
+        syncing = true
+        syncMessage = ""
+        scope.launch {
+            val ok = AppGraph.cloud.syncNow(force = true)
+            syncMessage = when {
+                ok -> "同步完成"
+                !AppGraph.cloud.isOnline() -> "当前没有网络，联网后再试"
+                else -> "暂时无法同步，请稍后再试"
+            }
+            syncing = false
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -146,6 +169,7 @@ fun SettingsScreen(
                     )
                     InfoRow("内容版本", manifest?.contentVersion?.toString() ?: "未读取到")
                     InfoRow("学科 / 工具", "${catalog.subjects.size} / ${catalog.allTools.size}")
+                    InfoRow("设备标识", AppGraph.cloud.deviceSn)
                     HorizontalDivider(Modifier.padding(vertical = 12.dp))
                     Text(
                         text = "特别鸣谢：陈子仪老师 郑晓宇老师",
@@ -225,6 +249,78 @@ fun SettingsScreen(
                             onCheckedChange = { viewModel.setShowRecents(it) },
                         )
                     }
+                }
+            }
+
+            item {
+                SettingsGroup(title = "云端同步") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (cloud.loaded) "云端修订 #${cloud.revision ?: "—"}" else "尚未同步云端配置",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                text = relativeSyncTime(cloud.lastSyncAtMillis),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Button(onClick = ::triggerSync, enabled = !syncing) {
+                            Text(if (syncing) "同步中…" else "立即同步")
+                        }
+                    }
+                    if (syncMessage.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = syncMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    val enabledTools = cloud.tools.values.count { it.enabled }
+                    val disabledTools = cloud.tools.values.count { !it.enabled }
+                    Text(
+                        text = if (cloud.tools.isEmpty()) {
+                            "还没有从云端取到工具开关。"
+                        } else {
+                            "可用工具 $enabledTools 个，单独停用 $disabledTools 个。"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "配置最多 6 小时同步一次，遥测最多 10 分钟上报一次；没有网络时不会发起请求。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            }
+
+            item {
+                SettingsGroup(title = "数据与隐私") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("匿名使用统计", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "记录打开过哪些工具、版本与会话时长；不含姓名或学号",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = settings.telemetryEnabled,
+                            onCheckedChange = { viewModel.setTelemetryEnabled(it) },
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "关闭后会立即停止记录并清空本地待上报队列；云端配置仍会同步，用于接收工具开关。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
                 }
             }
 
@@ -359,5 +455,16 @@ private fun VersionRow(version: String, onOpenChangelog: () -> Unit) {
                 Text("›", style = MaterialTheme.typography.labelMedium)
             }
         }
+    }
+}
+
+private fun relativeSyncTime(lastSyncAt: Long?): String {
+    if (lastSyncAt == null || lastSyncAt <= 0L) return "还没有同步过"
+    val diff = System.currentTimeMillis() - lastSyncAt
+    return when {
+        diff < 60_000L -> "刚刚同步"
+        diff < 3_600_000L -> "${diff / 60_000L} 分钟前同步"
+        diff < 86_400_000L -> "${diff / 3_600_000L} 小时前同步"
+        else -> "${diff / 86_400_000L} 天前同步"
     }
 }

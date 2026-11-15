@@ -3,7 +3,9 @@ package cn.stb.app
 import android.app.Application
 import cn.stb.core.data.SettingsRepositoryImpl
 import cn.stb.core.data.UsageRepositoryImpl
+import cn.stb.core.data.cloud.CloudControlImpl
 import cn.stb.core.model.AppGraph
+import cn.stb.core.model.ToolDescriptor
 import cn.stb.core.registry.ToolCatalog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,10 +26,48 @@ class StbApplication : Application() {
             subjectList = ToolRegistrations.subjects,
         )
 
+        val cloud = CloudControlImpl(
+            context = this,
+            settings = settings,
+            baseUrl = BuildConfig.STB_API_BASE,
+            apiKey = BuildConfig.STB_API_KEY,
+            channel = if (BuildConfig.DEBUG) "beta" else "stable",
+            toolsProvider = {
+                catalog.allTools.map { tool ->
+                    ToolDescriptor(tool.id.value, tool.title, tool.subjectId.value)
+                }
+            },
+        )
+
         AppContainer.catalog = catalog
-        AppGraph.install(catalog = catalog, settings = settings, usage = usage)
+        AppGraph.install(catalog = catalog, settings = settings, usage = usage, cloud = cloud)
+        installCrashHandler()
+        cloud.start()
 
         seedDefaultPins()
+    }
+
+    /**
+     * 只记录事件，不改变系统原有的崩溃处理：写一行到本地队列，下一次启动上报。
+     * 没有网络时也能留下记录；队列有 800 条 / 512 KB 上限。
+     */
+    private fun installCrashHandler() {
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            runCatching {
+                val frame = throwable.stackTrace.firstOrNull()
+                val signature = buildString {
+                    append(throwable.javaClass.name)
+                    if (frame != null) append("@${frame.fileName ?: "?"}:${frame.lineNumber}")
+                }
+                AppGraph.cloud.recordCrash(
+                    signature = signature,
+                    message = throwable.message.orEmpty(),
+                    stack = throwable.stackTraceToString(),
+                )
+            }
+            previous?.uncaughtException(thread, throwable)
+        }
     }
 
     /**

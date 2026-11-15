@@ -60,6 +60,10 @@ object Changelog {
             changes = listOf(
                 ChangeItem(
                     ChangeKind.NEW,
+                    "增加远程遥测等云端功能。",
+                ),
+                ChangeItem(
+                    ChangeKind.NEW,
                     "语文·汉语词典：收录《现代汉语词典》第 7 版 70,113 条词条，支持汉字、词语、拼音与释义检索；繁体和异体写法会自动跳到对应词条。",
                 ),
                 ChangeItem(
@@ -125,6 +129,10 @@ object Changelog {
                 ChangeItem(
                     ChangeKind.FIX,
                     "修复英语词典只输入一个汉字查不到内容的问题（如「水」）；列表也不再卡在 60 条，生词本全量展示，搜索结果可以「加载更多」。",
+                ),
+                ChangeItem(
+                    ChangeKind.FIX,
+                    "修复远程公告只显示第一条、其他公告被忽略，以及点「知道了」后要重进主页才消失的问题。",
                 ),
             ),
         ),

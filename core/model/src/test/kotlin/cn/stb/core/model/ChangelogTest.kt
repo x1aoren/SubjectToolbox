@@ -49,7 +49,7 @@ class ChangelogTest {
         val current = Changelog.current()
         assertEquals("1.1.0", current.versionName)
         assertEquals(2, current.versionCode)
-        assertEquals("2026-11-14", current.date)
+        assertEquals("2026-11-15", current.date)
         assertEquals("1.1.0", Changelog.currentVersionName())
 
         val oldest = Changelog.releases.last()

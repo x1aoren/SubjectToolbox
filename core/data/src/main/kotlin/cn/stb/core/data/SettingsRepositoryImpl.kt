@@ -43,6 +43,8 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         val schema = intPreferencesKey("schema_version")
         val seeded = booleanPreferencesKey("seeded")
         val lastSeenVersion = stringPreferencesKey("last_seen_version")
+        val telemetryEnabled = booleanPreferencesKey("telemetry_enabled")
+        val lastSeenRemoteVersion = stringPreferencesKey("last_seen_remote_version")
     }
 
     override val settings: Flow<AppSettings> =
@@ -61,6 +63,8 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
             prefs[Keys.schema] = next.schemaVersion
             prefs[Keys.seeded] = next.seeded
             prefs[Keys.lastSeenVersion] = next.lastSeenVersion
+            prefs[Keys.telemetryEnabled] = next.telemetryEnabled
+            prefs[Keys.lastSeenRemoteVersion] = next.lastSeenRemoteVersion
         }
     }
 
@@ -87,6 +91,8 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
             schemaVersion = this[Keys.schema] ?: AppSettings.CURRENT_SCHEMA,
             seeded = this[Keys.seeded] ?: false,
             lastSeenVersion = this[Keys.lastSeenVersion] ?: "",
+            telemetryEnabled = this[Keys.telemetryEnabled] ?: true,
+            lastSeenRemoteVersion = this[Keys.lastSeenRemoteVersion] ?: "",
         )
     }
 

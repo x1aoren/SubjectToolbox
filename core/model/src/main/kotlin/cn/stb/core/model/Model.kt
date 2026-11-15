@@ -97,9 +97,13 @@ data class AppSettings(
      * 是否全新安装由 core:data 的工具类按系统安装时间判断，不落盘——它属于系统事实，不是用户意图。
      */
     val lastSeenVersion: String = "",
+    /** 匿名使用统计开关；关闭后不再记录和上报遥测事件（云端配置仍会同步）。 */
+    val telemetryEnabled: Boolean = true,
+    /** 已经提示过的云端最新版本，避免同一版本反复弹窗。 */
+    val lastSeenRemoteVersion: String = "",
 ) {
     companion object {
-        const val CURRENT_SCHEMA = 1
+        const val CURRENT_SCHEMA = 2
     }
 }
 
@@ -158,14 +162,18 @@ object AppGraph {
         private set
     lateinit var usage: UsageRepository
         private set
+    lateinit var cloud: CloudControl
+        private set
 
     fun install(
         catalog: ToolCatalogView,
         settings: SettingsRepository,
         usage: UsageRepository,
+        cloud: CloudControl,
     ) {
         this.catalog = catalog
         this.settings = settings
         this.usage = usage
+        this.cloud = cloud
     }
 }

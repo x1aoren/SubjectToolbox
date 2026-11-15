@@ -15,6 +15,11 @@ val localProps = Properties().apply {
 val releaseStorePath = localProps.getProperty("stb.storeFile")
 val hasReleaseKey = releaseStorePath != null && rootProject.file(releaseStorePath).exists()
 
+// 默认域名：开发调试走本机，生产走 stb.mcobs.cn；可在 local.properties 覆盖。
+val debugApiBase = localProps.getProperty("stb.debugApiBase") ?: "http://127.0.0.1:8787"
+val releaseApiBase = localProps.getProperty("stb.releaseApiBase") ?: "http://stb.mcobs.cn"
+val apiKey = localProps.getProperty("stb.apiKey") ?: ""
+
 android {
     namespace = "cn.stb.app"
     compileSdk = 35
@@ -25,6 +30,7 @@ android {
         targetSdk = 34
         versionCode = 2
         versionName = "1.1.0"
+        buildConfigField("String", "STB_API_KEY", "\"$apiKey\"")
     }
 
     signingConfigs {
@@ -39,7 +45,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "STB_API_BASE", "\"$debugApiBase\"")
+        }
         release {
+            buildConfigField("String", "STB_API_BASE", "\"$releaseApiBase\"")
             // 上架形态：R8 代码压缩 + 资源收缩。必须实测，混淆常把反射/序列化打坏
             isMinifyEnabled = true
             isShrinkResources = true
@@ -54,7 +64,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     packaging {
         resources {

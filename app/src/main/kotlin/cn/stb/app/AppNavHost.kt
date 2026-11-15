@@ -15,8 +15,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,11 +37,13 @@ import cn.stb.core.registry.ToolHost
 import cn.stb.feature.home.HomeScreen
 import cn.stb.feature.settings.ChangelogScreen
 import cn.stb.feature.settings.DisplayManagerScreen
+import cn.stb.feature.settings.FeedbackScreen
 import cn.stb.feature.settings.SettingsScreen
 
 private object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
+    const val FEEDBACK = "feedback"
     const val DISPLAY = "display"
     const val CHANGELOG = "changelog"
     const val TOOL = "tool/{toolId}"
@@ -47,6 +53,7 @@ private object Routes {
 @Composable
 fun AppNavHost(startToolId: String? = null) {
     val navController = rememberNavController()
+    val cloud by AppGraph.cloud.snapshot.collectAsStateWithLifecycle()
 
     val host = remember(navController) {
         object : ToolHost {
@@ -76,8 +83,13 @@ fun AppNavHost(startToolId: String? = null) {
             HomeScreen(
                 onOpenTool = { navController.navigate(Routes.tool(it.value)) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenFeedback = { navController.navigate(Routes.FEEDBACK) },
                 onOpenDisplayManager = { navController.navigate(Routes.DISPLAY) },
             )
+        }
+
+        composable(Routes.FEEDBACK) { entry ->
+            FeedbackScreen(onBack = { navController.popBackFrom(entry) })
         }
 
         composable(Routes.SETTINGS) { entry ->
@@ -102,14 +114,36 @@ fun AppNavHost(startToolId: String? = null) {
         ) { entry ->
             val id = ToolId(entry.arguments?.getString("toolId").orEmpty())
             val provider = AppContainer.catalog.providerOf(id)
+            val cloudDisabled = cloud.tools[id.value]?.enabled == false
 
-            LaunchedEffect(id) {
-                if (provider != null) AppGraph.usage.recordOpen(id.value)
+            LaunchedEffect(id, cloudDisabled) {
+                if (provider != null && !cloudDisabled) {
+                    AppGraph.usage.recordOpen(id.value)
+                    AppGraph.cloud.recordEvent("tool_open", id.value, mapOf("source" to "home"))
+                }
+            }
+            DisposableEffect(id, cloudDisabled) {
+                val startedAt = SystemClock.elapsedRealtime()
+                onDispose {
+                    if (provider != null && !cloudDisabled) {
+                        AppGraph.cloud.recordEvent(
+                            "tool_close",
+                            id.value,
+                            mapOf("durationMs" to (SystemClock.elapsedRealtime() - startedAt)),
+                        )
+                    }
+                }
             }
 
             if (provider == null) {
                 // 工具已下线，或者旧返回栈指向了不存在的 id——别崩，给个能回去的页面
                 MissingToolScreen(onBack = { navController.popBackFrom(entry) })
+            } else if (cloudDisabled) {
+                ToolDisabledScreen(
+                    title = provider.spec.title,
+                    message = cloud.tools[id.value]?.message.orEmpty(),
+                    onBack = { navController.popBackFrom(entry) },
+                )
             } else {
                 provider.Content(host)
             }
@@ -119,6 +153,7 @@ fun AppNavHost(startToolId: String? = null) {
     // 版本升级提示挂在 NavHost 之后：它只往独立的 Dialog 窗口画内容，
     // 不参与页面布局与导航栈；「查看完整更新日志」由这里接到 changelog 路由。
     UpdateNotice(onOpenChangelog = { navController.navigate(Routes.CHANGELOG) })
+    RemoteUpdateNotice()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -152,6 +187,42 @@ private fun MissingToolScreen(onBack: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ToolDisabledScreen(title: String, message: String, onBack: () -> Unit) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text("工具暂不可用") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(28.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = message.ifBlank { "学校管理员暂时关闭了这个工具；你的本地数据不会丢失。" },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(18.dp))
+            Text(
+                text = "联网后会自动同步最新开关；也可以稍后再试。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+    }
+}
 /**
  * 返回上一页，但只接受当前栈顶页面的返回请求。
  *

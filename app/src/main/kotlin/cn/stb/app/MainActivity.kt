@@ -19,6 +19,17 @@ import cn.stb.core.model.DarkMode
 
 class MainActivity : ComponentActivity() {
 
+    override fun onStart() {
+        super.onStart()
+        // 只在前台时记录会话并做一次节流同步；没有网络时 CloudControl 内部直接跳过。
+        runCatching { AppGraph.cloud.onForeground() }
+    }
+
+    override fun onStop() {
+        runCatching { AppGraph.cloud.onBackground() }
+        super.onStop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

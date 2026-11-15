@@ -28,6 +28,8 @@ class SettingsViewModel : ViewModel() {
 
     fun setShowRecents(show: Boolean) = update { it.copy(home = it.home.copy(showRecents = show)) }
 
+    fun setTelemetryEnabled(enabled: Boolean) = update { it.copy(telemetryEnabled = enabled) }
+
     fun setSubjectHidden(subjectId: String, hidden: Boolean) = update { current ->
         val next = current.visibility.hiddenSubjectIds.toMutableSet()
         if (hidden) next += subjectId else next -= subjectId

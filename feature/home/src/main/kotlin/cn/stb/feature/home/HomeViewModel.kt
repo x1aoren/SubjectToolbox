@@ -21,8 +21,10 @@ class HomeViewModel : ViewModel() {
     val content: StateFlow<HomeContent?> = combine(
         AppGraph.settings.settings,
         AppGraph.usage.recents,
-    ) { settings, recents ->
-        HomeComposer.compose(AppGraph.catalog, settings, recents)
+        AppGraph.cloud.snapshot,
+    ) { settings, recents, cloud ->
+        val disabled = cloud.tools.filterValues { !it.enabled }.keys
+        HomeComposer.compose(AppGraph.catalog, settings, recents, disabled)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
