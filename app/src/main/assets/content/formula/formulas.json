@@ -1,8 +1,8 @@
 {
  "version": 1,
- "source": "https://github.com/HuiTurn/Formula",
+ "source": "https://github.com/HuiTurn/Formula；https://drhuang.com/chinese/science/%E5%88%9D%E4%B8%AD%E9%AB%98%E4%B8%AD%E6%95%B0%E7%90%86%E5%8C%96%E5%85%AC%E5%BC%8F%E5%A4%A7%E5%85%A8/",
  "license": "MIT",
- "builtAt": "2026-11-08",
+ "builtAt": "2026-11-15",
  "formulas": [
   {
    "id": "middle_alg_001",
@@ -3511,6 +3511,4614 @@
    ],
    "cond": "适用于理想气体，高温低压条件",
    "note": "R 的值约为 8.314 J/(mol·K)"
+  },
+  {
+   "id": "math_hs_001",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "集合与逻辑",
+   "name": "交集",
+   "latex": "A \\cap B = \\{x \\mid x \\in A \\text{ 且 } x \\in B\\}",
+   "plain": "A ∩ B = {x | x∈A 且 x∈B}",
+   "vars": [
+    {
+     "n": "A",
+     "d": "集合 A",
+     "u": ""
+    },
+    {
+     "n": "B",
+     "d": "集合 B",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "由同时属于 A 和 B 的元素组成，A∩B⊆A 且 A∩B⊆B。"
+  },
+  {
+   "id": "math_hs_002",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "集合与逻辑",
+   "name": "并集",
+   "latex": "A \\cup B = \\{x \\mid x \\in A \\text{ 或 } x \\in B\\}",
+   "plain": "A ∪ B = {x | x∈A 或 x∈B}",
+   "vars": [
+    {
+     "n": "A",
+     "d": "集合 A",
+     "u": ""
+    },
+    {
+     "n": "B",
+     "d": "集合 B",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "由属于 A 或属于 B 的元素组成，A⊆A∪B，B⊆A∪B。"
+  },
+  {
+   "id": "math_hs_003",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "集合与逻辑",
+   "name": "补集",
+   "latex": "\\complement_U A = \\{x \\mid x \\in U \\text{ 且 } x \\notin A\\}",
+   "plain": "∁ᵤA = {x | x∈U 且 x∉A}",
+   "vars": [
+    {
+     "n": "U",
+     "d": "全集",
+     "u": ""
+    },
+    {
+     "n": "A",
+     "d": "集合 A",
+     "u": ""
+    }
+   ],
+   "cond": "A⊆U",
+   "note": "A 在全集 U 中的补集，满足 A∪∁ᵤA=U，A∩∁ᵤA=∅。"
+  },
+  {
+   "id": "math_hs_004",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "集合与逻辑",
+   "name": "子集个数",
+   "latex": "2^n",
+   "plain": "2ⁿ",
+   "vars": [
+    {
+     "n": "n",
+     "d": "集合中元素的个数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "含 n 个元素的集合有 2ⁿ 个子集、2ⁿ−1 个真子集、2ⁿ−1 个非空子集。"
+  },
+  {
+   "id": "math_hs_005",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "函数",
+   "name": "二次函数顶点式",
+   "latex": "y = a(x-h)^2 + k",
+   "plain": "y = a(x−h)² + k",
+   "vars": [
+    {
+     "n": "a",
+     "d": "二次项系数",
+     "u": ""
+    },
+    {
+     "n": "h",
+     "d": "顶点横坐标",
+     "u": ""
+    },
+    {
+     "n": "k",
+     "d": "顶点纵坐标",
+     "u": ""
+    }
+   ],
+   "cond": "a ≠ 0",
+   "note": "顶点为 (h,k)，对称轴为直线 x=h；a>0 开口向上，a<0 开口向下。"
+  },
+  {
+   "id": "math_hs_006",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "函数",
+   "name": "指数运算法则",
+   "latex": "\\begin{aligned} a^m a^n &= a^{m+n} \\\\ (a^m)^n &= a^{mn} \\\\ (ab)^n &= a^n b^n \\end{aligned}",
+   "plain": "aᵐ·aⁿ = aᵐ⁺ⁿ；(aᵐ)ⁿ = aᵐⁿ；(ab)ⁿ = aⁿbⁿ",
+   "vars": [
+    {
+     "n": "a",
+     "d": "底数",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "另一个底数",
+     "u": ""
+    },
+    {
+     "n": "m",
+     "d": "指数",
+     "u": ""
+    },
+    {
+     "n": "n",
+     "d": "指数",
+     "u": ""
+    }
+   ],
+   "cond": "a>0，b>0，m、n∈R",
+   "note": "同底数幂相乘，底数不变、指数相加。"
+  },
+  {
+   "id": "math_hs_007",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "函数",
+   "name": "对数恒等式",
+   "latex": "a^{\\log_a N} = N,\\quad \\log_a a^N = N",
+   "plain": "a^(logₐN) = N；logₐaᴺ = N",
+   "vars": [
+    {
+     "n": "a",
+     "d": "底数",
+     "u": ""
+    },
+    {
+     "n": "N",
+     "d": "真数",
+     "u": ""
+    }
+   ],
+   "cond": "a>0 且 a≠1，N>0",
+   "note": "两条恒等式说明指数与对数互为逆运算。"
+  },
+  {
+   "id": "math_hs_008",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "函数",
+   "name": "奇偶性判定",
+   "latex": "\\begin{aligned} f(-x) &= f(x) && \\text{偶函数} \\\\ f(-x) &= -f(x) && \\text{奇函数} \\end{aligned}",
+   "plain": "f(−x) = f(x) 为偶函数；f(−x) = −f(x) 为奇函数",
+   "vars": [
+    {
+     "n": "f(x)",
+     "d": "定义在对称区间上的函数",
+     "u": ""
+    },
+    {
+     "n": "x",
+     "d": "自变量",
+     "u": ""
+    }
+   ],
+   "cond": "定义域关于原点对称",
+   "note": "偶函数图象关于 y 轴对称，奇函数图象关于原点对称；奇函数若在 x=0 处有定义，则 f(0)=0。"
+  },
+  {
+   "id": "math_hs_009",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "数列",
+   "name": "等差数列通项公式",
+   "latex": "a_n = a_1 + (n-1)d",
+   "plain": "aₙ = a₁ + (n−1)d",
+   "vars": [
+    {
+     "n": "aₙ",
+     "d": "第 n 项",
+     "u": ""
+    },
+    {
+     "n": "a₁",
+     "d": "首项",
+     "u": ""
+    },
+    {
+     "n": "d",
+     "d": "公差",
+     "u": ""
+    },
+    {
+     "n": "n",
+     "d": "项数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "等差数列中任意两项满足 aₙ=aₘ+(n−m)d。"
+  },
+  {
+   "id": "math_hs_010",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "数列",
+   "name": "等差数列前n项和",
+   "latex": "S_n = \\frac{n(a_1+a_n)}{2} = na_1 + \\frac{n(n-1)}{2}d",
+   "plain": "Sₙ = n(a₁+aₙ)/2 = na₁ + n(n−1)d/2",
+   "vars": [
+    {
+     "n": "Sₙ",
+     "d": "前 n 项和",
+     "u": ""
+    },
+    {
+     "n": "a₁",
+     "d": "首项",
+     "u": ""
+    },
+    {
+     "n": "aₙ",
+     "d": "第 n 项",
+     "u": ""
+    },
+    {
+     "n": "d",
+     "d": "公差",
+     "u": ""
+    },
+    {
+     "n": "n",
+     "d": "项数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "已知首末两项时用第一个式子，已知首项和公差时用第二个。"
+  },
+  {
+   "id": "math_hs_011",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "数列",
+   "name": "等差中项",
+   "latex": "2b = a + c",
+   "plain": "2b = a + c",
+   "vars": [
+    {
+     "n": "a",
+     "d": "前一项",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "中项",
+     "u": ""
+    },
+    {
+     "n": "c",
+     "d": "后一项",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "a、b、c 成等差数列的充要条件；此时 b=(a+c)/2。"
+  },
+  {
+   "id": "math_hs_012",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "数列",
+   "name": "等比数列通项公式",
+   "latex": "a_n = a_1 q^{\\,n-1}",
+   "plain": "aₙ = a₁qⁿ⁻¹",
+   "vars": [
+    {
+     "n": "aₙ",
+     "d": "第 n 项",
+     "u": ""
+    },
+    {
+     "n": "a₁",
+     "d": "首项",
+     "u": ""
+    },
+    {
+     "n": "q",
+     "d": "公比",
+     "u": ""
+    },
+    {
+     "n": "n",
+     "d": "项数",
+     "u": ""
+    }
+   ],
+   "cond": "q ≠ 0",
+   "note": "q=1 时为常数列；等比数列中 aₙ=aₘqⁿ⁻ᵐ。"
+  },
+  {
+   "id": "math_hs_013",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "数列",
+   "name": "等比中项",
+   "latex": "b^2 = ac",
+   "plain": "b² = ac",
+   "vars": [
+    {
+     "n": "a",
+     "d": "前一项",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "中项",
+     "u": ""
+    },
+    {
+     "n": "c",
+     "d": "后一项",
+     "u": ""
+    }
+   ],
+   "cond": "a、b、c 同号且均不为 0",
+   "note": "a、b、c 成等比数列的充要条件；b=±√(ac)。"
+  },
+  {
+   "id": "math_hs_014",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "不等式",
+   "name": "基本不等式",
+   "latex": "\\sqrt{ab} \\le \\frac{a+b}{2}",
+   "plain": "√(ab) ≤ (a+b)/2",
+   "vars": [
+    {
+     "n": "a",
+     "d": "正数",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "正数",
+     "u": ""
+    }
+   ],
+   "cond": "a>0，b>0，当且仅当 a=b 时取等号",
+   "note": "也叫均值不等式，常用变形 a+b≥2√(ab)、ab≤((a+b)/2)²。"
+  },
+  {
+   "id": "math_hs_015",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "不等式",
+   "name": "一元二次不等式解集",
+   "latex": "\\begin{aligned} \\Delta>0 &: \\{x \\mid x<x_1 \\text{ 或 } x>x_2\\} \\\\ \\Delta=0 &: \\left\\{x \\mid x \\ne -\\frac{b}{2a}\\right\\} \\\\ \\Delta<0 &: \\mathbb{R} \\end{aligned}",
+   "plain": "Δ>0：x<x₁ 或 x>x₂；Δ=0：x≠−b/(2a)；Δ<0：全体实数",
+   "vars": [
+    {
+     "n": "a",
+     "d": "二次项系数",
+     "u": ""
+    },
+    {
+     "n": "Δ",
+     "d": "判别式 Δ=b²−4ac",
+     "u": ""
+    },
+    {
+     "n": "x₁、x₂",
+     "d": "方程的两根，x₁<x₂",
+     "u": ""
+    }
+   ],
+   "cond": "a>0，求解 ax²+bx+c>0",
+   "note": "a<0 时先化为正系数；若求 ax²+bx+c<0 的解集，取上述结果在 R 中的补集。"
+  },
+  {
+   "id": "math_hs_016",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "不等式",
+   "name": "绝对值三角不等式",
+   "latex": "\\left|\\,|a|-|b|\\,\\right| \\le |a+b| \\le |a|+|b|",
+   "plain": "||a|−|b|| ≤ |a+b| ≤ |a|+|b|",
+   "vars": [
+    {
+     "n": "a",
+     "d": "实数或向量",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "实数或向量",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "右边取等当且仅当 a、b 同向（ab≥0），左边取等当且仅当 a、b 反向（ab≤0）。"
+  },
+  {
+   "id": "math_hs_017",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "不等式",
+   "name": "柯西不等式",
+   "latex": "(a_1^2+a_2^2)(b_1^2+b_2^2) \\ge (a_1b_1+a_2b_2)^2",
+   "plain": "(a₁²+a₂²)(b₁²+b₂²) ≥ (a₁b₁+a₂b₂)²",
+   "vars": [
+    {
+     "n": "a₁、a₂",
+     "d": "第一组实数",
+     "u": ""
+    },
+    {
+     "n": "b₁、b₂",
+     "d": "第二组实数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "当且仅当 a₁b₂=a₂b₁ 时取等号；可推广到 n 维：(Σaᵢ²)(Σbᵢ²)≥(Σaᵢbᵢ)²。"
+  },
+  {
+   "id": "math_hs_018",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "复数",
+   "name": "复数的模",
+   "latex": "|z| = \\sqrt{a^2+b^2}",
+   "plain": "|z| = √(a²+b²)",
+   "vars": [
+    {
+     "n": "z",
+     "d": "复数 z=a+bi",
+     "u": ""
+    },
+    {
+     "n": "a",
+     "d": "实部",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "虚部",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "复数模的几何意义是复平面内点 (a,b) 到原点的距离。"
+  },
+  {
+   "id": "math_hs_019",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "复数",
+   "name": "共轭复数",
+   "latex": "z\\bar z = (a+bi)(a-bi) = a^2+b^2",
+   "plain": "z·z̄ = (a+bi)(a−bi) = a²+b²",
+   "vars": [
+    {
+     "n": "z",
+     "d": "复数 z=a+bi",
+     "u": ""
+    },
+    {
+     "n": "z̄",
+     "d": "共轭复数 a−bi",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "z·z̄=|z|²；共轭复数在复平面内关于实轴对称。"
+  },
+  {
+   "id": "math_hs_020",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "复数",
+   "name": "复数除法",
+   "latex": "\\frac{a+bi}{c+di} = \\frac{(a+bi)(c-di)}{c^2+d^2}",
+   "plain": "(a+bi)/(c+di) = (a+bi)(c−di)/(c²+d²)",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "被除数的实部与虚部",
+     "u": ""
+    },
+    {
+     "n": "c、d",
+     "d": "除数的实部与虚部",
+     "u": ""
+    }
+   ],
+   "cond": "c+di ≠ 0",
+   "note": "分子分母同乘除数的共轭复数，把分母化为实数。"
+  },
+  {
+   "id": "math_hs_021",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "复数",
+   "name": "复数三角形式",
+   "latex": "z = r(\\cos\\theta + i\\sin\\theta)",
+   "plain": "z = r(cosθ + i sinθ)",
+   "vars": [
+    {
+     "n": "r",
+     "d": "复数的模 r=|z|",
+     "u": ""
+    },
+    {
+     "n": "θ",
+     "d": "辐角",
+     "u": ""
+    }
+   ],
+   "cond": "r ≥ 0",
+   "note": "r=√(a²+b²)，tanθ=b/a；用于复数乘除与乘方运算。"
+  },
+  {
+   "id": "math_hs_022",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "计数原理",
+   "name": "排列数公式",
+   "latex": "A_n^m = \\frac{n!}{(n-m)!}",
+   "plain": "Aₙᵐ = n!/(n−m)!",
+   "vars": [
+    {
+     "n": "n",
+     "d": "元素总数",
+     "u": ""
+    },
+    {
+     "n": "m",
+     "d": "取出并排列的个数",
+     "u": ""
+    }
+   ],
+   "cond": "0 ≤ m ≤ n，m、n∈N*",
+   "note": "与顺序有关；Aₙⁿ=n!，Aₙ¹=n。"
+  },
+  {
+   "id": "math_hs_023",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "计数原理",
+   "name": "组合数公式",
+   "latex": "C_n^m = \\frac{n!}{m!\\,(n-m)!}",
+   "plain": "Cₙᵐ = n!/[m!(n−m)!]",
+   "vars": [
+    {
+     "n": "n",
+     "d": "元素总数",
+     "u": ""
+    },
+    {
+     "n": "m",
+     "d": "取出的个数",
+     "u": ""
+    }
+   ],
+   "cond": "0 ≤ m ≤ n，m、n∈N*",
+   "note": "与顺序无关；Cₙ⁰=Cₙⁿ=1。"
+  },
+  {
+   "id": "math_hs_024",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "计数原理",
+   "name": "组合数性质",
+   "latex": "\\begin{aligned} C_n^m &= C_n^{\\,n-m} \\\\ C_{n+1}^m &= C_n^m + C_n^{m-1} \\end{aligned}",
+   "plain": "Cₙᵐ = Cₙⁿ⁻ᵐ；Cₙ₊₁ᵐ = Cₙᵐ + Cₙᵐ⁻¹",
+   "vars": [
+    {
+     "n": "n",
+     "d": "元素总数",
+     "u": ""
+    },
+    {
+     "n": "m",
+     "d": "取出的个数",
+     "u": ""
+    }
+   ],
+   "cond": "0 ≤ m ≤ n",
+   "note": "第二个式子为组合数的递推性质，也是杨辉三角的构造依据。"
+  },
+  {
+   "id": "math_hs_025",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "计数原理",
+   "name": "二项式定理",
+   "latex": "(a+b)^n = \\sum_{k=0}^{n} C_n^k a^{\\,n-k} b^k",
+   "plain": "(a+b)ⁿ = Σ Cₙᵏ aⁿ⁻ᵏ bᵏ（k=0 到 n）",
+   "vars": [
+    {
+     "n": "n",
+     "d": "正整数",
+     "u": ""
+    },
+    {
+     "n": "k",
+     "d": "展开项序号减一",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "共 n+1 项，二项式系数为 Cₙ⁰、Cₙ¹、…、Cₙⁿ。"
+  },
+  {
+   "id": "math_hs_026",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "计数原理",
+   "name": "二项展开通项",
+   "latex": "T_{k+1} = C_n^k a^{\\,n-k} b^k",
+   "plain": "Tₖ₊₁ = Cₙᵏ aⁿ⁻ᵏ bᵏ",
+   "vars": [
+    {
+     "n": "Tₖ₊₁",
+     "d": "第 k+1 项",
+     "u": ""
+    },
+    {
+     "n": "n",
+     "d": "二项式的次数",
+     "u": ""
+    },
+    {
+     "n": "k",
+     "d": "项的序号减一",
+     "u": ""
+    }
+   ],
+   "cond": "k=0，1，…，n",
+   "note": "求指定项（如常数项、含某字母的项）时，先写出通项再定 k。"
+  },
+  {
+   "id": "math_hs_027",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "三角函数",
+   "name": "辅助角公式",
+   "latex": "a\\sin x + b\\cos x = \\sqrt{a^2+b^2}\\,\\sin(x+\\varphi)",
+   "plain": "a sinx + b cosx = √(a²+b²)·sin(x+φ)",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "系数，不同时为零",
+     "u": ""
+    },
+    {
+     "n": "φ",
+     "d": "辅助角，tanφ=b/a",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "φ 所在象限由点 (a,b) 确定；常用于求振幅、周期与最值。"
+  },
+  {
+   "id": "math_hs_028",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "三角函数",
+   "name": "万能公式",
+   "latex": "\\begin{aligned} \\sin\\alpha &= \\frac{2t}{1+t^2} \\\\ \\cos\\alpha &= \\frac{1-t^2}{1+t^2} \\\\ \\tan\\alpha &= \\frac{2t}{1-t^2} \\end{aligned}",
+   "plain": "sinα = 2t/(1+t²)；cosα = (1−t²)/(1+t²)；tanα = 2t/(1−t²)",
+   "vars": [
+    {
+     "n": "t",
+     "d": "t=tan(α/2)",
+     "u": ""
+    },
+    {
+     "n": "α",
+     "d": "角度",
+     "u": ""
+    }
+   ],
+   "cond": "α ≠ π+2kπ，tan(α/2) 有意义；求 tanα 时还需 α ≠ π/2+kπ",
+   "note": "把任意三角函数化为 t 的有理式，适合统一变量后解方程。"
+  },
+  {
+   "id": "math_hs_029",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "三角函数",
+   "name": "三角形面积公式",
+   "latex": "S = \\frac{1}{2}ab\\sin C = \\frac{1}{2}bc\\sin A = \\frac{1}{2}ca\\sin B",
+   "plain": "S = ½ab sinC = ½bc sinA = ½ca sinB",
+   "vars": [
+    {
+     "n": "a、b、c",
+     "d": "三角形的三边",
+     "u": ""
+    },
+    {
+     "n": "A、B、C",
+     "d": "三边所对的角",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "已知两边及其夹角时最方便；结合正弦定理可化为只含边的形式。"
+  },
+  {
+   "id": "math_hs_030",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "平面向量",
+   "name": "向量坐标加减法",
+   "latex": "\\vec a \\pm \\vec b = (x_1 \\pm x_2,\\ y_1 \\pm y_2)",
+   "plain": "a ± b = (x₁±x₂, y₁±y₂)",
+   "vars": [
+    {
+     "n": "a",
+     "d": "向量 a=(x₁,y₁)",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "向量 b=(x₂,y₂)",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "坐标运算与三角形法则、平行四边形法则等价。"
+  },
+  {
+   "id": "math_hs_031",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "平面向量",
+   "name": "数乘向量坐标",
+   "latex": "\\lambda \\vec a = (\\lambda x,\\ \\lambda y)",
+   "plain": "λa = (λx, λy)",
+   "vars": [
+    {
+     "n": "λ",
+     "d": "实数",
+     "u": ""
+    },
+    {
+     "n": "a",
+     "d": "向量 a=(x,y)",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "λ>0 时与 a 同向，λ<0 时反向，|λa|=|λ||a|。"
+  },
+  {
+   "id": "math_hs_032",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "平面向量",
+   "name": "数量积",
+   "latex": "\\vec a \\cdot \\vec b = x_1x_2+y_1y_2 = |\\vec a||\\vec b|\\cos\\theta",
+   "plain": "a·b = x₁x₂+y₁y₂ = |a||b|cosθ",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "两个非零向量",
+     "u": ""
+    },
+    {
+     "n": "θ",
+     "d": "两向量夹角",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "坐标式与定义式可互相转化，是求夹角、判断垂直的主要工具。"
+  },
+  {
+   "id": "math_hs_033",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "平面向量",
+   "name": "向量的模",
+   "latex": "|\\vec a| = \\sqrt{x^2+y^2}",
+   "plain": "|a| = √(x²+y²)",
+   "vars": [
+    {
+     "n": "a",
+     "d": "向量 a=(x,y)",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "由 a·a=|a|² 得到，也可用 |a±b|²=|a|²±2a·b+|b|² 求模。"
+  },
+  {
+   "id": "math_hs_034",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "平面向量",
+   "name": "向量夹角余弦",
+   "latex": "\\cos\\theta = \\frac{x_1x_2+y_1y_2}{\\sqrt{x_1^2+y_1^2}\\,\\sqrt{x_2^2+y_2^2}}",
+   "plain": "cosθ = (x₁x₂+y₁y₂)/[√(x₁²+y₁²)·√(x₂²+y₂²)]",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "两个非零向量",
+     "u": ""
+    },
+    {
+     "n": "θ",
+     "d": "夹角，0≤θ≤π",
+     "u": ""
+    }
+   ],
+   "cond": "a≠0，b≠0",
+   "note": "cosθ>0 为锐角，cosθ=0 为直角，cosθ<0 为钝角。"
+  },
+  {
+   "id": "math_hs_035",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "平面向量",
+   "name": "向量平行条件",
+   "latex": "\\vec a \\parallel \\vec b \\iff x_1y_2-x_2y_1 = 0",
+   "plain": "a∥b ⇔ x₁y₂−x₂y₁ = 0",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "两个非零向量",
+     "u": ""
+    }
+   ],
+   "cond": "a≠0，b≠0",
+   "note": "坐标交叉相乘相等；若 b≠0，也可写成 a=λb。"
+  },
+  {
+   "id": "math_hs_036",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "平面向量",
+   "name": "向量垂直条件",
+   "latex": "\\vec a \\perp \\vec b \\iff x_1x_2+y_1y_2 = 0",
+   "plain": "a⊥b ⇔ x₁x₂+y₁y₂ = 0",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "两个非零向量",
+     "u": ""
+    }
+   ],
+   "cond": "a≠0，b≠0",
+   "note": "由数量积定义，cos90°=0；也写作 a·b=0。"
+  },
+  {
+   "id": "math_hs_037",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "两点间距离公式",
+   "latex": "|P_1P_2| = \\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}",
+   "plain": "|P₁P₂| = √[(x₂−x₁)²+(y₂−y₁)²]",
+   "vars": [
+    {
+     "n": "P₁",
+     "d": "点 P₁(x₁,y₁)",
+     "u": ""
+    },
+    {
+     "n": "P₂",
+     "d": "点 P₂(x₂,y₂)",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "三维空间中再加 (z₂−z₁)² 一项。"
+  },
+  {
+   "id": "math_hs_038",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "中点坐标公式",
+   "latex": "\\begin{aligned} x &= \\frac{x_1+x_2}{2} \\\\ y &= \\frac{y_1+y_2}{2} \\end{aligned}",
+   "plain": "x = (x₁+x₂)/2；y = (y₁+y₂)/2",
+   "vars": [
+    {
+     "n": "P₁",
+     "d": "点 P₁(x₁,y₁)",
+     "u": ""
+    },
+    {
+     "n": "P₂",
+     "d": "点 P₂(x₂,y₂)",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "中点 M 的坐标是两端点坐标的算术平均。"
+  },
+  {
+   "id": "math_hs_039",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "定比分点坐标公式",
+   "latex": "\\begin{aligned} x &= \\frac{x_1+\\lambda x_2}{1+\\lambda} \\\\ y &= \\frac{y_1+\\lambda y_2}{1+\\lambda} \\end{aligned}",
+   "plain": "x = (x₁+λx₂)/(1+λ)；y = (y₁+λy₂)/(1+λ)",
+   "vars": [
+    {
+     "n": "P₁、P₂",
+     "d": "已知两点",
+     "u": ""
+    },
+    {
+     "n": "λ",
+     "d": "P 分 P₁P₂ 的比",
+     "u": ""
+    }
+   ],
+   "cond": "λ ≠ −1",
+   "note": "λ=1 时退化为中点公式；λ>0 为内分，λ<0 为外分。"
+  },
+  {
+   "id": "math_hs_040",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "直线斜率公式",
+   "latex": "k = \\frac{y_2-y_1}{x_2-x_1} = \\tan\\alpha",
+   "plain": "k = (y₂−y₁)/(x₂−x₁) = tanα",
+   "vars": [
+    {
+     "n": "k",
+     "d": "斜率",
+     "u": ""
+    },
+    {
+     "n": "α",
+     "d": "倾斜角，0≤α<π",
+     "u": ""
+    }
+   ],
+   "cond": "x₁ ≠ x₂；α ≠ 90°",
+   "note": "x₁=x₂ 时直线垂直于 x 轴，斜率不存在。"
+  },
+  {
+   "id": "math_hs_041",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "直线点斜式方程",
+   "latex": "y-y_0 = k(x-x_0)",
+   "plain": "y−y₀ = k(x−x₀)",
+   "vars": [
+    {
+     "n": "k",
+     "d": "斜率",
+     "u": ""
+    },
+    {
+     "n": "(x₀,y₀)",
+     "d": "直线上一点",
+     "u": ""
+    }
+   ],
+   "cond": "斜率 k 存在",
+   "note": "已知一点和斜率时使用；斜率不存在时写 x=x₀。"
+  },
+  {
+   "id": "math_hs_042",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "直线斜截式方程",
+   "latex": "y = kx+b",
+   "plain": "y = kx+b",
+   "vars": [
+    {
+     "n": "k",
+     "d": "斜率",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "纵截距",
+     "u": ""
+    }
+   ],
+   "cond": "斜率 k 存在",
+   "note": "b 是直线与 y 轴交点的纵坐标，不是交点到原点的距离。"
+  },
+  {
+   "id": "math_hs_043",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "两直线平行与垂直",
+   "latex": "\\begin{aligned} l_1 \\parallel l_2 &\\iff k_1 = k_2 \\\\ l_1 \\perp l_2 &\\iff k_1k_2 = -1 \\end{aligned}",
+   "plain": "l₁∥l₂ ⇔ k₁=k₂；l₁⊥l₂ ⇔ k₁k₂=−1",
+   "vars": [
+    {
+     "n": "l₁、l₂",
+     "d": "两条直线",
+     "u": ""
+    },
+    {
+     "n": "k₁、k₂",
+     "d": "两直线斜率",
+     "u": ""
+    }
+   ],
+   "cond": "两直线斜率均存在",
+   "note": "一般式 A₁x+B₁y+C₁=0 时，平行看 A₁B₂=A₂B₁，垂直看 A₁A₂+B₁B₂=0，后者不受斜率不存在限制。"
+  },
+  {
+   "id": "math_hs_044",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "点到直线的距离",
+   "latex": "d = \\frac{|Ax_0+By_0+C|}{\\sqrt{A^2+B^2}}",
+   "plain": "d = |Ax₀+By₀+C|/√(A²+B²)",
+   "vars": [
+    {
+     "n": "d",
+     "d": "点到直线的距离",
+     "u": ""
+    },
+    {
+     "n": "(x₀,y₀)",
+     "d": "已知点",
+     "u": ""
+    },
+    {
+     "n": "A、B、C",
+     "d": "直线 Ax+By+C=0 的系数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "使用前先把直线方程化为一般式。"
+  },
+  {
+   "id": "math_hs_045",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "两平行线间距离",
+   "latex": "d = \\frac{|C_1-C_2|}{\\sqrt{A^2+B^2}}",
+   "plain": "d = |C₁−C₂|/√(A²+B²)",
+   "vars": [
+    {
+     "n": "C₁、C₂",
+     "d": "两平行线的常数项",
+     "u": ""
+    },
+    {
+     "n": "A、B",
+     "d": "两直线对应系数相同",
+     "u": ""
+    }
+   ],
+   "cond": "两直线方程中 x、y 的系数分别相同",
+   "note": "若系数不同，先化成相同系数再套公式。"
+  },
+  {
+   "id": "math_hs_046",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "圆的标准方程",
+   "latex": "(x-a)^2+(y-b)^2 = r^2",
+   "plain": "(x−a)²+(y−b)² = r²",
+   "vars": [
+    {
+     "n": "(a,b)",
+     "d": "圆心坐标",
+     "u": ""
+    },
+    {
+     "n": "r",
+     "d": "半径",
+     "u": ""
+    }
+   ],
+   "cond": "r > 0",
+   "note": "圆心在原点时简化为 x²+y²=r²。"
+  },
+  {
+   "id": "math_hs_047",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "圆的一般方程",
+   "latex": "x^2+y^2+Dx+Ey+F = 0",
+   "plain": "x²+y²+Dx+Ey+F = 0",
+   "vars": [
+    {
+     "n": "D、E、F",
+     "d": "方程系数",
+     "u": ""
+    }
+   ],
+   "cond": "D²+E²−4F > 0",
+   "note": "圆心为 (−D/2,−E/2)，半径 r=½√(D²+E²−4F)。"
+  },
+  {
+   "id": "math_hs_048",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "椭圆标准方程",
+   "latex": "\\frac{x^2}{a^2}+\\frac{y^2}{b^2} = 1",
+   "plain": "x²/a² + y²/b² = 1",
+   "vars": [
+    {
+     "n": "a",
+     "d": "长半轴长",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "短半轴长",
+     "u": ""
+    }
+   ],
+   "cond": "a > b > 0，焦点在 x 轴上",
+   "note": "焦点在 y 轴时写成 y²/a²+x²/b²=1；a、b、c 满足 a²=b²+c²。"
+  },
+  {
+   "id": "math_hs_049",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "椭圆的几何性质",
+   "latex": "\\begin{aligned} c^2 &= a^2-b^2 \\\\ e &= \\frac{c}{a} \\\\ &F_1(-c,0),\\ F_2(c,0) \\end{aligned}",
+   "plain": "c² = a²−b²；e = c/a；焦点 F₁(−c,0)、F₂(c,0)",
+   "vars": [
+    {
+     "n": "a",
+     "d": "长半轴长",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "短半轴长",
+     "u": ""
+    },
+    {
+     "n": "c",
+     "d": "半焦距",
+     "u": ""
+    },
+    {
+     "n": "e",
+     "d": "离心率",
+     "u": ""
+    }
+   ],
+   "cond": "a > b > 0，0 < e < 1",
+   "note": "e 越接近 1 椭圆越扁；椭圆上任意一点到两焦点距离之和为 2a。"
+  },
+  {
+   "id": "math_hs_050",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "双曲线标准方程",
+   "latex": "\\frac{x^2}{a^2}-\\frac{y^2}{b^2} = 1",
+   "plain": "x²/a² − y²/b² = 1",
+   "vars": [
+    {
+     "n": "a",
+     "d": "实半轴长",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "虚半轴长",
+     "u": ""
+    }
+   ],
+   "cond": "a > 0，b > 0，焦点在 x 轴上",
+   "note": "焦点在 y 轴时写成 y²/a²−x²/b²=1；c²=a²+b²。"
+  },
+  {
+   "id": "math_hs_051",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "双曲线的渐近线与离心率",
+   "latex": "\\begin{aligned} y &= \\pm\\frac{b}{a}x \\\\ e &= \\frac{c}{a},\\quad c^2 = a^2+b^2 \\end{aligned}",
+   "plain": "渐近线 y = ±(b/a)x；e = c/a，c² = a²+b²",
+   "vars": [
+    {
+     "n": "a",
+     "d": "实半轴长",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "虚半轴长",
+     "u": ""
+    },
+    {
+     "n": "c",
+     "d": "半焦距",
+     "u": ""
+    },
+    {
+     "n": "e",
+     "d": "离心率",
+     "u": ""
+    }
+   ],
+   "cond": "a > 0，b > 0，e > 1",
+   "note": "焦点在 y 轴时渐近线为 y=±(a/b)x；双曲线上的点到两焦点距离之差的绝对值为 2a。"
+  },
+  {
+   "id": "math_hs_052",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "抛物线标准方程",
+   "latex": "y^2 = 2px,\\quad y^2 = -2px,\\quad x^2 = 2py,\\quad x^2 = -2py",
+   "plain": "y² = 2px；y² = −2px；x² = 2py；x² = −2py",
+   "vars": [
+    {
+     "n": "p",
+     "d": "焦点到准线的距离",
+     "u": ""
+    }
+   ],
+   "cond": "p > 0",
+   "note": "四种形式对应开口向右、左、上、下；p 是焦准距。"
+  },
+  {
+   "id": "math_hs_053",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "解析几何",
+   "name": "抛物线的焦点与准线",
+   "latex": "F\\left(\\frac{p}{2},0\\right),\\quad x = -\\frac{p}{2}",
+   "plain": "焦点 F(p/2,0)，准线 x = −p/2",
+   "vars": [
+    {
+     "n": "p",
+     "d": "焦准距",
+     "u": ""
+    }
+   ],
+   "cond": "以 y²=2px（p>0）为例",
+   "note": "抛物线上任意一点到焦点的距离等于到准线的距离。"
+  },
+  {
+   "id": "math_hs_054",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "古典概型",
+   "latex": "P(A) = \\frac{m}{n}",
+   "plain": "P(A) = m/n",
+   "vars": [
+    {
+     "n": "m",
+     "d": "A 包含的基本事件数",
+     "u": ""
+    },
+    {
+     "n": "n",
+     "d": "基本事件总数",
+     "u": ""
+    }
+   ],
+   "cond": "各基本事件等可能发生",
+   "note": "计算时先明确样本空间，再数清 m 和 n。"
+  },
+  {
+   "id": "math_hs_055",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "互斥事件加法公式",
+   "latex": "P(A \\cup B) = P(A)+P(B)",
+   "plain": "P(A∪B) = P(A)+P(B)",
+   "vars": [
+    {
+     "n": "A、B",
+     "d": "互斥事件",
+     "u": ""
+    }
+   ],
+   "cond": "A∩B = ∅",
+   "note": "两事件不能同时发生；一般情形为 P(A∪B)=P(A)+P(B)−P(A∩B)。"
+  },
+  {
+   "id": "math_hs_056",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "对立事件概率",
+   "latex": "P(\\bar A) = 1-P(A)",
+   "plain": "P(Ā) = 1−P(A)",
+   "vars": [
+    {
+     "n": "A",
+     "d": "事件",
+     "u": ""
+    },
+    {
+     "n": "Ā",
+     "d": "A 的对立事件",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "当正面计算较繁时，用 1 减去反面情形的概率。"
+  },
+  {
+   "id": "math_hs_057",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "条件概率",
+   "latex": "P(B|A) = \\frac{P(A \\cap B)}{P(A)}",
+   "plain": "P(B|A) = P(A∩B)/P(A)",
+   "vars": [
+    {
+     "n": "A、B",
+     "d": "两个事件",
+     "u": ""
+    }
+   ],
+   "cond": "P(A) > 0",
+   "note": "表示在 A 已发生的条件下 B 发生的概率。"
+  },
+  {
+   "id": "math_hs_058",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "独立事件乘法公式",
+   "latex": "P(A \\cap B) = P(A)P(B)",
+   "plain": "P(A∩B) = P(A)P(B)",
+   "vars": [
+    {
+     "n": "A、B",
+     "d": "相互独立的事件",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "A、B 独立等价于 P(B|A)=P(B)；多个事件相互独立时可连乘。"
+  },
+  {
+   "id": "math_hs_059",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "全概率公式",
+   "latex": "P(B) = \\sum_{i=1}^{n} P(A_i)P(B \\mid A_i)",
+   "plain": "P(B) = Σ P(Aᵢ)P(B|Aᵢ)",
+   "vars": [
+    {
+     "n": "Aᵢ",
+     "d": "互斥且完备的事件组",
+     "u": ""
+    },
+    {
+     "n": "B",
+     "d": "目标事件",
+     "u": ""
+    }
+   ],
+   "cond": "A₁∪A₂∪…∪Aₙ=Ω，Aᵢ∩Aⱼ=∅（i≠j）",
+   "note": "把复杂事件按原因分解成若干互斥情形再相加。"
+  },
+  {
+   "id": "math_hs_060",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "二项分布",
+   "latex": "P(X=k) = C_n^k p^k(1-p)^{n-k}",
+   "plain": "P(X=k) = Cₙᵏpᵏ(1−p)ⁿ⁻ᵏ",
+   "vars": [
+    {
+     "n": "n",
+     "d": "独立重复试验次数",
+     "u": ""
+    },
+    {
+     "n": "p",
+     "d": "每次成功的概率",
+     "u": ""
+    },
+    {
+     "n": "k",
+     "d": "成功次数",
+     "u": ""
+    }
+   ],
+   "cond": "X ~ B(n,p)，k=0，1，…，n",
+   "note": "n 次独立重复试验中恰好成功 k 次的概率。"
+  },
+  {
+   "id": "math_hs_061",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "超几何分布",
+   "latex": "P(X=k) = \\frac{C_M^k\\,C_{N-M}^{\\,n-k}}{C_N^n}",
+   "plain": "P(X=k) = Cₘᵏ·C_(N−M)^(n−k)/C_Nⁿ",
+   "vars": [
+    {
+     "n": "N",
+     "d": "产品总数",
+     "u": ""
+    },
+    {
+     "n": "M",
+     "d": "其中某类产品数",
+     "u": ""
+    },
+    {
+     "n": "n",
+     "d": "抽取件数",
+     "u": ""
+    },
+    {
+     "n": "k",
+     "d": "抽到的某类件数",
+     "u": ""
+    }
+   ],
+   "cond": "k 满足 0≤k≤M 且 0≤n−k≤N−M",
+   "note": "不放回抽样模型，与二项分布的区别是各次抽取不独立。"
+  },
+  {
+   "id": "math_hs_062",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "数学期望",
+   "latex": "E(X) = \\sum_{i=1}^{n} x_i p_i",
+   "plain": "E(X) = Σ xᵢpᵢ",
+   "vars": [
+    {
+     "n": "xᵢ",
+     "d": "随机变量的取值",
+     "u": ""
+    },
+    {
+     "n": "pᵢ",
+     "d": "对应的概率",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "线性性质：E(aX+b)=aE(X)+b。"
+  },
+  {
+   "id": "math_hs_063",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "方差",
+   "latex": "D(X) = \\sum_{i=1}^{n}\\left(x_i-E(X)\\right)^2 p_i",
+   "plain": "D(X) = Σ (xᵢ−E(X))²pᵢ",
+   "vars": [
+    {
+     "n": "xᵢ",
+     "d": "随机变量的取值",
+     "u": ""
+    },
+    {
+     "n": "pᵢ",
+     "d": "对应的概率",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "D(aX+b)=a²D(X)；标准差为 √D(X)，与随机变量同量纲。"
+  },
+  {
+   "id": "math_hs_064",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "线性回归方程",
+   "latex": "\\begin{aligned} \\hat b &= \\frac{\\sum (x_i-\\bar x)(y_i-\\bar y)}{\\sum (x_i-\\bar x)^2} \\\\ \\hat a &= \\bar y-\\hat b\\,\\bar x \\end{aligned}",
+   "plain": "b̂ = Σ(xᵢ−x̄)(yᵢ−ȳ)/Σ(xᵢ−x̄)²；â = ȳ−b̂x̄",
+   "vars": [
+    {
+     "n": "b̂",
+     "d": "回归系数",
+     "u": ""
+    },
+    {
+     "n": "â",
+     "d": "截距",
+     "u": ""
+    },
+    {
+     "n": "x̄、ȳ",
+     "d": "样本均值",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "回归直线 ŷ=b̂x+â 一定经过样本中心点 (x̄,ȳ)。"
+  },
+  {
+   "id": "math_hs_065",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "导数",
+   "name": "导数定义",
+   "latex": "f'(x_0) = \\lim_{\\Delta x \\to 0}\\frac{f(x_0+\\Delta x)-f(x_0)}{\\Delta x}",
+   "plain": "f′(x₀) = lim(Δx→0)[f(x₀+Δx)−f(x₀)]/Δx",
+   "vars": [
+    {
+     "n": "f′(x₀)",
+     "d": "函数在 x₀ 处的导数",
+     "u": ""
+    },
+    {
+     "n": "Δx",
+     "d": "自变量的增量",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "导数的几何意义是曲线在点 (x₀,f(x₀)) 处切线的斜率。"
+  },
+  {
+   "id": "math_hs_066",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "导数",
+   "name": "幂函数求导公式",
+   "latex": "(x^n)' = n x^{\\,n-1}",
+   "plain": "(xⁿ)′ = n xⁿ⁻¹",
+   "vars": [
+    {
+     "n": "n",
+     "d": "实数指数",
+     "u": ""
+    },
+    {
+     "n": "x",
+     "d": "自变量",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "n=1 时 (x)′=1，n=1/2 时 (√x)′=1/(2√x)。"
+  },
+  {
+   "id": "math_hs_067",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "导数",
+   "name": "三角函数求导公式",
+   "latex": "\\begin{aligned} (\\sin x)' &= \\cos x \\\\ (\\cos x)' &= -\\sin x \\end{aligned}",
+   "plain": "(sinx)′ = cosx；(cosx)′ = −sinx",
+   "vars": [
+    {
+     "n": "x",
+     "d": "自变量，用弧度制",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "求导时角度必须用弧度；tanx 的导数为 1/cos²x。"
+  },
+  {
+   "id": "math_hs_068",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "导数",
+   "name": "指数函数求导公式",
+   "latex": "\\begin{aligned} (a^x)' &= a^x \\ln a \\\\ (e^x)' &= e^x \\end{aligned}",
+   "plain": "(aˣ)′ = aˣlna；(eˣ)′ = eˣ",
+   "vars": [
+    {
+     "n": "a",
+     "d": "底数",
+     "u": ""
+    },
+    {
+     "n": "x",
+     "d": "自变量",
+     "u": ""
+    }
+   ],
+   "cond": "a > 0 且 a ≠ 1",
+   "note": "以 e 为底时导数形式最简单，这是自然指数在微积分中常用的原因。"
+  },
+  {
+   "id": "math_hs_069",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "导数",
+   "name": "对数函数求导公式",
+   "latex": "\\begin{aligned} (\\log_a x)' &= \\frac{1}{x\\ln a} \\\\ (\\ln x)' &= \\frac{1}{x} \\end{aligned}",
+   "plain": "(logₐx)′ = 1/(xlna)；(lnx)′ = 1/x",
+   "vars": [
+    {
+     "n": "a",
+     "d": "底数",
+     "u": ""
+    },
+    {
+     "n": "x",
+     "d": "自变量",
+     "u": ""
+    }
+   ],
+   "cond": "a > 0 且 a ≠ 1，x > 0",
+   "note": "与指数函数求导公式互为对应。"
+  },
+  {
+   "id": "math_hs_070",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "导数",
+   "name": "导数四则运算法则",
+   "latex": "\\begin{aligned} (f \\pm g)' &= f' \\pm g' \\\\ (fg)' &= f'g+fg' \\\\ \\left(\\frac{f}{g}\\right)' &= \\frac{f'g-fg'}{g^2} \\end{aligned}",
+   "plain": "(f±g)′ = f′±g′；(fg)′ = f′g+fg′；(f/g)′ = (f′g−fg′)/g²",
+   "vars": [
+    {
+     "n": "f、g",
+     "d": "可导函数",
+     "u": ""
+    }
+   ],
+   "cond": "商的法则要求 g ≠ 0",
+   "note": "常数因子可提出：(cf)′=cf′。"
+  },
+  {
+   "id": "math_hs_071",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "导数",
+   "name": "复合函数求导",
+   "latex": "y' = f'(u)\\cdot g'(x)",
+   "plain": "y′ = f′(u)·g′(x)",
+   "vars": [
+    {
+     "n": "y",
+     "d": "y=f(u)，u=g(x)",
+     "u": ""
+    },
+    {
+     "n": "u",
+     "d": "中间变量",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "链式法则，由外向内逐层求导再相乘。"
+  },
+  {
+   "id": "math_hs_072",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "导数",
+   "name": "切线方程",
+   "latex": "y-f(x_0) = f'(x_0)(x-x_0)",
+   "plain": "y−f(x₀) = f′(x₀)(x−x₀)",
+   "vars": [
+    {
+     "n": "(x₀,f(x₀))",
+     "d": "切点",
+     "u": ""
+    },
+    {
+     "n": "f′(x₀)",
+     "d": "切线斜率",
+     "u": ""
+    }
+   ],
+   "cond": "f 在 x₀ 处可导",
+   "note": "先求导得斜率，再用点斜式写方程；过某点作切线时要先判断该点是否在曲线上。"
+  },
+  {
+   "id": "phys_hs_001",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "胡克定律",
+   "latex": "F = kx",
+   "plain": "F = kx",
+   "vars": [
+    {
+     "n": "F",
+     "d": "弹力",
+     "u": "N"
+    },
+    {
+     "n": "k",
+     "d": "劲度系数",
+     "u": "N/m"
+    },
+    {
+     "n": "x",
+     "d": "形变量（伸长或压缩量）",
+     "u": "m"
+    }
+   ],
+   "cond": "在弹性限度内",
+   "note": "x 是形变量，不是弹簧总长度；劲度系数由弹簧本身决定。"
+  },
+  {
+   "id": "phys_hs_002",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "滑动摩擦力",
+   "latex": "f = \\mu N",
+   "plain": "f = μN",
+   "vars": [
+    {
+     "n": "f",
+     "d": "滑动摩擦力",
+     "u": "N"
+    },
+    {
+     "n": "μ",
+     "d": "动摩擦因数",
+     "u": ""
+    },
+    {
+     "n": "N",
+     "d": "正压力",
+     "u": "N"
+    }
+   ],
+   "cond": "",
+   "note": "滑动摩擦力方向与相对运动方向相反，与接触面积无关。"
+  },
+  {
+   "id": "phys_hs_003",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "互成角度的二力合成",
+   "latex": "F = \\sqrt{F_1^2+F_2^2+2F_1F_2\\cos\\theta}",
+   "plain": "F = √(F₁²+F₂²+2F₁F₂cosθ)",
+   "vars": [
+    {
+     "n": "F",
+     "d": "合力",
+     "u": "N"
+    },
+    {
+     "n": "F₁、F₂",
+     "d": "两个分力",
+     "u": "N"
+    },
+    {
+     "n": "θ",
+     "d": "两分力夹角",
+     "u": "°"
+    }
+   ],
+   "cond": "",
+   "note": "夹角为 90° 时化为勾股定理；合力范围 |F₁−F₂|≤F≤F₁+F₂。"
+  },
+  {
+   "id": "phys_hs_004",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "共点力平衡条件",
+   "latex": "\\begin{aligned} \\sum F_x &= 0 \\\\ \\sum F_y &= 0 \\end{aligned}",
+   "plain": "ΣFₓ = 0；ΣF_y = 0",
+   "vars": [
+    {
+     "n": "Fₓ",
+     "d": "x 方向分力",
+     "u": "N"
+    },
+    {
+     "n": "F_y",
+     "d": "y 方向分力",
+     "u": "N"
+    }
+   ],
+   "cond": "",
+   "note": "物体处于静止或匀速直线运动状态时合外力为零，常用正交分解列方程。"
+  },
+  {
+   "id": "phys_hs_005",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "力矩",
+   "latex": "M = FL",
+   "plain": "M = FL",
+   "vars": [
+    {
+     "n": "M",
+     "d": "力矩",
+     "u": "N·m"
+    },
+    {
+     "n": "F",
+     "d": "作用力",
+     "u": "N"
+    },
+    {
+     "n": "L",
+     "d": "力臂",
+     "u": "m"
+    }
+   ],
+   "cond": "L 为转轴到力的作用线的垂直距离",
+   "note": "有固定转轴物体的平衡条件为顺时针力矩之和等于逆时针力矩之和。"
+  },
+  {
+   "id": "phys_hs_006",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "匀速直线运动",
+   "latex": "x = vt",
+   "plain": "x = vt",
+   "vars": [
+    {
+     "n": "x",
+     "d": "位移",
+     "u": "m"
+    },
+    {
+     "n": "v",
+     "d": "速度",
+     "u": "m/s"
+    },
+    {
+     "n": "t",
+     "d": "时间",
+     "u": "s"
+    }
+   ],
+   "cond": "",
+   "note": "速度大小和方向都不变，加速度为零。"
+  },
+  {
+   "id": "phys_hs_007",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "平均速度",
+   "latex": "\\bar v = \\frac{\\Delta x}{\\Delta t} = \\frac{v_0+v}{2}",
+   "plain": "v̄ = Δx/Δt = (v₀+v)/2",
+   "vars": [
+    {
+     "n": "v̄",
+     "d": "平均速度",
+     "u": "m/s"
+    },
+    {
+     "n": "Δx",
+     "d": "位移",
+     "u": "m"
+    },
+    {
+     "n": "Δt",
+     "d": "时间",
+     "u": "s"
+    },
+    {
+     "n": "v₀、v",
+     "d": "初、末速度",
+     "u": "m/s"
+    }
+   ],
+   "cond": "第二个等号仅适用于匀变速直线运动",
+   "note": "平均速度是位移与时间的比值，与平均速率不同。"
+  },
+  {
+   "id": "phys_hs_008",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "竖直上抛运动",
+   "latex": "\\begin{aligned} v &= v_0-gt \\\\ h &= v_0t-\\frac{1}{2}gt^2 \\\\ v^2 &= v_0^2-2gh \\end{aligned}",
+   "plain": "v = v₀−gt；h = v₀t−½gt²；v² = v₀²−2gh",
+   "vars": [
+    {
+     "n": "v₀",
+     "d": "初速度",
+     "u": "m/s"
+    },
+    {
+     "n": "v",
+     "d": "t 时刻速度",
+     "u": "m/s"
+    },
+    {
+     "n": "h",
+     "d": "离抛出点的高度",
+     "u": "m"
+    },
+    {
+     "n": "g",
+     "d": "重力加速度",
+     "u": "m/s²"
+    }
+   ],
+   "cond": "不计空气阻力，取竖直向上为正方向",
+   "note": "上升时间 t=v₀/g，最大高度 H=v₀²/(2g)；下落过程可看成逆向的自由落体。"
+  },
+  {
+   "id": "phys_hs_009",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "斜抛运动",
+   "latex": "\\begin{aligned} x &= v_0\\cos\\theta\\,t \\\\ y &= v_0\\sin\\theta\\,t-\\frac{1}{2}gt^2 \\\\ y &= x\\tan\\theta-\\frac{gx^2}{2v_0^2\\cos^2\\theta} \\end{aligned}",
+   "plain": "x = v₀cosθ·t；y = v₀sinθ·t−½gt²；y = xtanθ−gx²/(2v₀²cos²θ)",
+   "vars": [
+    {
+     "n": "v₀",
+     "d": "抛出初速度",
+     "u": "m/s"
+    },
+    {
+     "n": "θ",
+     "d": "抛射角",
+     "u": "°"
+    },
+    {
+     "n": "x",
+     "d": "水平位移",
+     "u": "m"
+    },
+    {
+     "n": "y",
+     "d": "竖直位移",
+     "u": "m"
+    }
+   ],
+   "cond": "不计空气阻力，抛出点为原点",
+   "note": "斜抛可分解为水平匀速和竖直上抛；θ=90° 时退化为竖直上抛。"
+  },
+  {
+   "id": "phys_hs_010",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "圆周运动",
+   "latex": "\\begin{aligned} v &= \\omega r = \\frac{2\\pi r}{T} \\\\ \\omega &= \\frac{2\\pi}{T} = 2\\pi n \\\\ n &= \\frac{1}{T} \\end{aligned}",
+   "plain": "v = ωr = 2πr/T；ω = 2π/T = 2πn；n = 1/T",
+   "vars": [
+    {
+     "n": "v",
+     "d": "线速度",
+     "u": "m/s"
+    },
+    {
+     "n": "ω",
+     "d": "角速度",
+     "u": "rad/s"
+    },
+    {
+     "n": "r",
+     "d": "半径",
+     "u": "m"
+    },
+    {
+     "n": "T",
+     "d": "周期",
+     "u": "s"
+    },
+    {
+     "n": "n",
+     "d": "转速",
+     "u": "r/s"
+    }
+   ],
+   "cond": "",
+   "note": "同轴转动各点角速度相同，皮带传动边缘各点线速度大小相同。"
+  },
+  {
+   "id": "phys_hs_011",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "向心加速度",
+   "latex": "a_n = \\frac{v^2}{r} = \\omega^2 r = \\frac{4\\pi^2 r}{T^2}",
+   "plain": "aₙ = v²/r = ω²r = 4π²r/T²",
+   "vars": [
+    {
+     "n": "aₙ",
+     "d": "向心加速度",
+     "u": "m/s²"
+    },
+    {
+     "n": "v",
+     "d": "线速度",
+     "u": "m/s"
+    },
+    {
+     "n": "ω",
+     "d": "角速度",
+     "u": "rad/s"
+    },
+    {
+     "n": "r",
+     "d": "半径",
+     "u": "m"
+    },
+    {
+     "n": "T",
+     "d": "周期",
+     "u": "s"
+    }
+   ],
+   "cond": "",
+   "note": "方向始终指向圆心，只改变速度方向，不改变速度大小。"
+  },
+  {
+   "id": "phys_hs_012",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "匀变速直线运动位移差",
+   "latex": "\\Delta x = aT^2",
+   "plain": "Δx = aT²",
+   "vars": [
+    {
+     "n": "Δx",
+     "d": "相邻相等时间内的位移差",
+     "u": "m"
+    },
+    {
+     "n": "a",
+     "d": "加速度",
+     "u": "m/s²"
+    },
+    {
+     "n": "T",
+     "d": "相等时间间隔",
+     "u": "s"
+    }
+   ],
+   "cond": "匀变速直线运动",
+   "note": "逐差法测加速度的依据，也常写成 xₘ−xₙ=(m−n)aT²。"
+  },
+  {
+   "id": "phys_hs_013",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "牛顿第三定律",
+   "latex": "\\vec F = -\\vec F'",
+   "plain": "F = −F′",
+   "vars": [
+    {
+     "n": "F",
+     "d": "作用力",
+     "u": "N"
+    },
+    {
+     "n": "F′",
+     "d": "反作用力",
+     "u": "N"
+    }
+   ],
+   "cond": "",
+   "note": "作用力与反作用力大小相等、方向相反、作用在同一直线上，分别作用在两个物体上，不能抵消。"
+  },
+  {
+   "id": "phys_hs_014",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "动能定理",
+   "latex": "W_{\\text{合}} = \\frac{1}{2}mv^2-\\frac{1}{2}mv_0^2",
+   "plain": "W合 = ½mv²−½mv₀²",
+   "vars": [
+    {
+     "n": "W合",
+     "d": "合外力做的功",
+     "u": "J"
+    },
+    {
+     "n": "m",
+     "d": "质量",
+     "u": "kg"
+    },
+    {
+     "n": "v₀、v",
+     "d": "初、末速度",
+     "u": "m/s"
+    }
+   ],
+   "cond": "",
+   "note": "合外力做功等于动能的变化量，适用于直线和曲线运动。"
+  },
+  {
+   "id": "phys_hs_015",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "动量",
+   "latex": "p = mv",
+   "plain": "p = mv",
+   "vars": [
+    {
+     "n": "p",
+     "d": "动量",
+     "u": "kg·m/s"
+    },
+    {
+     "n": "m",
+     "d": "质量",
+     "u": "kg"
+    },
+    {
+     "n": "v",
+     "d": "速度",
+     "u": "m/s"
+    }
+   ],
+   "cond": "",
+   "note": "动量是矢量，方向与速度方向相同。"
+  },
+  {
+   "id": "phys_hs_016",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "冲量",
+   "latex": "I = Ft",
+   "plain": "I = Ft",
+   "vars": [
+    {
+     "n": "I",
+     "d": "冲量",
+     "u": "N·s"
+    },
+    {
+     "n": "F",
+     "d": "恒力",
+     "u": "N"
+    },
+    {
+     "n": "t",
+     "d": "作用时间",
+     "u": "s"
+    }
+   ],
+   "cond": "",
+   "note": "冲量是矢量，方向与力的方向相同；变力时可用 F−t 图象面积求冲量。"
+  },
+  {
+   "id": "phys_hs_017",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "弹性碰撞",
+   "latex": "\\begin{aligned} v_1' &= \\frac{m_1-m_2}{m_1+m_2}v_1 \\\\ v_2' &= \\frac{2m_1}{m_1+m_2}v_1 \\end{aligned}",
+   "plain": "v₁′ = (m₁−m₂)/(m₁+m₂)·v₁；v₂′ = 2m₁/(m₁+m₂)·v₁",
+   "vars": [
+    {
+     "n": "m₁、m₂",
+     "d": "两球质量",
+     "u": "kg"
+    },
+    {
+     "n": "v₁",
+     "d": "碰前 m₁ 的速度",
+     "u": "m/s"
+    },
+    {
+     "n": "v₁′、v₂′",
+     "d": "碰后速度",
+     "u": "m/s"
+    }
+   ],
+   "cond": "一维弹性碰撞，碰前 m₂ 静止",
+   "note": "碰撞过程动量守恒、动能守恒；m₁=m₂ 时速度交换。"
+  },
+  {
+   "id": "phys_hs_018",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "完全非弹性碰撞",
+   "latex": "v = \\frac{m_1v_1+m_2v_2}{m_1+m_2}",
+   "plain": "v = (m₁v₁+m₂v₂)/(m₁+m₂)",
+   "vars": [
+    {
+     "n": "m₁、m₂",
+     "d": "两物体质量",
+     "u": "kg"
+    },
+    {
+     "n": "v₁、v₂",
+     "d": "碰前速度",
+     "u": "m/s"
+    },
+    {
+     "n": "v",
+     "d": "碰后共同速度",
+     "u": "m/s"
+    }
+   ],
+   "cond": "",
+   "note": "碰后两物体粘在一起，动量守恒但动能损失最大。"
+  },
+  {
+   "id": "phys_hs_019",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "简谐运动位移公式",
+   "latex": "x = A\\sin(\\omega t+\\varphi)",
+   "plain": "x = A sin(ωt+φ)",
+   "vars": [
+    {
+     "n": "x",
+     "d": "位移",
+     "u": "m"
+    },
+    {
+     "n": "A",
+     "d": "振幅",
+     "u": "m"
+    },
+    {
+     "n": "ω",
+     "d": "角频率",
+     "u": "rad/s"
+    },
+    {
+     "n": "φ",
+     "d": "初相位",
+     "u": "rad"
+    }
+   ],
+   "cond": "",
+   "note": "ω=2π/T；位移—时间图象为正弦或余弦曲线。"
+  },
+  {
+   "id": "phys_hs_020",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "单摆周期",
+   "latex": "T = 2\\pi\\sqrt{\\frac{l}{g}}",
+   "plain": "T = 2π√(l/g)",
+   "vars": [
+    {
+     "n": "T",
+     "d": "周期",
+     "u": "s"
+    },
+    {
+     "n": "l",
+     "d": "摆长",
+     "u": "m"
+    },
+    {
+     "n": "g",
+     "d": "重力加速度",
+     "u": "m/s²"
+    }
+   ],
+   "cond": "摆角很小（一般小于 5°）",
+   "note": "周期与摆球质量无关，只与摆长和重力加速度有关。"
+  },
+  {
+   "id": "phys_hs_021",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "弹簧振子周期",
+   "latex": "T = 2\\pi\\sqrt{\\frac{m}{k}}",
+   "plain": "T = 2π√(m/k)",
+   "vars": [
+    {
+     "n": "T",
+     "d": "周期",
+     "u": "s"
+    },
+    {
+     "n": "m",
+     "d": "振子质量",
+     "u": "kg"
+    },
+    {
+     "n": "k",
+     "d": "弹簧劲度系数",
+     "u": "N/m"
+    }
+   ],
+   "cond": "",
+   "note": "在弹性限度内周期与振幅无关。"
+  },
+  {
+   "id": "phys_hs_022",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "波速公式",
+   "latex": "v = \\lambda f = \\frac{\\lambda}{T}",
+   "plain": "v = λf = λ/T",
+   "vars": [
+    {
+     "n": "v",
+     "d": "波速",
+     "u": "m/s"
+    },
+    {
+     "n": "λ",
+     "d": "波长",
+     "u": "m"
+    },
+    {
+     "n": "f",
+     "d": "频率",
+     "u": "Hz"
+    },
+    {
+     "n": "T",
+     "d": "周期",
+     "u": "s"
+    }
+   ],
+   "cond": "",
+   "note": "波速由介质决定，频率由波源决定；波从一种介质进入另一种介质时频率不变。"
+  },
+  {
+   "id": "phys_hs_023",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "力学",
+   "name": "波的干涉加强与减弱",
+   "latex": "\\begin{aligned} \\Delta r &= k\\lambda && \\text{加强} \\\\ \\Delta r &= (2k+1)\\frac{\\lambda}{2} && \\text{减弱} \\end{aligned}",
+   "plain": "Δr = kλ 加强；Δr = (2k+1)λ/2 减弱",
+   "vars": [
+    {
+     "n": "Δr",
+     "d": "到两波源的路程差",
+     "u": "m"
+    },
+    {
+     "n": "λ",
+     "d": "波长",
+     "u": "m"
+    },
+    {
+     "n": "k",
+     "d": "整数 0，1，2，…",
+     "u": ""
+    }
+   ],
+   "cond": "两波源同相、频率相同",
+   "note": "反相波源时加强、减弱条件互换。"
+  },
+  {
+   "id": "phys_hs_024",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "热学",
+   "name": "热力学温度",
+   "latex": "T = t + 273.15",
+   "plain": "T = t + 273.15",
+   "vars": [
+    {
+     "n": "T",
+     "d": "热力学温度",
+     "u": "K"
+    },
+    {
+     "n": "t",
+     "d": "摄氏温度",
+     "u": "℃"
+    }
+   ],
+   "cond": "",
+   "note": "高中计算常取 T=t+273；热力学温度没有负值。"
+  },
+  {
+   "id": "phys_hs_025",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "热学",
+   "name": "玻意耳定律",
+   "latex": "p_1V_1 = p_2V_2",
+   "plain": "p₁V₁ = p₂V₂",
+   "vars": [
+    {
+     "n": "p",
+     "d": "气体压强",
+     "u": "Pa"
+    },
+    {
+     "n": "V",
+     "d": "气体体积",
+     "u": "m³"
+    }
+   ],
+   "cond": "一定质量的气体，温度不变",
+   "note": "等温变化中压强与体积成反比。"
+  },
+  {
+   "id": "phys_hs_026",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "热学",
+   "name": "查理定律",
+   "latex": "\\frac{p_1}{T_1} = \\frac{p_2}{T_2}",
+   "plain": "p₁/T₁ = p₂/T₂",
+   "vars": [
+    {
+     "n": "p",
+     "d": "气体压强",
+     "u": "Pa"
+    },
+    {
+     "n": "T",
+     "d": "热力学温度",
+     "u": "K"
+    }
+   ],
+   "cond": "一定质量的气体，体积不变",
+   "note": "等容变化中压强与热力学温度成正比。"
+  },
+  {
+   "id": "phys_hs_027",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "热学",
+   "name": "盖-吕萨克定律",
+   "latex": "\\frac{V_1}{T_1} = \\frac{V_2}{T_2}",
+   "plain": "V₁/T₁ = V₂/T₂",
+   "vars": [
+    {
+     "n": "V",
+     "d": "气体体积",
+     "u": "m³"
+    },
+    {
+     "n": "T",
+     "d": "热力学温度",
+     "u": "K"
+    }
+   ],
+   "cond": "一定质量的气体，压强不变",
+   "note": "等压变化中体积与热力学温度成正比。"
+  },
+  {
+   "id": "phys_hs_029",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "热学",
+   "name": "热力学第一定律",
+   "latex": "\\Delta U = Q+W",
+   "plain": "ΔU = Q+W",
+   "vars": [
+    {
+     "n": "ΔU",
+     "d": "内能变化量",
+     "u": "J"
+    },
+    {
+     "n": "Q",
+     "d": "吸收的热量",
+     "u": "J"
+    },
+    {
+     "n": "W",
+     "d": "外界对气体做的功",
+     "u": "J"
+    }
+   ],
+   "cond": "W 取外界对气体做功为正",
+   "note": "若用气体对外做功 W′，则写为 ΔU=Q−W′；符号约定要统一。"
+  },
+  {
+   "id": "phys_hs_030",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "电场力",
+   "latex": "F = qE",
+   "plain": "F = qE",
+   "vars": [
+    {
+     "n": "F",
+     "d": "电场力",
+     "u": "N"
+    },
+    {
+     "n": "q",
+     "d": "电荷量",
+     "u": "C"
+    },
+    {
+     "n": "E",
+     "d": "电场强度",
+     "u": "N/C"
+    }
+   ],
+   "cond": "",
+   "note": "正电荷受力方向与场强方向相同，负电荷相反。"
+  },
+  {
+   "id": "phys_hs_031",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "电势差",
+   "latex": "U_{AB} = \\frac{W_{AB}}{q}",
+   "plain": "U_AB = W_AB/q",
+   "vars": [
+    {
+     "n": "U_AB",
+     "d": "A、B 两点间电势差",
+     "u": "V"
+    },
+    {
+     "n": "W_AB",
+     "d": "电场力做的功",
+     "u": "J"
+    },
+    {
+     "n": "q",
+     "d": "试探电荷电荷量",
+     "u": "C"
+    }
+   ],
+   "cond": "",
+   "note": "U_AB=φ_A−φ_B；电势差也叫电压。"
+  },
+  {
+   "id": "phys_hs_032",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "电场力做功",
+   "latex": "W_{AB} = qU_{AB}",
+   "plain": "W_AB = qU_AB",
+   "vars": [
+    {
+     "n": "W_AB",
+     "d": "电场力做的功",
+     "u": "J"
+    },
+    {
+     "n": "q",
+     "d": "电荷量",
+     "u": "C"
+    },
+    {
+     "n": "U_AB",
+     "d": "电势差",
+     "u": "V"
+    }
+   ],
+   "cond": "",
+   "note": "电场力做正功时电势能减少，做负功时电势能增加。"
+  },
+  {
+   "id": "phys_hs_033",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "平行板电容器的电容",
+   "latex": "C = \\frac{\\varepsilon_r S}{4\\pi k d}",
+   "plain": "C = εᵣS/(4πkd)",
+   "vars": [
+    {
+     "n": "C",
+     "d": "电容",
+     "u": "F"
+    },
+    {
+     "n": "εᵣ",
+     "d": "介电常数（相对）",
+     "u": ""
+    },
+    {
+     "n": "S",
+     "d": "正对面积",
+     "u": "m²"
+    },
+    {
+     "n": "d",
+     "d": "板间距离",
+     "u": "m"
+    },
+    {
+     "n": "k",
+     "d": "静电力常量",
+     "u": "N·m²/C²"
+    }
+   ],
+   "cond": "",
+   "note": "电容由电容器本身决定，与所带电荷量和电压无关。"
+  },
+  {
+   "id": "phys_hs_034",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "电容串联",
+   "latex": "\\frac{1}{C} = \\frac{1}{C_1}+\\frac{1}{C_2}",
+   "plain": "1/C = 1/C₁+1/C₂",
+   "vars": [
+    {
+     "n": "C",
+     "d": "总电容",
+     "u": "F"
+    },
+    {
+     "n": "C₁、C₂",
+     "d": "各电容",
+     "u": "F"
+    }
+   ],
+   "cond": "",
+   "note": "串联后总电容小于任一分电容，各电容所带电荷量相同。"
+  },
+  {
+   "id": "phys_hs_035",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "电容并联",
+   "latex": "C = C_1+C_2",
+   "plain": "C = C₁+C₂",
+   "vars": [
+    {
+     "n": "C",
+     "d": "总电容",
+     "u": "F"
+    },
+    {
+     "n": "C₁、C₂",
+     "d": "各电容",
+     "u": "F"
+    }
+   ],
+   "cond": "",
+   "note": "并联后总电容等于各电容之和，各电容两端电压相同。"
+  },
+  {
+   "id": "phys_hs_036",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "电流的微观表达式",
+   "latex": "I = nqSv",
+   "plain": "I = nqSv",
+   "vars": [
+    {
+     "n": "n",
+     "d": "单位体积内的自由电荷数",
+     "u": "个/m³"
+    },
+    {
+     "n": "q",
+     "d": "每个自由电荷的电荷量",
+     "u": "C"
+    },
+    {
+     "n": "S",
+     "d": "导体横截面积",
+     "u": "m²"
+    },
+    {
+     "n": "v",
+     "d": "自由电荷定向移动速率",
+     "u": "m/s"
+    }
+   ],
+   "cond": "",
+   "note": "定义式 I=q/t 对任何导体都成立；微观表达式说明电流由自由电荷的密度、电荷量、横截面积和定向移动速率共同决定。"
+  },
+  {
+   "id": "phys_hs_037",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "电阻定律",
+   "latex": "R = \\rho\\frac{L}{S}",
+   "plain": "R = ρL/S",
+   "vars": [
+    {
+     "n": "R",
+     "d": "电阻",
+     "u": "Ω"
+    },
+    {
+     "n": "ρ",
+     "d": "电阻率",
+     "u": "Ω·m"
+    },
+    {
+     "n": "L",
+     "d": "导体长度",
+     "u": "m"
+    },
+    {
+     "n": "S",
+     "d": "横截面积",
+     "u": "m²"
+    }
+   ],
+   "cond": "导体材料均匀、温度一定",
+   "note": "电阻率反映材料导电性能，与导体长度、粗细无关。"
+  },
+  {
+   "id": "phys_hs_038",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "闭合电路欧姆定律",
+   "latex": "I = \\frac{E}{R+r}",
+   "plain": "I = E/(R+r)",
+   "vars": [
+    {
+     "n": "I",
+     "d": "电流",
+     "u": "A"
+    },
+    {
+     "n": "E",
+     "d": "电源电动势",
+     "u": "V"
+    },
+    {
+     "n": "R",
+     "d": "外电路电阻",
+     "u": "Ω"
+    },
+    {
+     "n": "r",
+     "d": "电源内阻",
+     "u": "Ω"
+    }
+   ],
+   "cond": "",
+   "note": "路端电压 U=E−Ir，外电阻增大时路端电压增大。"
+  },
+  {
+   "id": "phys_hs_039",
+   "subject": "物理",
+   "grades": [
+    "初中",
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "焦耳定律",
+   "latex": "Q = I^2Rt",
+   "plain": "Q = I²Rt",
+   "vars": [
+    {
+     "n": "Q",
+     "d": "产生的热量",
+     "u": "J"
+    },
+    {
+     "n": "I",
+     "d": "电流",
+     "u": "A"
+    },
+    {
+     "n": "R",
+     "d": "电阻",
+     "u": "Ω"
+    },
+    {
+     "n": "t",
+     "d": "通电时间",
+     "u": "s"
+    }
+   ],
+   "cond": "",
+   "note": "普遍适用；纯电阻电路中也可写成 Q=UIt=U²t/R。"
+  },
+  {
+   "id": "phys_hs_040",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "带电粒子在磁场中的圆周运动",
+   "latex": "\\begin{aligned} r &= \\frac{mv}{qB} \\\\ T &= \\frac{2\\pi m}{qB} \\end{aligned}",
+   "plain": "r = mv/(qB)；T = 2πm/(qB)",
+   "vars": [
+    {
+     "n": "r",
+     "d": "轨道半径",
+     "u": "m"
+    },
+    {
+     "n": "T",
+     "d": "周期",
+     "u": "s"
+    },
+    {
+     "n": "m",
+     "d": "粒子质量",
+     "u": "kg"
+    },
+    {
+     "n": "v",
+     "d": "速度",
+     "u": "m/s"
+    },
+    {
+     "n": "q",
+     "d": "电荷量",
+     "u": "C"
+    },
+    {
+     "n": "B",
+     "d": "磁感应强度",
+     "u": "T"
+    }
+   ],
+   "cond": "速度方向垂直于磁场，不计重力",
+   "note": "洛伦兹力提供向心力；周期与速度大小无关。"
+  },
+  {
+   "id": "phys_hs_041",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "动生电动势",
+   "latex": "E = BLv",
+   "plain": "E = BLv",
+   "vars": [
+    {
+     "n": "E",
+     "d": "感应电动势",
+     "u": "V"
+    },
+    {
+     "n": "B",
+     "d": "磁感应强度",
+     "u": "T"
+    },
+    {
+     "n": "L",
+     "d": "导体有效长度",
+     "u": "m"
+    },
+    {
+     "n": "v",
+     "d": "切割速度",
+     "u": "m/s"
+    }
+   ],
+   "cond": "B、L、v 三者两两垂直",
+   "note": "三者不垂直时取垂直分量；这是法拉第电磁感应定律的特例。"
+  },
+  {
+   "id": "phys_hs_042",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "正弦交流电的有效值",
+   "latex": "U = \\frac{U_m}{\\sqrt{2}},\\quad I = \\frac{I_m}{\\sqrt{2}}",
+   "plain": "U = Uₘ/√2；I = Iₘ/√2",
+   "vars": [
+    {
+     "n": "U、I",
+     "d": "有效值",
+     "u": "V、A"
+    },
+    {
+     "n": "Uₘ、Iₘ",
+     "d": "最大值",
+     "u": "V、A"
+    }
+   ],
+   "cond": "正弦或余弦交流电",
+   "note": "有效值按电流热效应定义；电表读数、额定值通常指有效值。"
+  },
+  {
+   "id": "phys_hs_043",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "理想变压器",
+   "latex": "\\begin{aligned} \\frac{U_1}{U_2} &= \\frac{n_1}{n_2} \\\\ \\frac{I_1}{I_2} &= \\frac{n_2}{n_1} \\end{aligned}",
+   "plain": "U₁/U₂ = n₁/n₂；I₁/I₂ = n₂/n₁",
+   "vars": [
+    {
+     "n": "U₁、U₂",
+     "d": "原、副线圈电压",
+     "u": "V"
+    },
+    {
+     "n": "I₁、I₂",
+     "d": "原、副线圈电流",
+     "u": "A"
+    },
+    {
+     "n": "n₁、n₂",
+     "d": "原、副线圈匝数",
+     "u": ""
+    }
+   ],
+   "cond": "理想变压器，无能量损失",
+   "note": "输入功率等于输出功率；高压线圈匝数多、电流小。"
+  },
+  {
+   "id": "phys_hs_044",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "电学",
+   "name": "电磁波波速",
+   "latex": "c = \\lambda f",
+   "plain": "c = λf",
+   "vars": [
+    {
+     "n": "c",
+     "d": "光速",
+     "u": "m/s"
+    },
+    {
+     "n": "λ",
+     "d": "波长",
+     "u": "m"
+    },
+    {
+     "n": "f",
+     "d": "频率",
+     "u": "Hz"
+    }
+   ],
+   "cond": "真空中 c≈3.0×10⁸ m/s",
+   "note": "电磁波在介质中的速度小于真空中的速度，频率由波源决定。"
+  },
+  {
+   "id": "phys_hs_045",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "光学",
+   "name": "折射率",
+   "latex": "n = \\frac{\\sin i}{\\sin r} = \\frac{c}{v}",
+   "plain": "n = sini/sinr = c/v",
+   "vars": [
+    {
+     "n": "n",
+     "d": "折射率",
+     "u": ""
+    },
+    {
+     "n": "i",
+     "d": "入射角",
+     "u": "°"
+    },
+    {
+     "n": "r",
+     "d": "折射角",
+     "u": "°"
+    },
+    {
+     "n": "c",
+     "d": "真空中光速",
+     "u": "m/s"
+    },
+    {
+     "n": "v",
+     "d": "介质中光速",
+     "u": "m/s"
+    }
+   ],
+   "cond": "光从真空（或空气）射入介质",
+   "note": "折射率由介质和光的频率共同决定。"
+  },
+  {
+   "id": "phys_hs_046",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "光学",
+   "name": "光的折射定律",
+   "latex": "n_1\\sin\\theta_1 = n_2\\sin\\theta_2",
+   "plain": "n₁sinθ₁ = n₂sinθ₂",
+   "vars": [
+    {
+     "n": "n₁、n₂",
+     "d": "两种介质的折射率",
+     "u": ""
+    },
+    {
+     "n": "θ₁",
+     "d": "入射角",
+     "u": "°"
+    },
+    {
+     "n": "θ₂",
+     "d": "折射角",
+     "u": "°"
+    }
+   ],
+   "cond": "",
+   "note": "光从光疏介质射入光密介质时折射角小于入射角。"
+  },
+  {
+   "id": "phys_hs_047",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "光学",
+   "name": "全反射临界角",
+   "latex": "\\sin C = \\frac{1}{n}",
+   "plain": "sinC = 1/n",
+   "vars": [
+    {
+     "n": "C",
+     "d": "临界角",
+     "u": "°"
+    },
+    {
+     "n": "n",
+     "d": "光密介质的折射率",
+     "u": ""
+    }
+   ],
+   "cond": "光从光密介质射向光疏介质，n>1",
+   "note": "入射角大于等于临界角时发生全反射；光密到光疏才可能全反射。"
+  },
+  {
+   "id": "phys_hs_048",
+   "subject": "物理",
+   "grades": [
+    "初中",
+    "高中"
+   ],
+   "chapter": "光学",
+   "name": "透镜成像公式",
+   "latex": "\\frac{1}{u}+\\frac{1}{v} = \\frac{1}{f},\\quad m = \\frac{v}{u}",
+   "plain": "1/u+1/v = 1/f；m = v/u",
+   "vars": [
+    {
+     "n": "u",
+     "d": "物距",
+     "u": "m"
+    },
+    {
+     "n": "v",
+     "d": "像距",
+     "u": "m"
+    },
+    {
+     "n": "f",
+     "d": "焦距",
+     "u": "m"
+    },
+    {
+     "n": "m",
+     "d": "放大率",
+     "u": ""
+    }
+   ],
+   "cond": "近轴光线，符号按所选约定统一",
+   "note": "凸透镜成实像时 v>0、倒立；成虚像时像距取负，像为正立。"
+  },
+  {
+   "id": "phys_hs_049",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "原子物理",
+   "name": "光子能量",
+   "latex": "E = h\\nu = \\frac{hc}{\\lambda}",
+   "plain": "E = hν = hc/λ",
+   "vars": [
+    {
+     "n": "E",
+     "d": "光子能量",
+     "u": "J"
+    },
+    {
+     "n": "h",
+     "d": "普朗克常量",
+     "u": "J·s"
+    },
+    {
+     "n": "ν",
+     "d": "频率",
+     "u": "Hz"
+    },
+    {
+     "n": "λ",
+     "d": "波长",
+     "u": "m"
+    }
+   ],
+   "cond": "",
+   "note": "h≈6.63×10⁻³⁴ J·s；有时用 eV 作单位，1 eV≈1.6×10⁻¹⁹ J。"
+  },
+  {
+   "id": "phys_hs_050",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "原子物理",
+   "name": "光电效应方程",
+   "latex": "E_{k\\max} = h\\nu-W_0",
+   "plain": "Eₖmax = hν−W₀",
+   "vars": [
+    {
+     "n": "Eₖmax",
+     "d": "最大初动能",
+     "u": "J"
+    },
+    {
+     "n": "hν",
+     "d": "入射光子能量",
+     "u": "J"
+    },
+    {
+     "n": "W₀",
+     "d": "逸出功",
+     "u": "J"
+    }
+   ],
+   "cond": "",
+   "note": "只有 hν≥W₀ 才能发生光电效应；遏止电压满足 eU₀=Eₖmax。"
+  },
+  {
+   "id": "phys_hs_051",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "原子物理",
+   "name": "能级跃迁",
+   "latex": "h\\nu = E_m-E_n",
+   "plain": "hν = Eₘ−Eₙ",
+   "vars": [
+    {
+     "n": "Eₘ、Eₙ",
+     "d": "两个能级的能量",
+     "u": "J"
+    },
+    {
+     "n": "ν",
+     "d": "吸收或辐射光子的频率",
+     "u": "Hz"
+    }
+   ],
+   "cond": "m>n，向低能级跃迁时辐射光子",
+   "note": "能级差为正时辐射，为负时吸收；一群氢原子可发出 Cₙ² 种不同频率的光。"
+  },
+  {
+   "id": "phys_hs_052",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "原子物理",
+   "name": "质能方程",
+   "latex": "E = mc^2,\\quad \\Delta E = \\Delta m\\,c^2",
+   "plain": "E = mc²；ΔE = Δmc²",
+   "vars": [
+    {
+     "n": "E",
+     "d": "能量",
+     "u": "J"
+    },
+    {
+     "n": "m",
+     "d": "质量",
+     "u": "kg"
+    },
+    {
+     "n": "c",
+     "d": "真空中光速",
+     "u": "m/s"
+    },
+    {
+     "n": "Δm",
+     "d": "质量亏损",
+     "u": "kg"
+    }
+   ],
+   "cond": "",
+   "note": "核反应中质量亏损对应释放的能量，Δm 取绝对值。"
+  },
+  {
+   "id": "phys_hs_053",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "原子物理",
+   "name": "半衰期",
+   "latex": "m = m_0\\left(\\frac{1}{2}\\right)^{t/T}",
+   "plain": "m = m₀(1/2)^(t/T)",
+   "vars": [
+    {
+     "n": "m",
+     "d": "剩余质量",
+     "u": "kg"
+    },
+    {
+     "n": "m₀",
+     "d": "初始质量",
+     "u": "kg"
+    },
+    {
+     "n": "t",
+     "d": "经过的时间",
+     "u": "s"
+    },
+    {
+     "n": "T",
+     "d": "半衰期",
+     "u": "s"
+    }
+   ],
+   "cond": "",
+   "note": "半衰期由原子核本身决定，与温度、压强、化学状态无关；统计规律只对大量原子核成立。"
+  },
+  {
+   "id": "phys_hs_054",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "近代物理",
+   "name": "时间膨胀",
+   "latex": "\\Delta t = \\frac{\\Delta t_0}{\\sqrt{1-v^2/c^2}}",
+   "plain": "Δt = Δt₀/√(1−v²/c²)",
+   "vars": [
+    {
+     "n": "Δt",
+     "d": "观测者测得的时间间隔",
+     "u": "s"
+    },
+    {
+     "n": "Δt₀",
+     "d": "固有时间间隔",
+     "u": "s"
+    },
+    {
+     "n": "v",
+     "d": "相对速度",
+     "u": "m/s"
+    },
+    {
+     "n": "c",
+     "d": "光速",
+     "u": "m/s"
+    }
+   ],
+   "cond": "狭义相对论，惯性系之间",
+   "note": "运动的时钟变慢，v 远小于 c 时退化为经典时间。"
+  },
+  {
+   "id": "phys_hs_055",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "近代物理",
+   "name": "长度收缩",
+   "latex": "l = l_0\\sqrt{1-v^2/c^2}",
+   "plain": "l = l₀√(1−v²/c²)",
+   "vars": [
+    {
+     "n": "l",
+     "d": "观测长度",
+     "u": "m"
+    },
+    {
+     "n": "l₀",
+     "d": "固有长度",
+     "u": "m"
+    },
+    {
+     "n": "v",
+     "d": "相对速度",
+     "u": "m/s"
+    },
+    {
+     "n": "c",
+     "d": "光速",
+     "u": "m/s"
+    }
+   ],
+   "cond": "狭义相对论，长度沿运动方向",
+   "note": "只在运动方向上收缩，垂直于运动方向的长度不变。"
+  },
+  {
+   "id": "chem_hs_001",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "基础",
+   "name": "摩尔质量",
+   "latex": "M = \\frac{m}{n}",
+   "plain": "M = m/n",
+   "vars": [
+    {
+     "n": "M",
+     "d": "摩尔质量",
+     "u": "g/mol"
+    },
+    {
+     "n": "m",
+     "d": "物质的质量",
+     "u": "g"
+    },
+    {
+     "n": "n",
+     "d": "物质的量",
+     "u": "mol"
+    }
+   ],
+   "cond": "",
+   "note": "数值上等于该物质的相对分子质量或相对原子质量。"
+  },
+  {
+   "id": "chem_hs_002",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "基础",
+   "name": "气体摩尔体积",
+   "latex": "n = \\frac{V}{V_m}",
+   "plain": "n = V/Vₘ",
+   "vars": [
+    {
+     "n": "n",
+     "d": "物质的量",
+     "u": "mol"
+    },
+    {
+     "n": "V",
+     "d": "气体体积",
+     "u": "L"
+    },
+    {
+     "n": "Vₘ",
+     "d": "气体摩尔体积",
+     "u": "L/mol"
+    }
+   ],
+   "cond": "标准状况下 Vₘ≈22.4 L/mol",
+   "note": "标准状况指 0 ℃、101 kPa；非标准状况不能用 22.4 L/mol。"
+  },
+  {
+   "id": "chem_hs_003",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "基础",
+   "name": "阿伏加德罗定律及推论",
+   "latex": "\\begin{aligned} \\text{同温同压} &: \\frac{V_1}{V_2} = \\frac{n_1}{n_2} \\\\ \\text{同温同容} &: \\frac{p_1}{p_2} = \\frac{n_1}{n_2} \\end{aligned}",
+   "plain": "同温同压：V₁/V₂=n₁/n₂；同温同容：p₁/p₂=n₁/n₂",
+   "vars": [
+    {
+     "n": "V",
+     "d": "气体体积",
+     "u": "L"
+    },
+    {
+     "n": "n",
+     "d": "物质的量",
+     "u": "mol"
+    },
+    {
+     "n": "p",
+     "d": "压强",
+     "u": "Pa"
+    }
+   ],
+   "cond": "",
+   "note": "同温同压同体积的气体含有相同数目的分子；可由 pV=nRT 推出。"
+  },
+  {
+   "id": "chem_hs_004",
+   "subject": "化学",
+   "grades": [
+    "初中",
+    "高中"
+   ],
+   "chapter": "基础",
+   "name": "溶液稀释定律",
+   "latex": "c_1V_1 = c_2V_2",
+   "plain": "c₁V₁ = c₂V₂",
+   "vars": [
+    {
+     "n": "c₁、c₂",
+     "d": "稀释前后的物质的量浓度",
+     "u": "mol/L"
+    },
+    {
+     "n": "V₁、V₂",
+     "d": "稀释前后的溶液体积",
+     "u": "L"
+    }
+   ],
+   "cond": "",
+   "note": "稀释前后溶质的物质的量不变；质量分数稀释用 m₁w₁=m₂w₂。"
+  },
+  {
+   "id": "chem_hs_005",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "基础",
+   "name": "溶解度",
+   "latex": "S = \\frac{m_{\\text{溶质}}}{m_{\\text{溶剂}}}\\times 100\\,\\text{g}",
+   "plain": "S = m溶质/m溶剂×100 g",
+   "vars": [
+    {
+     "n": "S",
+     "d": "溶解度",
+     "u": "g"
+    },
+    {
+     "n": "m溶质",
+     "d": "饱和溶液中溶质质量",
+     "u": "g"
+    },
+    {
+     "n": "m溶剂",
+     "d": "溶剂质量",
+     "u": "g"
+    }
+   ],
+   "cond": "一定温度下达到饱和，溶剂为 100 g",
+   "note": "固体溶解度只与温度有关；气体溶解度还受压强影响。"
+  },
+  {
+   "id": "chem_hs_006",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "基础",
+   "name": "平均摩尔质量",
+   "latex": "\\bar M = \\frac{m_{\\text{总}}}{n_{\\text{总}}} = \\sum M_i x_i",
+   "plain": "M̄ = m总/n总 = Σ Mᵢxᵢ",
+   "vars": [
+    {
+     "n": "M̄",
+     "d": "平均摩尔质量",
+     "u": "g/mol"
+    },
+    {
+     "n": "m总",
+     "d": "混合物总质量",
+     "u": "g"
+    },
+    {
+     "n": "n总",
+     "d": "混合物总物质的量",
+     "u": "mol"
+    },
+    {
+     "n": "xᵢ",
+     "d": "各组分的物质的量分数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "混合气体中物质的量分数等于体积分数；也等于标准状况下密度的 22.4 倍。"
+  },
+  {
+   "id": "chem_hs_007",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "基础",
+   "name": "质量数与质子数、中子数的关系",
+   "latex": "A = Z+N",
+   "plain": "A = Z+N",
+   "vars": [
+    {
+     "n": "A",
+     "d": "质量数",
+     "u": ""
+    },
+    {
+     "n": "Z",
+     "d": "质子数",
+     "u": ""
+    },
+    {
+     "n": "N",
+     "d": "中子数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "质量数等于质子数与中子数之和；阴离子的核外电子数=Z+所带电荷数，阳离子则减去电荷数。"
+  },
+  {
+   "id": "chem_hs_008",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "化学反应",
+   "name": "化学反应速率之比",
+   "latex": "\\frac{v(A)}{v(B)} = \\frac{\\nu(A)}{\\nu(B)}",
+   "plain": "v(A)/v(B) = ν(A)/ν(B)",
+   "vars": [
+    {
+     "n": "v",
+     "d": "化学反应速率",
+     "u": "mol/(L·s)"
+    },
+    {
+     "n": "ν",
+     "d": "化学计量数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "同一反应中各物质的反应速率之比等于化学计量数之比，比较速率快慢时要先统一物质。"
+  },
+  {
+   "id": "chem_hs_009",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "化学反应",
+   "name": "平衡转化率",
+   "latex": "\\alpha = \\frac{\\text{已转化量}}{\\text{起始量}}\\times 100\\%",
+   "plain": "α = 已转化量/起始量×100%",
+   "vars": [
+    {
+     "n": "α",
+     "d": "转化率",
+     "u": "%"
+    },
+    {
+     "n": "已转化量",
+     "d": "反应消耗的物质的量",
+     "u": "mol"
+    },
+    {
+     "n": "起始量",
+     "d": "起始物质的量",
+     "u": "mol"
+    }
+   ],
+   "cond": "",
+   "note": "投料比等于化学计量数之比时，各反应物的转化率相等；计算时分子分母的单位要一致。"
+  },
+  {
+   "id": "chem_hs_010",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "化学反应",
+   "name": "电离度",
+   "latex": "\\alpha = \\frac{\\text{已电离的分子数}}{\\text{电离前的分子总数}}\\times 100\\%",
+   "plain": "α = 已电离的分子数/电离前的分子总数×100%",
+   "vars": [
+    {
+     "n": "α",
+     "d": "电离度",
+     "u": "%"
+    }
+   ],
+   "cond": "",
+   "note": "弱电解质电离程度很小；浓度越小、温度越高，电离度通常越大。"
+  },
+  {
+   "id": "chem_hs_011",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "化学反应",
+   "name": "溶度积",
+   "latex": "K_{sp} = [A^{m+}]^n[B^{n-}]^m",
+   "plain": "Ksp = [Aᵐ⁺]ⁿ[Bⁿ⁻]ᵐ",
+   "vars": [
+    {
+     "n": "Ksp",
+     "d": "溶度积常数",
+     "u": ""
+    },
+    {
+     "n": "[Aᵐ⁺]、[Bⁿ⁻]",
+     "d": "离子浓度",
+     "u": "mol/L"
+    }
+   ],
+   "cond": "难溶电解质 AₘBₙ 的沉淀溶解平衡",
+   "note": "Ksp 只与温度有关；离子积 Q>Ksp 时生成沉淀，Q<Ksp 时沉淀溶解。"
+  },
+  {
+   "id": "chem_hs_012",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "物质结构",
+   "name": "元素周期表位置与原子结构",
+   "latex": "\\begin{aligned} \\text{周期数} &= \\text{电子层数} \\\\ \\text{主族序数} &= \\text{最外层电子数} \\\\ \\text{最高正价} &= \\text{主族序数} \\end{aligned}",
+   "plain": "周期数=电子层数；主族序数=最外层电子数=最高正价",
+   "vars": [
+    {
+     "n": "周期数",
+     "d": "元素所在周期",
+     "u": ""
+    },
+    {
+     "n": "主族序数",
+     "d": "元素所在主族",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "非金属元素还有 最高正价+|最低负价|=8（氢除外）；副族、Ⅷ族不适用该规律。"
+  },
+  {
+   "id": "chem_hs_013",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "有机化学",
+   "name": "烃的燃烧通式",
+   "latex": "C_xH_y + \\left(x+\\frac{y}{4}\\right)O_2 \\xrightarrow{\\text{点燃}} xCO_2 + \\frac{y}{2}H_2O",
+   "plain": "CₓHᵧ + (x+y/4)O₂ →(点燃) xCO₂ + (y/2)H₂O",
+   "vars": [
+    {
+     "n": "x",
+     "d": "烃中碳原子数",
+     "u": ""
+    },
+    {
+     "n": "y",
+     "d": "烃中氢原子数",
+     "u": ""
+    }
+   ],
+   "cond": "完全燃烧，产物为 CO₂ 和 H₂O",
+   "note": "等物质的量的烃完全燃烧，耗氧量由 x+y/4 决定；等质量时含氢量越高耗氧越多。"
+  },
+  {
+   "id": "chem_hs_014",
+   "subject": "化学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "有机化学",
+   "name": "商余法确定烃的分子式",
+   "latex": "M = 12x + y",
+   "plain": "M = 12x + y",
+   "vars": [
+    {
+     "n": "M",
+     "d": "烃的相对分子质量",
+     "u": ""
+    },
+    {
+     "n": "x",
+     "d": "碳原子数",
+     "u": ""
+    },
+    {
+     "n": "y",
+     "d": "氢原子数",
+     "u": ""
+    }
+   ],
+   "cond": "烃 CₓHᵧ，y ≤ 2x+2（x≥1）",
+   "note": "先用 M÷14 估算碳原子数，再按烷烃、烯烃、炔烃等通式调整。只有烯烃、环烷烃（M=14n）时余数才恰好等于氢原子数，不能直接套用。"
+  },
+  {
+   "id": "math_ms_001",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "代数",
+   "name": "绝对值",
+   "latex": "|a| = \\begin{cases} a, & a \\ge 0 \\\\ -a, & a < 0 \\end{cases}",
+   "plain": "|a| = a（a≥0）；|a| = −a（a<0）",
+   "vars": [
+    {
+     "n": "a",
+     "d": "实数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "绝对值表示数轴上点到原点的距离，因此 |a|≥0。"
+  },
+  {
+   "id": "math_ms_002",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "代数",
+   "name": "十字相乘法",
+   "latex": "x^2+(p+q)x+pq = (x+p)(x+q)",
+   "plain": "x²+(p+q)x+pq = (x+p)(x+q)",
+   "vars": [
+    {
+     "n": "p、q",
+     "d": "两常数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "因式分解时找两数，积为常数项、和为一次项系数。"
+  },
+  {
+   "id": "math_ms_003",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "代数",
+   "name": "二次根式的性质",
+   "latex": "\\sqrt{a^2} = |a|,\\quad \\sqrt{ab} = \\sqrt{a}\\,\\sqrt{b}",
+   "plain": "√(a²) = |a|；√(ab) = √a·√b",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "非负实数（第一个式子中 a 可为任意实数）",
+     "u": ""
+    }
+   ],
+   "cond": "第二个式子要求 a≥0，b≥0",
+   "note": "化简时先判断字母符号，再决定是否加绝对值。"
+  },
+  {
+   "id": "math_ms_004",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "代数",
+   "name": "不等式的基本性质",
+   "latex": "\\begin{aligned} a>b &\\Rightarrow a+c>b+c \\\\ a>b,\\ c>0 &\\Rightarrow ac>bc \\\\ a>b,\\ c<0 &\\Rightarrow ac<bc \\end{aligned}",
+   "plain": "a>b ⇒ a+c>b+c；c>0 时 ac>bc；c<0 时 ac<bc",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "实数",
+     "u": ""
+    },
+    {
+     "n": "c",
+     "d": "实数",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "两边同乘或同除以负数时，不等号方向要改变。"
+  },
+  {
+   "id": "math_ms_005",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "几何",
+   "name": "锐角三角函数",
+   "latex": "\\sin A = \\frac{a}{c},\\quad \\cos A = \\frac{b}{c},\\quad \\tan A = \\frac{a}{b}",
+   "plain": "sinA = a/c；cosA = b/c；tanA = a/b",
+   "vars": [
+    {
+     "n": "A",
+     "d": "直角三角形的一个锐角",
+     "u": "°"
+    },
+    {
+     "n": "a",
+     "d": "∠A 的对边",
+     "u": ""
+    },
+    {
+     "n": "b",
+     "d": "∠A 的邻边",
+     "u": ""
+    },
+    {
+     "n": "c",
+     "d": "斜边",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "仅适用于直角三角形；sin²A+cos²A=1。"
+  },
+  {
+   "id": "math_ms_006",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "几何",
+   "name": "三角形面积",
+   "latex": "S = \\frac{1}{2}ah",
+   "plain": "S = ½ah",
+   "vars": [
+    {
+     "n": "S",
+     "d": "三角形面积",
+     "u": ""
+    },
+    {
+     "n": "a",
+     "d": "底边长",
+     "u": ""
+    },
+    {
+     "n": "h",
+     "d": "对应的高",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "也可用海伦公式或两边夹角求面积，高中会学 S=½ab sinC。"
+  },
+  {
+   "id": "math_ms_007",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "几何",
+   "name": "平行四边形与梯形面积",
+   "latex": "\\begin{aligned} S_{\\text{平行四边形}} &= ah \\\\ S_{\\text{梯形}} &= \\frac{1}{2}(a+b)h \\end{aligned}",
+   "plain": "平行四边形 S=ah；梯形 S=½(a+b)h",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "底边长",
+     "u": ""
+    },
+    {
+     "n": "h",
+     "d": "高",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "梯形面积等于上底加下底乘高的一半。"
+  },
+  {
+   "id": "math_ms_008",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "代数",
+   "name": "一元二次方程根与系数的关系",
+   "latex": "x_1+x_2 = -\\frac{b}{a},\\quad x_1x_2 = \\frac{c}{a}",
+   "plain": "x₁+x₂ = −b/a；x₁x₂ = c/a",
+   "vars": [
+    {
+     "n": "x₁、x₂",
+     "d": "方程 ax²+bx+c=0 的两根",
+     "u": ""
+    }
+   ],
+   "cond": "a≠0，且 Δ=b²−4ac≥0",
+   "note": "韦达定理；常用于不解方程求两根之和、两根之积或构造方程。"
+  },
+  {
+   "id": "math_ms_009",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "几何",
+   "name": "圆的周长",
+   "latex": "C = 2\\pi r",
+   "plain": "C = 2πr",
+   "vars": [
+    {
+     "n": "C",
+     "d": "圆的周长",
+     "u": ""
+    },
+    {
+     "n": "r",
+     "d": "半径",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "也可写成 C=πd，d 为直径；π≈3.14。"
+  },
+  {
+   "id": "math_ms_010",
+   "subject": "数学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "几何",
+   "name": "两圆的位置关系",
+   "latex": "\\begin{aligned} d>R+r &: \\text{外离} \\\\ d=R+r &: \\text{外切} \\\\ |R-r|<d<R+r &: \\text{相交} \\\\ d=|R-r| &: \\text{内切} \\\\ d<|R-r| &: \\text{内含} \\end{aligned}",
+   "plain": "d>R+r 外离；d=R+r 外切；|R−r|<d<R+r 相交；d=|R−r| 内切；d<|R−r| 内含",
+   "vars": [
+    {
+     "n": "d",
+     "d": "圆心距",
+     "u": ""
+    },
+    {
+     "n": "R、r",
+     "d": "两圆半径",
+     "u": ""
+    }
+   ],
+   "cond": "R≥r",
+   "note": "d=0 时为同心圆；判断两圆位置关系只看圆心距与半径和、差的关系。"
+  },
+  {
+   "id": "phys_ms_001",
+   "subject": "物理",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "力学",
+   "name": "速度",
+   "latex": "v = \\frac{s}{t}",
+   "plain": "v = s/t",
+   "vars": [
+    {
+     "n": "v",
+     "d": "速度",
+     "u": "m/s"
+    },
+    {
+     "n": "s",
+     "d": "路程",
+     "u": "m"
+    },
+    {
+     "n": "t",
+     "d": "时间",
+     "u": "s"
+    }
+   ],
+   "cond": "",
+   "note": "初中阶段速度指路程与时间之比；1 m/s=3.6 km/h。"
+  },
+  {
+   "id": "phys_ms_002",
+   "subject": "物理",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "力学",
+   "name": "重力",
+   "latex": "G = mg",
+   "plain": "G = mg",
+   "vars": [
+    {
+     "n": "G",
+     "d": "重力",
+     "u": "N"
+    },
+    {
+     "n": "m",
+     "d": "质量",
+     "u": "kg"
+    },
+    {
+     "n": "g",
+     "d": "重力加速度",
+     "u": "N/kg"
+    }
+   ],
+   "cond": "",
+   "note": "g≈9.8 N/kg，粗略计算取 10 N/kg；重力方向竖直向下。"
+  },
+  {
+   "id": "phys_ms_003",
+   "subject": "物理",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "力学",
+   "name": "同一直线上二力的合成",
+   "latex": "F = F_1 \\pm F_2",
+   "plain": "F = F₁ ± F₂",
+   "vars": [
+    {
+     "n": "F",
+     "d": "合力",
+     "u": "N"
+    },
+    {
+     "n": "F₁、F₂",
+     "d": "两个分力",
+     "u": "N"
+    }
+   ],
+   "cond": "两力方向相同取加号，方向相反取减号",
+   "note": "合力方向与较大分力的方向相同。"
+  },
+  {
+   "id": "phys_ms_004",
+   "subject": "物理",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "电学",
+   "name": "电流",
+   "latex": "I = \\frac{Q}{t}",
+   "plain": "I = Q/t",
+   "vars": [
+    {
+     "n": "I",
+     "d": "电流",
+     "u": "A"
+    },
+    {
+     "n": "Q",
+     "d": "电荷量",
+     "u": "C"
+    },
+    {
+     "n": "t",
+     "d": "时间",
+     "u": "s"
+    }
+   ],
+   "cond": "",
+   "note": "1 A=1 C/s；电流表串联接入电路，电流从正接线柱流入。"
+  },
+  {
+   "id": "chem_ms_001",
+   "subject": "化学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "基础",
+   "name": "相对原子质量",
+   "latex": "A_r = \\frac{\\text{该原子的质量}}{\\text{一个碳-12原子质量的}1/12}",
+   "plain": "Ar = 该原子质量 ÷ (碳-12原子质量的 1/12)",
+   "vars": [
+    {
+     "n": "Ar",
+     "d": "相对原子质量",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "相对原子质量是比值，单位为 1；数值上约等于质子数加中子数。"
+  },
+  {
+   "id": "chem_ms_002",
+   "subject": "化学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "基础",
+   "name": "元素质量比",
+   "latex": "m(A):m(B) = A_r(A)\\cdot x : A_r(B)\\cdot y",
+   "plain": "m(A):m(B) = Ar(A)·x : Ar(B)·y",
+   "vars": [
+    {
+     "n": "Ar(A)、Ar(B)",
+     "d": "A、B 的相对原子质量",
+     "u": ""
+    },
+    {
+     "n": "x、y",
+     "d": "化学式中 A、B 的原子个数",
+     "u": ""
+    }
+   ],
+   "cond": "化合物化学式为 AₘBₙ",
+   "note": "先算各元素相对原子质量与原子个数的乘积，再求比并化简。"
+  },
+  {
+   "id": "chem_ms_003",
+   "subject": "化学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "基础",
+   "name": "元素质量分数",
+   "latex": "w(A) = \\frac{A_r(A)\\times m}{M_r}\\times 100\\%",
+   "plain": "w(A) = Ar(A)×m/Mr×100%",
+   "vars": [
+    {
+     "n": "w(A)",
+     "d": "A 元素的质量分数",
+     "u": "%"
+    },
+    {
+     "n": "Ar(A)",
+     "d": "A 的相对原子质量",
+     "u": ""
+    },
+    {
+     "n": "m",
+     "d": "一个分子中 A 的原子个数",
+     "u": ""
+    },
+    {
+     "n": "Mr",
+     "d": "相对分子质量",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "各元素质量分数之和为 100%。"
+  },
+  {
+   "id": "chem_ms_004",
+   "subject": "化学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "基础",
+   "name": "纯度",
+   "latex": "\\text{纯度} = \\frac{\\text{纯物质的质量}}{\\text{混合物总质量}}\\times 100\\%",
+   "plain": "纯度 = 纯物质质量/混合物总质量×100%",
+   "vars": [
+    {
+     "n": "纯度",
+     "d": "混合物中某成分的质量分数",
+     "u": "%"
+    }
+   ],
+   "cond": "",
+   "note": "纯度也叫质量分数；计算时纯物质质量等于混合物质量乘纯度。"
+  },
+  {
+   "id": "chem_ms_005",
+   "subject": "化学",
+   "grades": [
+    "初中"
+   ],
+   "chapter": "基础",
+   "name": "标准状况下气体密度",
+   "latex": "\\rho = \\frac{M}{22.4}",
+   "plain": "ρ = M/22.4",
+   "vars": [
+    {
+     "n": "ρ",
+     "d": "气体密度",
+     "u": "g/L"
+    },
+    {
+     "n": "M",
+     "d": "摩尔质量",
+     "u": "g/mol"
+    }
+   ],
+   "cond": "标准状况（0 ℃、101 kPa）",
+   "note": "22.4 L/mol 是标准状况下的气体摩尔体积，单位换算时注意体积单位。"
+  },
+  {
+   "id": "math_hs_073",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "立体几何",
+   "name": "空间两点间距离公式",
+   "latex": "|P_1P_2| = \\sqrt{(x_2-x_1)^2+(y_2-y_1)^2+(z_2-z_1)^2}",
+   "plain": "|P₁P₂| = √[(x₂−x₁)²+(y₂−y₁)²+(z₂−z₁)²]",
+   "vars": [
+    {
+     "n": "P₁",
+     "d": "点 P₁(x₁,y₁,z₁)",
+     "u": ""
+    },
+    {
+     "n": "P₂",
+     "d": "点 P₂(x₂,y₂,z₂)",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "平面内两点距离公式在三维空间的推广。"
+  },
+  {
+   "id": "math_hs_074",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "立体几何",
+   "name": "空间向量夹角余弦",
+   "latex": "\\cos\\theta = \\frac{\\vec a \\cdot \\vec b}{|\\vec a||\\vec b|} = \\frac{x_1x_2+y_1y_2+z_1z_2}{\\sqrt{x_1^2+y_1^2+z_1^2}\\,\\sqrt{x_2^2+y_2^2+z_2^2}}",
+   "plain": "cosθ = (x₁x₂+y₁y₂+z₁z₂)/[√(x₁²+y₁²+z₁²)·√(x₂²+y₂²+z₂²)]",
+   "vars": [
+    {
+     "n": "a、b",
+     "d": "两个非零空间向量",
+     "u": ""
+    },
+    {
+     "n": "θ",
+     "d": "两向量夹角，0≤θ≤π",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "空间向量的数量积比平面向量多一个 z 分量乘积。"
+  },
+  {
+   "id": "math_hs_075",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "立体几何",
+   "name": "直线与平面所成的角",
+   "latex": "\\sin\\theta = \\frac{|\\vec a \\cdot \\vec n|}{|\\vec a||\\vec n|}",
+   "plain": "sinθ = |a·n|/(|a||n|)",
+   "vars": [
+    {
+     "n": "θ",
+     "d": "直线与平面所成的角，0≤θ≤90°",
+     "u": ""
+    },
+    {
+     "n": "a",
+     "d": "直线的方向向量",
+     "u": ""
+    },
+    {
+     "n": "n",
+     "d": "平面的法向量",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "线面角用正弦，因为方向向量与法向量的夹角与线面角互余。"
+  },
+  {
+   "id": "math_hs_076",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "立体几何",
+   "name": "二面角",
+   "latex": "\\cos\\theta = \\frac{\\vec n_1 \\cdot \\vec n_2}{|\\vec n_1||\\vec n_2|}",
+   "plain": "cosθ = (n₁·n₂)/(|n₁||n₂|)",
+   "vars": [
+    {
+     "n": "θ",
+     "d": "二面角的平面角",
+     "u": ""
+    },
+    {
+     "n": "n₁、n₂",
+     "d": "两个半平面的法向量",
+     "u": ""
+    }
+   ],
+   "cond": "",
+   "note": "算出的是两法向量的夹角，二面角可能取其补角，要结合图形判断锐钝。"
+  },
+  {
+   "id": "math_hs_077",
+   "subject": "数学",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "概率统计",
+   "name": "正态分布密度函数",
+   "latex": "f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}}\\,e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}",
+   "plain": "f(x) = 1/(σ√(2π))·e^(−(x−μ)²/(2σ²))",
+   "vars": [
+    {
+     "n": "μ",
+     "d": "均值",
+     "u": ""
+    },
+    {
+     "n": "σ",
+     "d": "标准差，σ>0",
+     "u": ""
+    },
+    {
+     "n": "x",
+     "d": "随机变量的取值",
+     "u": ""
+    }
+   ],
+   "cond": "X ~ N(μ,σ²)",
+   "note": "图象关于 x=μ 对称，σ 越小曲线越集中；常用 3σ 原则估计概率。"
+  },
+  {
+   "id": "phys_hs_056",
+   "subject": "物理",
+   "grades": [
+    "高中"
+   ],
+   "chapter": "光学",
+   "name": "双缝干涉条纹间距",
+   "latex": "\\Delta x = \\frac{L}{d}\\lambda",
+   "plain": "Δx = Lλ/d",
+   "vars": [
+    {
+     "n": "Δx",
+     "d": "相邻亮（暗）条纹间距",
+     "u": "m"
+    },
+    {
+     "n": "L",
+     "d": "双缝到屏的距离",
+     "u": "m"
+    },
+    {
+     "n": "d",
+     "d": "双缝间距",
+     "u": "m"
+    },
+    {
+     "n": "λ",
+     "d": "光的波长",
+     "u": "m"
+    }
+   ],
+   "cond": "双缝干涉，L 远大于 d",
+   "note": "条纹间距与波长成正比；测出 Δx、L、d 可求光的波长。"
   }
  ]
 }

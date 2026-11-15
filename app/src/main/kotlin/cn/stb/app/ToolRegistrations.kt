@@ -10,6 +10,7 @@ import cn.stb.feature.chemistry.ChemistryToolProvider
 import cn.stb.feature.dictionary.DictionaryToolProvider
 import cn.stb.feature.formula.FormulaToolProvider
 import cn.stb.feature.geography.GeographyDiagramToolProvider
+import cn.stb.feature.grammar.GrammarToolProvider
 import cn.stb.feature.math.MathToolProvider
 import cn.stb.feature.periodic.PeriodicTableToolProvider
 import cn.stb.feature.poetry.PoetryToolProvider
@@ -39,6 +40,7 @@ object ToolRegistrations {
         ChineseDictionaryToolProvider(),
         MathToolProvider(),
         DictionaryToolProvider(),
+        GrammarToolProvider(),
         ChemistryToolProvider(),
         PeriodicTableToolProvider(),
         BiologyDiagramToolProvider(),

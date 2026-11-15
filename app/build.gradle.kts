@@ -74,6 +74,7 @@ dependencies {
     implementation(project(":feature:chinese-dictionary"))
     implementation(project(":feature:math-function"))
     implementation(project(":feature:english-dictionary"))
+    implementation(project(":feature:english-grammar"))
     implementation(project(":feature:chemistry-equation"))
     implementation(project(":feature:biology-diagram"))
     implementation(project(":feature:geography-diagram"))

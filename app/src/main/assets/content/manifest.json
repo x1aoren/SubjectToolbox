@@ -1,6 +1,6 @@
 {
-  "contentVersion": 4,
-  "builtAt": "2026-11-15T12:00:00+08:00",
+  "contentVersion": 5,
+  "builtAt": "2026-11-15T18:00:00+08:00",
   "datasets": [
     {
       "id": "chinese.poetry",
@@ -19,6 +19,12 @@
       "version": 3,
       "path": "content/english/dict.db",
       "bytes": 12902400
+    },
+    {
+      "id": "english.grammar",
+      "version": 1,
+      "path": "content/english/grammar.json",
+      "bytes": 599455
     },
     {
       "id": "chemistry.equation",

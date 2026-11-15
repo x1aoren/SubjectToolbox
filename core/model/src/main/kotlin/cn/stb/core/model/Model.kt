@@ -28,7 +28,7 @@ enum class SubjectIcon {
 
 /** 工具图标的语义标识，理由同 [SubjectIcon]。 */
 enum class ToolIcon {
-    SCROLL, FUNCTION, DICTIONARY, ATOM, MICROSCOPE, ORBIT, LIBRARY, SIGMA,
+    SCROLL, FUNCTION, DICTIONARY, ATOM, MICROSCOPE, ORBIT, LIBRARY, SIGMA, GRAMMAR,
 }
 
 /**

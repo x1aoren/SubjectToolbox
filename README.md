@@ -19,6 +19,7 @@
 | 语文 | 汉语词典  | **现代汉语词典第 7 版 7 万词条**、精确/前缀/拼音/释义检索、繁体与异体写法跳转、拼音与词性排版、**本地生词本**                          |
 | 数学 | 函数编辑器 | **最多 6 条曲线同坐标系**、**显式 / 隐式方程手动切换**（圆、椭圆等如 `x^2+y^2=25`）、**每条曲线可单独设置定义域**、参数滑块可增删并设范围与步进、**开方所见即所得**、上标输入提示（输入指数时 x 右上角显示虚线框）、键盘按光标插入、报错栏固定占位、逐条配色与显隐、缩放平移 |
 | 英语 | 词典    | **ECDICT 77 万词条（含 36.6 万短语）**、精确/前缀/中文反查、音标·考试标签·词形变化·英文释义、**本地生词本**  |
+| 英语 | 语法    | **薄冰大学英语语法 50 篇**、24 类目录、标题 / 表格 / 例句**原生 Compose 排版**（非内嵌网页）、全文检索与命中高亮 |
 | 化学 | 化学方程式 | **165 条方程式**、类型筛选检索、化学式下标排版、**自动配平**（高斯消元）+ 一键复制                       |
 | 化学 | 元素周期表 | **118 种元素**、18 列标准排布与镧系 / 锕系单列、分类配色、点按查看原子序数·相对原子质量·熔沸点·电子排布                       |
 | 生物 | 交互示意图 | 索引页可搜索，**细胞分裂交互图**：有丝分裂 / 减数分裂对照、动物 / 植物细胞切换、阶段讲解、染色体与 DNA 数目统计、交叉互换                    |
@@ -94,6 +95,7 @@ feature/chinese-poetry/   语文·古诗词
 feature/chinese-dictionary/ 语文·汉语词典
 feature/math-function/    数学·函数编辑器
 feature/english-dictionary/ 英语·词典
+feature/english-grammar/  英语·语法
 feature/chemistry-equation/ 化学·方程式
 feature/periodic-table/   化学·元素周期表
 feature/biology-diagram/  生物·交互示意图
@@ -128,6 +130,7 @@ app/src/main/assets/content/
 ├── chinese/poems.json       古诗词（按册组织）
 ├── chinese/zhdict.db        汉语词库（现代汉语词典第 7 版，70,113 条，15.2MB，首启复制到 databases/）
 ├── english/dict.db          预置词库（ECDICT 全量派生，86.1MB，首启复制到 databases/）
+├── english/grammar.json     语法讲义（50 篇，24 类，构建期由 Markdown 转换）
 ├── chemistry/equations.json 方程式（165 条，构建期逐条校验配平）
 ├── chemistry/elements.json  118 元素数据
 ├── biology/cell-division.html 细胞分裂交互图
@@ -135,10 +138,10 @@ app/src/main/assets/content/
 └── formula/                  公式库（formulas.json 116 条 + KaTeX 渲染页与本地字体）
 ```
 
-当前内置：**61 篇古诗文**（新课标必背 60 篇全部收录 + 沁园春·长沙，按统编版六册归类，含注释与赏析）、**现代汉语词典第 7 版 70,113 条**（繁体、异体与重定向别名共 4,686 条，15.2MB SQLite）、**ECDICT 77 万词条（含 36.6 万条短语，86.1MB SQLite，APK 内压缩约 40MB）**、**165 条方程式**（构建期逐条校验配平）、**118 元素周期表**、**116 条初高中数理化公式**（逐条含变量说明与适用条件，数据整理自 HuiTurn/Formula，MIT License）；「电子教材」在线访问人教社官网查看各科电子课本。
+当前内置：**61 篇古诗文**（新课标必背 60 篇全部收录 + 沁园春·长沙，按统编版六册归类，含注释与赏析）、**现代汉语词典第 7 版 70,113 条**（繁体、异体与重定向别名共 4,686 条，15.2MB SQLite）、**ECDICT 77 万词条（含 36.6 万条短语，86.1MB SQLite，APK 内压缩约 40MB）**、**薄冰大学英语语法 50 篇专题**、**165 条方程式**（构建期逐条校验配平）、**118 元素周期表**、**116 条初高中数理化公式**（逐条含变量说明与适用条件，数据整理自 HuiTurn/Formula，MIT License）；「电子教材」在线访问人教社官网查看各科电子课本。
 正式部署时替换为教研组校对/授权的内容即可，接口不变。
 
-词库由脚本生成，不要手改 assets：
+词库与语法讲义由脚本生成，不要手改 assets：
 
 ```bash
 # 数据源：https://github.com/skywind3000/ECDICT 的 ecdict.csv（MIT License）
@@ -148,6 +151,9 @@ python tools/dictionary/verify_dict_db.py
 # 数据源：https://github.com/pampas9000/ModernChineseDict 的 dict.mdx
 # 先 `mdict -x dict.mdx -d ./mdx` 解包，再指向解包出来的文本
 python tools/dictionary/build_zh_dict_db.py --source H:/tools/zhdict/mdx/dict.mdx.txt
+
+# 数据源：https://github.com/oldwestenglish/grammar 的 docs 目录（docsify 站点）
+python tools/grammar/build_grammar_json.py --source H:/tools/grammar/docs
 ```
 
 收录规则是**全量**：只排除空词 / 超 60 字符 / 大小写重复 / 完全无释义的词，
@@ -160,11 +166,13 @@ python tools/dictionary/build_zh_dict_db.py --source H:/tools/zhdict/mdx/dict.md
 
 ## 第三方资源
 
-学科与工具图标取自 [Lucide](https://lucide.dev)（ISC License），15 枚矢量图放在
+学科与工具图标取自 [Lucide](https://lucide.dev)（ISC License），16 枚矢量图放在
 `core/designsystem/src/main/res/drawable/`，只做了 SVG → Android vector drawable 的等价转换，
 单色描边、由 `Icon(tint = 学科色)` 染色，因此天然适配深浅色与字号档位。
 汉语词库派生自 [pampas9000/ModernChineseDict](https://github.com/pampas9000/ModernChineseDict)，
 源仓库注明仅供学习和交流、禁止商用，本项目仅在非商业校园场景使用。
+语法讲义来自 [oldwestenglish/grammar](https://github.com/oldwestenglish/grammar)，
+内容为《薄冰大学英语语法》的网络整理版，同样只在非商业校园场景使用。
 完整清单与许可原文见 [`docs/THIRD_PARTY_LICENSES.md`](docs/THIRD_PARTY_LICENSES.md)。
 
 ***

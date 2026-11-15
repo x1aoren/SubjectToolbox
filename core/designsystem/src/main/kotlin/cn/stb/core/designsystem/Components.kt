@@ -170,6 +170,7 @@ private fun ToolIcon.resId(): Int = when (this) {
     ToolIcon.ORBIT -> R.drawable.ic_tool_geography
     ToolIcon.LIBRARY -> R.drawable.ic_tool_textbook
     ToolIcon.SIGMA -> R.drawable.ic_tool_formula
+    ToolIcon.GRAMMAR -> R.drawable.ic_tool_grammar
 }
 
 @Composable
