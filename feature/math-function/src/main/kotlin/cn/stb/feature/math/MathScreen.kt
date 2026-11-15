@@ -971,15 +971,16 @@ private fun ExpressionField(
         label = "caretAlpha",
     )
 
-    // 三个编辑区各一套颜色：光标、手柄、区域高亮都用同一色，看到颜色就知道在哪一层。
-    // 基线用中性色（和正文同色，最不抢眼），上标用 tertiary、根号内用 primary，色相拉开。
+    // 四个编辑区各一套颜色：光标、手柄、区域高亮都用同一色，看到颜色就知道在哪一层。
+    // 基线用中性色（和正文同色，最不抢眼），上标用 tertiary、根号内用 primary、绝对值用 secondary。
     val caretColor = MaterialTheme.colorScheme.onSurface
     val scriptColor = MaterialTheme.colorScheme.tertiary
     val radicalColor = MaterialTheme.colorScheme.primary
+    val absColor = MaterialTheme.colorScheme.secondary
     val labelSurface = MaterialTheme.colorScheme.surface
     val labelMeasurer = rememberTextMeasurer()
 
-    // 是否正在按住手柄拖动：只在拖动时浮出「基线 / 上标 / 根号内」提示
+    // 是否正在按住手柄拖动：只在拖动时浮出「基线 / 上标 / 根号内 / 绝对值」提示
     var draggingHandle by remember { mutableStateOf(false) }
 
     val borderColor = when {
@@ -1077,6 +1078,7 @@ private fun ExpressionField(
                             MathEditRegion.BASE -> caretColor
                             MathEditRegion.SCRIPT -> scriptColor
                             MathEditRegion.RADICAL -> radicalColor
+                            MathEditRegion.ABS -> absColor
                         }
 
                         drawMathDecorations(
@@ -1121,6 +1123,7 @@ private fun ExpressionField(
                                 MathEditRegion.BASE -> caretColor
                                 MathEditRegion.SCRIPT -> scriptColor
                                 MathEditRegion.RADICAL -> radicalColor
+                                MathEditRegion.ABS -> absColor
                             },
                             surfaceColor = labelSurface,
                             measurer = labelMeasurer,

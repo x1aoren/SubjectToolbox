@@ -71,6 +71,9 @@ internal enum class MathEditRegion(
 
     /** 根号内部（被开方数）。 */
     RADICAL("根号内"),
+
+    /** 绝对值内部（两根竖线之间）。 */
+    ABS("绝对值"),
 }
 
 /** 一根根号：√ 在显示文本中的下标、被开方内容范围，以及嵌套层级。 */
@@ -86,13 +89,23 @@ internal data class MathRadicalSpan(
     val placeholder: Boolean,
 )
 
-/** 一次排版的结果：显示文本 + 角标/根号位置 + 双向光标映射。 */
+/** 一个绝对值：两根竖线之间内容在显示文本中的范围，以及它在原始文本里的范围。 */
+internal data class MathAbsSpan(
+    val start: Int,
+    val end: Int,
+    val origStart: Int,
+    val origEnd: Int,
+    val placeholder: Boolean,
+)
+
+/** 一次排版的结果：显示文本 + 角标/根号/绝对值位置 + 双向光标映射。 */
 internal class MathDisplay(
     val raw: String,
     val text: String,
     val annotated: AnnotatedString,
     val scripts: List<MathScriptSpan>,
     val radicals: List<MathRadicalSpan>,
+    val absolutes: List<MathAbsSpan>,
     val mapping: OffsetMapping,
     private val origToTrans: IntArray,
 ) {
@@ -106,14 +119,26 @@ internal class MathDisplay(
      * 于是刚在根号里打完字，光标反而显示成基线。
      *
      * 角标优先于根号：`sqrt(x)^2` 这种角标套在根号后面时，角标里才是更小的那一层。
+     * 绝对值/根号可以互相嵌套，统一按「包含光标且范围最小」的那一层算，光标才不会认错层。
      */
     fun regionAt(originalOffset: Int): MathEditRegion {
         val offset = originalOffset.coerceIn(0, raw.length)
-        return when {
-            scripts.any { offset >= it.origStart && offset <= it.origEnd } -> MathEditRegion.SCRIPT
-            radicals.any { offset >= it.origStart && offset <= it.origEnd } -> MathEditRegion.RADICAL
-            else -> MathEditRegion.BASE
+        var region = MathEditRegion.BASE
+        var width = Int.MAX_VALUE
+
+        fun consider(range: IntRange, candidate: MathEditRegion) {
+            if (offset !in range) return
+            val span = range.last - range.first
+            if (span < width) {
+                region = candidate
+                width = span
+            }
         }
+
+        scripts.forEach { consider(it.origStart..it.origEnd, MathEditRegion.SCRIPT) }
+        radicals.forEach { consider(it.origStart..it.origEnd, MathEditRegion.RADICAL) }
+        absolutes.forEach { consider(it.origStart..it.origEnd, MathEditRegion.ABS) }
+        return region
     }
 }
 
@@ -184,6 +209,7 @@ private class MathDisplayBuilder(private val src: String) {
     private val styles = mutableListOf<Triple<Int, Int, SpanStyle>>()
     private val scripts = mutableListOf<MathScriptSpan>()
     private val radicals = mutableListOf<MathRadicalSpan>()
+    private val absolutes = mutableListOf<MathAbsSpan>()
     private var t = 0
 
     fun build(): MathDisplay {
@@ -218,7 +244,7 @@ private class MathDisplayBuilder(private val src: String) {
                 transToOrig[offset.coerceIn(0, text.length)]
         }
 
-        return MathDisplay(src, text, annotated, scripts.toList(), radicals.toList(), mapping, origToTrans)
+        return MathDisplay(src, text, annotated, scripts.toList(), radicals.toList(), absolutes.toList(), mapping, origToTrans)
     }
 
     /** 显示位置 → 原始位置的映射：一个显示位置对应多个原始位置时取最靠后的那个。 */
@@ -265,6 +291,12 @@ private class MathDisplayBuilder(private val src: String) {
                     i = if (close != null) close + 1 else end
                 }
 
+                isAbsCall(i, end) -> {
+                    val close = findMatchingParen(i + 3, end)
+                    renderAbsolute(i, close, end, scriptDepth, radicalDepth)
+                    i = if (close != null) close + 1 else end
+                }
+
                 src[i] == '^' -> {
                     val exponentEnd = exponentEnd(i + 1, end)
                     renderPower(i, exponentEnd, scriptDepth, radicalDepth)
@@ -284,6 +316,13 @@ private class MathDisplayBuilder(private val src: String) {
     private fun isSqrtCall(index: Int, end: Int): Boolean {
         if (index + 5 > end) return false
         if (!src.startsWith("sqrt(", index)) return false
+        return index == 0 || !src[index - 1].isLetter()
+    }
+
+    /** 「abs(」开头且前面的字符不是字母（避免把 `xabs(x)` 当绝对值）。 */
+    private fun isAbsCall(index: Int, end: Int): Boolean {
+        if (index + 4 > end) return false
+        if (!src.startsWith("abs(", index)) return false
         return index == 0 || !src[index - 1].isLetter()
     }
 
@@ -350,6 +389,54 @@ private class MathDisplayBuilder(private val src: String) {
             // 闭括号不显示；光标在它后面时视作在根号外，方便继续写 + × 等运算符
             mark(closeParen + 1)
         }
+    }
+
+    /**
+     * 一个绝对值：`abs(内容)` → 「|内容|」。
+     * 函数名与左括号不显示，收尾括号换成右边的竖线；内容递归排版，
+     * 所以绝对值里套根号、根号里套绝对值都能正常显示。
+     */
+    private fun renderAbsolute(
+        absStart: Int,
+        closeParen: Int?,
+        end: Int,
+        scriptDepth: Int,
+        radicalDepth: Int,
+    ) {
+        mark(absStart)
+        appendChunk("|")
+
+        // "abs(" 的剩下 3 个字符（"bs("）都不显示：光标落进来就视作在绝对值里
+        val contentStart = absStart + 4
+        for (o in absStart + 1..contentStart) {
+            if (o in origToTrans.indices) origToTrans[o] = t
+        }
+
+        val contentEnd = (closeParen ?: end).coerceIn(contentStart, end)
+        val displayStart = t
+        if (contentEnd > contentStart) {
+            renderRange(contentStart, contentEnd, scriptDepth, radicalDepth)
+        } else {
+            // 空的绝对值：一个空格撑出方框的位置，方框由画布画
+            appendChunk(" ")
+        }
+        val displayEnd = t
+
+        if (closeParen != null) {
+            // 有内容时光标停在右竖线前仍算「绝对值内」；
+            // 空槽不占用这个映射，否则点一下方框会落到 "abs(" 的括号上，一打字就把结构写坏
+            if (contentEnd > contentStart) mark(closeParen)
+            appendChunk("|")
+            mark(closeParen + 1)
+        }
+
+        absolutes += MathAbsSpan(
+            start = displayStart,
+            end = displayEnd,
+            origStart = contentStart,
+            origEnd = contentEnd,
+            placeholder = contentEnd == contentStart,
+        )
     }
 
     /**
@@ -513,6 +600,31 @@ internal fun DrawScope.drawMathDecorations(
             ),
         )
     }
+
+    // 空的绝对值：两根竖线中间画一个虚线方框，和键盘上那个键是同一个形象
+    val activeAbs = display.absolutes.firstOrNull { caret >= it.origStart && caret <= it.origEnd }
+    if (activeAbs != null && activeAbs.placeholder && activeAbs.start < textLength) {
+        val line = layout.getLineForOffset(activeAbs.start)
+        val lineTop = layout.getLineTop(line)
+        val lineHeight = (layout.getLineBottom(line) - lineTop).coerceAtLeast(1f)
+        val startX = layout.getHorizontalPosition(activeAbs.start, usePrimaryDirection = false)
+        val endX = layout.getHorizontalPosition(
+            activeAbs.end.coerceAtMost(textLength),
+            usePrimaryDirection = true,
+        )
+        val width = (endX - startX).coerceAtLeast(8.dp.toPx())
+        val height = (lineHeight * 0.64f).coerceAtLeast(12.dp.toPx())
+        drawRoundRect(
+            color = slotColor,
+            topLeft = Offset(startX, lineTop + lineHeight * 0.12f),
+            size = Size(width, height),
+            cornerRadius = CornerRadius(3.dp.toPx()),
+            style = Stroke(
+                width = 1.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())),
+            ),
+        )
+    }
 }
 
 /**
@@ -556,6 +668,18 @@ private fun DrawScope.drawActiveRegion(
             spanEnd = radical.end
             // 从根号横线下面一点开始，到基线附近收尾
             topFactor = 0.16f
+            bottomFactor = 0.94f
+        }
+
+        MathEditRegion.ABS -> {
+            val absSpan = display.absolutes
+                .firstOrNull { caret >= it.origStart && caret <= it.origEnd }
+                ?: return
+            if (absSpan.placeholder) return
+            spanStart = absSpan.start
+            spanEnd = absSpan.end
+            // 整块内容都在基线附近，罩色范围跟正文一致
+            topFactor = 0.12f
             bottomFactor = 0.94f
         }
 
@@ -640,6 +764,12 @@ internal fun DrawScope.drawMathCaret(
         }
 
         MathEditRegion.BASE -> {
+            top = lineTop + lineHeight * 0.08f
+            height = lineHeight * 0.84f
+        }
+
+        MathEditRegion.ABS -> {
+            // 绝对值里的内容和正文同高，光标不用特殊抬高
             top = lineTop + lineHeight * 0.08f
             height = lineHeight * 0.84f
         }

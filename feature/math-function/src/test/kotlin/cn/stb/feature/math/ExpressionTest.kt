@@ -232,6 +232,54 @@ class ExpressionTest {
         assertEquals(7, d.mapping.transformedToOriginal(2))
     }
 
+    /* ---------------- 显示层：绝对值 ---------------- */
+
+    @Test
+    fun `绝对值显示成两根竖线并隐藏 abs`() {
+        val d = display("abs(x+1)")
+        assertEquals("|x+1|", d.text)
+
+        val span = d.absolutes.single()
+        assertEquals(1, span.start)
+        assertEquals(4, span.end)
+        assertTrue("内容非空", !span.placeholder)
+
+        // 原始 4 是内容起点，落在左竖线后面
+        assertEquals(1, d.mapping.originalToTransformed(4))
+        // 右括号之后是整个绝对值之后
+        assertEquals(5, d.mapping.originalToTransformed(8))
+        assertEquals(8, d.mapping.transformedToOriginal(5))
+
+        assertEquals(MathEditRegion.ABS, d.regionAt(4))
+        assertEquals(MathEditRegion.BASE, d.regionAt(0))
+        assertEquals(MathEditRegion.BASE, d.regionAt(8))
+    }
+
+    @Test
+    fun `空绝对值留一个方框且光标在框里`() {
+        val d = display("abs()")
+        assertEquals("| |", d.text)
+        assertTrue(d.absolutes.single().placeholder)
+
+        // 光标在括号里（原始 4）落在方框起点
+        assertEquals(1, d.mapping.originalToTransformed(4))
+        assertEquals(4, d.mapping.transformedToOriginal(1))
+        assertEquals(MathEditRegion.ABS, d.regionAt(4))
+    }
+
+    @Test
+    fun `绝对值与根号互相嵌套时按最内层算`() {
+        val absInSqrt = display("sqrt(abs(x))")
+        assertEquals("√|x|", absInSqrt.text)
+        assertEquals(2, absInSqrt.radicals.size + absInSqrt.absolutes.size)
+        assertEquals(MathEditRegion.ABS, absInSqrt.regionAt(9))
+
+        val sqrtInAbs = display("abs(sqrt(x))")
+        assertEquals("|√x|", sqrtInAbs.text)
+        assertEquals(MathEditRegion.RADICAL, sqrtInAbs.regionAt(9))
+        assertEquals(MathEditRegion.ABS, sqrtInAbs.regionAt(4))
+    }
+
     /* ---------------- 输入逻辑 ---------------- */
 
     @Test
@@ -246,6 +294,19 @@ class ExpressionTest {
         val edit = MathEdit.insertFunction("x+1", TextRange(0, 3), "sin")
         assertEquals("sin(x+1)", edit.text)
         assertEquals(8, edit.caret)
+    }
+
+    @Test
+    fun `绝对值键插入空结构并能包裹选区`() {
+        val empty = MathEdit.insertFunction("x+1", TextRange(3), "abs")
+        assertEquals("x+1abs()", empty.text)
+        assertEquals(7, empty.caret)
+        assertEquals(MathEditRegion.ABS, buildMathDisplay(empty.text).regionAt(empty.caret))
+
+        val wrapped = MathEdit.insertFunction("x+1", TextRange(0, 3), "abs")
+        assertEquals("abs(x+1)", wrapped.text)
+        assertEquals(8, wrapped.caret)
+        assertEquals("|x+1|", buildMathDisplay(wrapped.text).text)
     }
 
     @Test

@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
  *
  * 排版沿用 1.0.0 的键位（学生已经用惯这一套）：
  * - 前 3 行是 6 列的数字与四则运算，第 4 行「0」占两格、「清空」占四格；
- * - 空一行之后是变量 / 函数 / 常数两行，分别 8 列、7 列；
+ * - 空一行之后是变量 / 函数 / 常数两行，各 8 列；
  * - 数字与运算是中性色，变量与函数用强调色，和输入框里「普通文字 vs 数学符号」的区分一致。
  *
  * 每个键只表达「按下去插入什么」，具体插入规则在 [MathEdit] 里，键盘本身不碰文本。
@@ -125,6 +125,8 @@ private val FUNCTION_ROWS: List<List<KeySpec>> = listOf(
         // ^ 键画成「x + 右上角空上标槽」，和输入框里按完 ^ 长出来的虚线框是同一个形象
         KeySpec("^", KeyAction.Power, accent = true, slot = true, description = "乘方"),
         KeySpec("√", KeyAction.Function("sqrt"), accent = true, description = "开方"),
+        // 绝对值键画成「| 方框 |」，和输入框里按完长出来的样子一致
+        KeySpec("| |", KeyAction.Function("abs"), accent = true, absSlot = true, description = "绝对值"),
         KeySpec("π", KeyAction.Char("π"), accent = true, description = "圆周率"),
         KeySpec("e", KeyAction.Char("e"), accent = true),
     ),
@@ -153,6 +155,8 @@ private data class KeySpec(
     val weight: Float = 1f,
     /** 用「x + 空上标槽」图标代替文字（乘方键）。 */
     val slot: Boolean = false,
+    /** 用「| 方框 |」图标代替文字（绝对值键）。 */
+    val absSlot: Boolean = false,
     val description: String? = null,
 )
 
@@ -196,6 +200,7 @@ private fun MathKeyButton(
     ) {
         Box(contentAlignment = Alignment.Center) {
             when {
+                spec.absSlot -> AbsoluteSlotIcon(color = contentColor)
                 spec.slot -> SuperscriptSlotIcon(color = contentColor)
                 spec.label.length <= 2 -> Text(
                     text = spec.label,
@@ -243,6 +248,41 @@ private fun SuperscriptSlotIcon(color: Color) {
                         ),
                     )
                 },
+        )
+    }
+}
+
+/** 绝对值键的图标：两边竖线，中间一个虚线方框。 */
+@Composable
+private fun AbsoluteSlotIcon(color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = "|",
+            style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+            color = color,
+        )
+        Spacer(Modifier.width(1.dp))
+        Box(
+            modifier = Modifier
+                .size(width = 12.dp, height = 13.dp)
+                .drawBehind {
+                    drawRoundRect(
+                        color = color.copy(alpha = 0.75f),
+                        cornerRadius = CornerRadius(2.dp.toPx()),
+                        style = Stroke(
+                            width = 1.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(2.dp.toPx(), 1.5.dp.toPx()),
+                            ),
+                        ),
+                    )
+                },
+        )
+        Spacer(Modifier.width(1.dp))
+        Text(
+            text = "|",
+            style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+            color = color,
         )
     }
 }
