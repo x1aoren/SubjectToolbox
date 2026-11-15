@@ -1,4 +1,4 @@
-package cn.stb.feature.chemistry
+package cn.stb.feature.periodic
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll

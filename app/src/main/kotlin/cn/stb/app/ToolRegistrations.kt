@@ -11,6 +11,7 @@ import cn.stb.feature.dictionary.DictionaryToolProvider
 import cn.stb.feature.formula.FormulaToolProvider
 import cn.stb.feature.geography.GeographyDiagramToolProvider
 import cn.stb.feature.math.MathToolProvider
+import cn.stb.feature.periodic.PeriodicTableToolProvider
 import cn.stb.feature.poetry.PoetryToolProvider
 import cn.stb.feature.textbook.TextbookToolProvider
 import cn.stb.feature.zhdict.ChineseDictionaryToolProvider
@@ -39,6 +40,7 @@ object ToolRegistrations {
         MathToolProvider(),
         DictionaryToolProvider(),
         ChemistryToolProvider(),
+        PeriodicTableToolProvider(),
         BiologyDiagramToolProvider(),
         GeographyDiagramToolProvider(),
         TextbookToolProvider(),

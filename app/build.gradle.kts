@@ -79,6 +79,7 @@ dependencies {
     implementation(project(":feature:geography-diagram"))
     implementation(project(":feature:electronic-textbook"))
     implementation(project(":feature:formula"))
+    implementation(project(":feature:periodic-table"))
 
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")

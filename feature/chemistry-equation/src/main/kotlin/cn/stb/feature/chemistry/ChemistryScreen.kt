@@ -72,10 +72,10 @@ class ChemistryToolProvider : ToolProvider {
         id = ToolId("chemistry.equation"),
         subjectId = SubjectId("chemistry"),
         title = "化学方程式",
-        summary = "165 条方程式 · 配平 · 元素周期表",
+        summary = "165 条方程式 · 检索 · 自动配平",
         glyph = "式",
         icon = ToolIcon.ATOM,
-        keywords = listOf("化学", "方程式", "配平", "反应", "氧化", "元素周期表", "元素"),
+        keywords = listOf("化学", "方程式", "配平", "反应", "氧化"),
     )
 
     @Composable
@@ -145,7 +145,6 @@ fun ChemistryScreen(onBack: () -> Unit) {
             ) {
                 Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("方程式库") })
                 Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("配平器") })
-                Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("元素周期表") })
             }
 
             when (tab) {
@@ -157,8 +156,7 @@ fun ChemistryScreen(onBack: () -> Unit) {
                     types = types,
                     equations = filtered,
                 )
-                1 -> BalancerTab()
-                else -> PeriodicTab()
+                else -> BalancerTab()
             }
             }
         }
@@ -419,22 +417,6 @@ private val UNICODE_SUBSCRIPTS = "₀₁₂₃₄₅₆₇₈₉"
 private fun toUnicodeSubscripts(formula: String): String = buildString {
     formula.forEach { c ->
         append(if (c.isDigit()) UNICODE_SUBSCRIPTS[c.digitToInt()] else c)
-    }
-}
-
-/* ------------------------------------------------------------------
- * 元素周期表
- * ---------------------------------------------------------------- */
-
-@Composable
-private fun PeriodicTab() {
-    val context = LocalContext.current
-    val repository = remember { ElementRepository(AssetReader(context)) }
-    val elements = remember { repository.elements() }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        PeriodicTable(elements = elements, modifier = Modifier.weight(1f))
-        CategoryLegend(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
     }
 }
 
