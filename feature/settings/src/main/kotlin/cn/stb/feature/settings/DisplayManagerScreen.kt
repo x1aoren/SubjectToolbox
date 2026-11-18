@@ -52,7 +52,9 @@ fun DisplayManagerScreen(
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val cloud by AppGraph.cloud.snapshot.collectAsStateWithLifecycle()
     val catalog = AppGraph.catalog
-    val cloudDisabledCount = cloud.tools.values.count { !it.enabled }
+    // 只统计主工具：示意图子项、反馈入口不属于主页工具卡片，不能把计数撑大
+    val mainToolIds = catalog.allTools.map { it.id.value }.toSet()
+    val cloudDisabledCount = cloud.tools.count { (id, state) -> id in mainToolIds && !state.enabled }
     val hiddenCount = settings.visibility.hiddenSubjectIds.size + settings.visibility.hiddenToolIds.size
 
     Scaffold(
@@ -90,7 +92,8 @@ fun DisplayManagerScreen(
                 if (cloudDisabledCount > 0) {
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text = "另外，学校管理员通过云端停用了  个工具，它们不会出现在主页；本地显隐设置会保留。",
+                        text = "另外，学校管理员通过云端停用了 $cloudDisabledCount 个工具；" +
+                            "它们仍会显示在主页（置灰），点击可查看停用原因。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )

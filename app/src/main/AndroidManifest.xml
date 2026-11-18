@@ -11,9 +11,18 @@
     <!-- 仅用于判断是否有可用网络；没有网络时不发起任何请求。 -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+      allowBackup 保留（用户换机时其它偏好仍可恢复），但设备 SN 所在的 stb_device_identity
+      必须排除在系统备份/换机迁移之外，否则新设备会沿用旧 SN、与旧机同号：
+      - Android 11 及以下读 android:fullBackupContent（@xml/backup_rules）；
+      - Android 12+ 读 android:dataExtractionRules（@xml/data_extraction_rules）。
+      两者可同时声明，系统按版本取用。
+    -->
     <application
         android:name=".StbApplication"
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:networkSecurityConfig="@xml/network_security_config"

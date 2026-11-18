@@ -1,6 +1,7 @@
 package cn.stb.feature.biology
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -9,6 +10,8 @@ import androidx.compose.ui.graphics.Color
 import cn.stb.core.designsystem.DiagramEntry
 import cn.stb.core.designsystem.DiagramGalleryScreen
 import cn.stb.core.designsystem.HtmlDiagramScreen
+import cn.stb.core.model.AppGraph
+import cn.stb.core.model.ManagedToolIds
 import cn.stb.core.model.SubjectId
 import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolId
@@ -46,6 +49,7 @@ private val BIOLOGY_DIAGRAMS = listOf(
             "细胞", "细胞分裂", "有丝分裂", "减数分裂", "染色体", "染色单体",
             "DNA", "配子", "交叉互换", "动物细胞", "植物细胞",
         ),
+        managedId = ManagedToolIds.BIOLOGY_CELL_DIVISION,
     ),
 )
 
@@ -53,6 +57,8 @@ private val BIOLOGY_DIAGRAMS = listOf(
 fun BiologyDiagramScreen(onBack: () -> Unit) {
     var openedId by rememberSaveable { mutableStateOf<String?>(null) }
     val opened = BIOLOGY_DIAGRAMS.firstOrNull { it.id == openedId }
+    // 停用状态来自云端快照（含离线缓存）；这里只做展示，不额外发请求
+    val cloud by AppGraph.cloud.snapshot.collectAsState()
 
     if (opened == null) {
         DiagramGalleryScreen(
@@ -63,6 +69,10 @@ fun BiologyDiagramScreen(onBack: () -> Unit) {
             searchHint = "搜索示意图，如「细胞」「分裂」",
             onOpen = { openedId = it.id },
             onBack = onBack,
+            disabledReasonFor = { managedId ->
+                cloud.disabledReasonFor(managedId).takeIf { it.isNotBlank() }
+            },
+            disabledSourceFor = { managedId -> cloud.disabledSourceFor(managedId) },
         )
     } else {
         HtmlDiagramScreen(

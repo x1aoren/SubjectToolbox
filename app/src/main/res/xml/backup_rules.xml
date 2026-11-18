@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 及以下的系统备份规则。
+  设备 SN 存在 SharedPreferences stb_device_identity.xml 里，若被 Auto Backup 恢复到新设备，
+  两台设备会同 SN（后台以 SN 为主键，会导致遥测/单设备开关串号），因此显式排除。
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="stb_device_identity.xml" />
+</full-backup-content>

@@ -7,13 +7,17 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * [source] 为 `device` 表示这台设备被单独设置过（后台可以按 SN 单独启停），
  * 为 `global` 表示沿用云端全局开关。
+ *
+ * [disabledReason] 是后台配置的停用原因（单设备原因 > 全局原因，优先级由服务端合并好再下发）；
+ * [disabledReasonSource] 表示这段文案的来源：`device`（仅本设备）或 `global`（学校全局设置）。
  */
 data class CloudToolState(
     val enabled: Boolean,
-    val message: String = "",
     val reason: String? = null,
     val source: String = "global",
     val note: String? = null,
+    val disabledReason: String = "",
+    val disabledReasonSource: String? = null,
 )
 
 data class CloudAnnouncement(
@@ -61,7 +65,27 @@ data class CloudSnapshot(
 ) {
     fun isToolDisabled(toolId: String): Boolean = tools[toolId]?.enabled == false
 
-    fun messageFor(toolId: String): String = tools[toolId]?.message.orEmpty()
+    /**
+     * 停用原因：启用/未知工具返回空串；停用工具返回后台下发的 [CloudToolState.disabledReason]，
+     * 后台没配原因时用 [DEFAULT_DISABLED_TEXT] 兜底（1.1.0 尚未上线，不再兼容旧版 message 字段）。
+     */
+    fun disabledReasonFor(toolId: String): String {
+        val state = tools[toolId] ?: return ""
+        if (state.enabled) return ""
+        return state.disabledReason.ifBlank { DEFAULT_DISABLED_TEXT }
+    }
+
+    /** 停用文案来源：`device`（仅本设备）/ `global`（学校全局）/ null（未知或已启用）。 */
+    fun disabledSourceFor(toolId: String): String? {
+        val state = tools[toolId] ?: return null
+        if (state.enabled) return null
+        return state.disabledReasonSource
+    }
+
+    companion object {
+        /** 后台没有配置任何停用原因时给用户看的默认文案。 */
+        const val DEFAULT_DISABLED_TEXT = "学校管理员暂时关闭了这个工具；你的本地数据不会丢失。"
+    }
 }
 
 data class ToolDescriptor(

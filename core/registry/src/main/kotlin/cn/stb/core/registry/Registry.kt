@@ -33,10 +33,15 @@ interface ToolHost {
  *
  * 主页、学科页、显示管理、搜索都只读这里，没有任何一处硬编码工具名，
  * 因此新增工具不需要改动它们中的任何一行。
+ *
+ * [managedEntries] 是受后台单独管控、但不对应独立工具页的条目（交互示意图子项、功能入口）。
+ * 它们不进入 [allTools]（主页工具卡片、显示管理、设置计数只统计主工具），
+ * 只通过 [everyEntry] 参与云端握手/上报，由各页面按固定 id 单独取用。
  */
 class ToolCatalog(
     providers: List<ToolProvider>,
     subjectList: List<Subject>,
+    managedEntries: List<ToolSpec> = emptyList(),
 ) : ToolCatalogView {
 
     private val providerById: Map<ToolId, ToolProvider> = providers.associateBy { it.spec.id }
@@ -45,13 +50,17 @@ class ToolCatalog(
 
     override val allTools: List<ToolSpec> = providers.map { it.spec }
 
+    override val managedEntries: List<ToolSpec> = managedEntries
+
+    override val everyEntry: List<ToolSpec> = allTools + managedEntries
+
     init {
         // 开发期就把重复 id、悬空学科这类错误暴露出来，而不是等用户点开空白页
-        val duplicated = providers.groupBy { it.spec.id.value }.filterValues { it.size > 1 }.keys
+        val duplicated = everyEntry.groupBy { it.id.value }.filterValues { it.size > 1 }.keys
         require(duplicated.isEmpty()) { "ToolId 重复注册: $duplicated" }
 
         val knownSubjects = subjects.map { it.id }.toSet()
-        providers.map { it.spec }.forEach { spec ->
+        everyEntry.forEach { spec ->
             require(spec.subjectId in knownSubjects) {
                 "工具 ${spec.id.value} 指向不存在的学科 ${spec.subjectId.value}"
             }
@@ -95,12 +104,10 @@ object HomeComposer {
         catalog: ToolCatalogView,
         settings: AppSettings,
         recents: List<String>,
-        cloudDisabledToolIds: Set<String> = emptySet(),
     ): HomeContent {
-        // 云端可以按设备停用工具；这里只影响主页呈现，不改本地显隐配置，
-        // 重新启用后用户的置顶与隐藏状态原样恢复。
+        // 云端停用不再影响主页呈现：被停用的工具仍按原位显示（置灰 + 徽章），
+        // 点击由 UI 层弹窗展示停用原因，本地显隐/置顶配置也原样保留。
         val visible = VisibilityResolver.visibleTools(catalog, settings)
-            .filterNot { it.id.value in cloudDisabledToolIds }
         val visibleById = visible.associateBy { it.id.value }
 
         // 置顶顺序就是用户拖拽出的顺序；被隐藏或被下线的 id 会被静默跳过，但保留在存储中

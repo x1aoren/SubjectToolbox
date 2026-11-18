@@ -472,10 +472,12 @@ class CloudControlImpl(
                 val item = toolObject.optJSONObject(key) ?: continue
                 tools[key] = CloudToolState(
                     enabled = item.optBoolean("enabled", true),
-                    message = item.optString("message"),
                     reason = item.nullableString("reason"),
                     source = item.optString("source", "global"),
                     note = item.nullableString("note"),
+                    // 停用原因：后台下发的 disabledReason；旧缓存/旧服务端里的 message 字段直接忽略（1.1.0 未上线，不保留兼容）
+                    disabledReason = item.nullableString("disabledReason").orEmpty(),
+                    disabledReasonSource = item.nullableString("disabledReasonSource"),
                 )
             }
         }

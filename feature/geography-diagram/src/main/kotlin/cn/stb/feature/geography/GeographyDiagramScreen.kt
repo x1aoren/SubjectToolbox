@@ -1,6 +1,7 @@
 package cn.stb.feature.geography
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -9,6 +10,8 @@ import androidx.compose.ui.graphics.Color
 import cn.stb.core.designsystem.DiagramEntry
 import cn.stb.core.designsystem.DiagramGalleryScreen
 import cn.stb.core.designsystem.HtmlDiagramScreen
+import cn.stb.core.model.AppGraph
+import cn.stb.core.model.ManagedToolIds
 import cn.stb.core.model.SubjectId
 import cn.stb.core.model.ToolIcon
 import cn.stb.core.model.ToolId
@@ -48,6 +51,7 @@ private val GEOGRAPHY_DIAGRAMS = listOf(
             "地球自转", "自转", "地轴", "倾角", "23.5", "昼夜交替", "昼夜半球",
             "线速度", "角速度", "自转周期", "北极", "南极", "太阳", "纬度",
         ),
+        managedId = ManagedToolIds.GEOGRAPHY_EARTH_ROTATION,
     ),
 )
 
@@ -55,6 +59,8 @@ private val GEOGRAPHY_DIAGRAMS = listOf(
 fun GeographyDiagramScreen(onBack: () -> Unit) {
     var openedId by rememberSaveable { mutableStateOf<String?>(null) }
     val opened = GEOGRAPHY_DIAGRAMS.firstOrNull { it.id == openedId }
+    // 停用状态来自云端快照（含离线缓存）；这里只做展示，不额外发请求
+    val cloud by AppGraph.cloud.snapshot.collectAsState()
 
     if (opened == null) {
         DiagramGalleryScreen(
@@ -65,6 +71,10 @@ fun GeographyDiagramScreen(onBack: () -> Unit) {
             searchHint = "搜索示意图，如「地球」「自转」",
             onOpen = { openedId = it.id },
             onBack = onBack,
+            disabledReasonFor = { managedId ->
+                cloud.disabledReasonFor(managedId).takeIf { it.isNotBlank() }
+            },
+            disabledSourceFor = { managedId -> cloud.disabledSourceFor(managedId) },
         )
     } else {
         HtmlDiagramScreen(

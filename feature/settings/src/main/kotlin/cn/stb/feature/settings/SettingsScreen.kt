@@ -279,17 +279,27 @@ fun SettingsScreen(
                         )
                     }
                     Spacer(Modifier.height(10.dp))
-                    val enabledTools = cloud.tools.values.count { it.enabled }
-                    val disabledTools = cloud.tools.values.count { !it.enabled }
+                    // 只统计主工具：子工具（示意图子项）与功能入口不参与主页工具计数，
+                    // 否则后台托管 3 个条目后这里会凭空多出 3 个「工具」。
+                    val mainToolIds = catalog.allTools.map { it.id.value }.toSet()
+                    val enabledTools = cloud.tools.count { (id, state) -> id in mainToolIds && state.enabled }
+                    val disabledTools = cloud.tools.count { (id, state) -> id in mainToolIds && !state.enabled }
                     Text(
-                        text = if (cloud.tools.isEmpty()) {
-                            "还没有从云端取到工具开关。"
-                        } else {
-                            "可用工具 $enabledTools 个，单独停用 $disabledTools 个。"
+                        text = when {
+                            cloud.tools.isEmpty() -> "还没有从云端取到工具开关。"
+                            else -> "可用工具 $enabledTools 个，停用 $disabledTools 个。"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (disabledTools > 0) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "停用的工具在主页仍会显示（置灰），点击可查看停用原因。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = "配置最多 6 小时同步一次，遥测最多 10 分钟上报一次；没有网络时不会发起请求。",

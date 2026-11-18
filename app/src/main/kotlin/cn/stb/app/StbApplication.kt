@@ -24,6 +24,7 @@ class StbApplication : Application() {
         val catalog = ToolCatalog(
             providers = ToolRegistrations.tools,
             subjectList = ToolRegistrations.subjects,
+            managedEntries = ToolRegistrations.managedEntries,
         )
 
         val cloud = CloudControlImpl(
@@ -33,7 +34,8 @@ class StbApplication : Application() {
             apiKey = BuildConfig.STB_API_KEY,
             channel = if (BuildConfig.DEBUG) "beta" else "stable",
             toolsProvider = {
-                catalog.allTools.map { tool ->
+                // 握手要上报「主工具 + 受管控条目」全量清单，后台工具清单同步才覆盖 100%
+                catalog.everyEntry.map { tool ->
                     ToolDescriptor(tool.id.value, tool.title, tool.subjectId.value)
                 }
             },

@@ -31,7 +31,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import cn.stb.core.designsystem.disabledSourceHint
 import cn.stb.core.model.AppGraph
+import cn.stb.core.model.CloudSnapshot
+import cn.stb.core.model.ManagedToolIds
 import cn.stb.core.model.ToolId
 import cn.stb.core.registry.ToolHost
 import cn.stb.feature.home.HomeScreen
@@ -89,7 +92,17 @@ fun AppNavHost(startToolId: String? = null) {
         }
 
         composable(Routes.FEEDBACK) { entry ->
-            FeedbackScreen(onBack = { navController.popBackFrom(entry) })
+            // 反馈入口纳入后台管控：停用时仍可进入该路由，但只展示停用页（不崩、可返回）
+            if (cloud.isToolDisabled(ManagedToolIds.FEEDBACK)) {
+                ToolDisabledScreen(
+                    title = AppContainer.catalog.findEntry(ManagedToolIds.feedback)?.title ?: "意见反馈",
+                    reason = cloud.disabledReasonFor(ManagedToolIds.FEEDBACK),
+                    source = cloud.disabledSourceFor(ManagedToolIds.FEEDBACK),
+                    onBack = { navController.popBackFrom(entry) },
+                )
+            } else {
+                FeedbackScreen(onBack = { navController.popBackFrom(entry) })
+            }
         }
 
         composable(Routes.SETTINGS) { entry ->
@@ -114,7 +127,7 @@ fun AppNavHost(startToolId: String? = null) {
         ) { entry ->
             val id = ToolId(entry.arguments?.getString("toolId").orEmpty())
             val provider = AppContainer.catalog.providerOf(id)
-            val cloudDisabled = cloud.tools[id.value]?.enabled == false
+            val cloudDisabled = cloud.isToolDisabled(id.value)
 
             LaunchedEffect(id, cloudDisabled) {
                 if (provider != null && !cloudDisabled) {
@@ -141,7 +154,9 @@ fun AppNavHost(startToolId: String? = null) {
             } else if (cloudDisabled) {
                 ToolDisabledScreen(
                     title = provider.spec.title,
-                    message = cloud.tools[id.value]?.message.orEmpty(),
+                    // 直达路由的停用文案与主页弹窗同一套解析：单设备原因 > 全局原因 > 默认文案
+                    reason = cloud.disabledReasonFor(id.value),
+                    source = cloud.disabledSourceFor(id.value),
                     onBack = { navController.popBackFrom(entry) },
                 )
             } else {
@@ -189,7 +204,12 @@ private fun MissingToolScreen(onBack: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ToolDisabledScreen(title: String, message: String, onBack: () -> Unit) {
+private fun ToolDisabledScreen(
+    title: String,
+    reason: String,
+    source: String? = null,
+    onBack: () -> Unit,
+) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -210,10 +230,20 @@ private fun ToolDisabledScreen(title: String, message: String, onBack: () -> Uni
             Text(title, style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(10.dp))
             Text(
-                text = message.ifBlank { "学校管理员暂时关闭了这个工具；你的本地数据不会丢失。" },
+                text = reason.ifBlank { CloudSnapshot.DEFAULT_DISABLED_TEXT },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            // 单设备停用要明确「只影响本设备」，全局停用说明来源；未知来源时不显示
+            val hint = disabledSourceHint(source)
+            if (hint != null) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
             Spacer(Modifier.height(18.dp))
             Text(
                 text = "联网后会自动同步最新开关；也可以稍后再试。",
