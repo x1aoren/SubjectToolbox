@@ -302,7 +302,8 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "配置最多 6 小时同步一次，遥测最多 10 分钟上报一次；没有网络时不会发起请求。",
+                        text = "前台每 30–60 秒检查一次云端修订号与单设备开关指纹，发现变化立即拉取；" +
+                            "完整配置最多 6 小时兜底同步；遥测最多 10 分钟上报；没有网络时不发起请求。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )

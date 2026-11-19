@@ -16,8 +16,10 @@ import cn.stb.core.model.FeedbackThread
 import cn.stb.core.model.FeedbackTicket
 import cn.stb.core.model.SettingsRepository
 import cn.stb.core.model.ToolDescriptor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
@@ -41,7 +44,8 @@ import kotlin.math.min
  *
  * 设计原则（按学校场景的约束）：
  * - 没有网络时不发起请求，事件先落本地队列；
- * - 配置最多 6 小时同步一次，遥测最多 10 分钟上报一次，失败指数退避；
+ * - 前台每 30–60 秒随机轮询一次云端修订号，只有修订号变化才拉完整配置（退后台立即停止）；
+ * - 完整配置最多 6 小时兜底同步一次，遥测最多 10 分钟上报一次，失败指数退避；
  * - 队列最多 800 条 / 512 KB，超出丢最旧，绝不会把平板磁盘写满；
  * - 配置缓存到 SharedPreferences，断网启动也能沿用上一次的设备级开关；
  * - 所有网络请求都在 IO 线程，超时 8 秒，不阻塞界面。
@@ -88,6 +92,14 @@ class CloudControlImpl(
     private var settingsState = AppSettings()
 
     private var started = false
+
+    /** 是否在前台；前台才轮询修订号，退后台立即取消。 */
+    @Volatile
+    private var foreground = false
+
+    /** 唯一的修订号轮询协程；重复 onForeground 不会叠加。 */
+    private var pollJob: Job? = null
+
     private var sessionId: String? = null
     private var sessionStartedElapsed = 0L
     private var lastAttemptAt = 0L
@@ -123,6 +135,8 @@ class CloudControlImpl(
     }
 
     override fun onForeground() {
+        foreground = true
+        startRevisionPolling()
         if (sessionId == null) {
             val id = UUID.randomUUID().toString().take(8)
             sessionId = id
@@ -133,6 +147,8 @@ class CloudControlImpl(
     }
 
     override fun onBackground() {
+        // 先停轮询：退到后台后不再发起任何修订号/配置请求
+        stopRevisionPolling()
         val id = sessionId ?: return
         val duration = (SystemClock.elapsedRealtime() - sessionStartedElapsed).coerceAtLeast(0L)
         sessionId = null
@@ -143,6 +159,120 @@ class CloudControlImpl(
                 mapOf("sessionId" to id, "durationMs" to duration),
             )
             if (NetworkState.isOnline(appContext)) flushTelemetry(force = false)
+        }
+    }
+
+    /* ------------------------------------------------------------------
+     * 前台短轮询：全局修订号 + 单设备覆盖指纹
+     * ---------------------------------------------------------------- */
+
+    /**
+     * 启动前台轮询协程；已在跑时直接返回（重复 onForeground 不会叠加多条循环）。
+     *
+     * 每个 tick 先随机等 30–60 秒（具体区间由服务端 sync 对象下发），再检查云端是否有变化：
+     * 全局修订号变了，或本设备的单设备覆盖指纹（count/updatedAt）变了，才拉完整配置。
+     * 退后台会调用 [stopRevisionPolling] 取消协程；[start] 不启动它。
+     */
+    private fun startRevisionPolling() {
+        if (pollJob?.isActive == true) return
+        pollJob = scope.launch {
+            while (foreground && isActive) {
+                delay(_snapshot.value.policy.revisionPollIntervalMillis())
+                if (!foreground || !isActive) break
+                try {
+                    pollRevisionOnce()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // 轮询失败静默处理：下一 tick 再试，不影响其它同步
+                }
+            }
+        }
+    }
+
+    private fun stopRevisionPolling() {
+        foreground = false
+        pollJob?.cancel()
+        pollJob = null
+    }
+
+    /** 一个轮询 tick：没加载过就先握手注册；已加载则比对修订号/覆盖指纹，有变化才拉全量。 */
+    private suspend fun pollRevisionOnce() {
+        if (!NetworkState.isOnline(appContext)) return
+        if (!_snapshot.value.loaded) {
+            // 还没拿到过配置：走一次握手，顺带注册设备、拿到首份配置并初始化覆盖指纹
+            syncNow(force = true)
+            return
+        }
+
+        val probe = fetchRevisionProbe() ?: return
+        val snapshot = _snapshot.value
+        val revisionChanged = probe.revision != null && probe.revision != snapshot.revision
+        val overridesChanged = hasOverrideFingerprintChanged(probe.overrides)
+        if (!revisionChanged && !overridesChanged) return
+
+        if (refreshConfigFromServer()) {
+            // 刷新成功才落指纹；失败保留旧值，下一 tick 重新判定并重试
+            probe.overrides?.let(::persistOverrideFingerprint)
+        }
+    }
+
+    /** 拉取云端「修订号 + 本设备覆盖指纹」；网络/解析失败返回 null（静默，下一 tick 重试）。 */
+    private fun fetchRevisionProbe(): RevisionProbe? {
+        val sn = URLEncoder.encode(deviceSn, "UTF-8")
+        val response = api.get("/v1/config/revision?sn=$sn")
+        if (!response.ok) return null
+        return runCatching {
+            val root = JSONObject(response.body)
+            if (!root.optBoolean("ok", false)) return@runCatching null
+            RevisionProbe(
+                revision = if (!root.has("revision") || root.isNull("revision")) {
+                    null
+                } else {
+                    root.optInt("revision", -1).takeIf { it >= 0 }
+                },
+                overrides = OverrideFingerprint.fromJson(root.optJSONObject("deviceOverrides")),
+            )
+        }.getOrNull()
+    }
+
+    /** 单设备覆盖指纹是否与本地持久化的值不同（本地 -1 表示还没初始化过）。 */
+    private fun hasOverrideFingerprintChanged(remote: OverrideFingerprint?): Boolean {
+        if (remote == null) return false
+        val localCount = prefs.getInt(KEY_OVERRIDE_COUNT, OVERRIDE_COUNT_UNINITIALIZED)
+        val localUpdatedAt = prefs.getString(KEY_OVERRIDE_UPDATED_AT, null)
+        return remote.count != localCount || remote.updatedAt != localUpdatedAt
+    }
+
+    private fun persistOverrideFingerprint(fingerprint: OverrideFingerprint) {
+        prefs.edit()
+            .putInt(KEY_OVERRIDE_COUNT, fingerprint.count)
+            .putString(KEY_OVERRIDE_UPDATED_AT, fingerprint.updatedAt)
+            .apply()
+    }
+
+    /** 一次 revision 轮询的结果：全局修订号 + 本设备覆盖指纹。 */
+    private data class RevisionProbe(
+        val revision: Int?,
+        val overrides: OverrideFingerprint?,
+    )
+
+    /** 单设备覆盖指纹：设备级停用/恢复不发布修订，只能靠它发现变化。 */
+    private data class OverrideFingerprint(
+        val count: Int,
+        val updatedAt: String?,
+    ) {
+        companion object {
+            fun fromJson(json: JSONObject?): OverrideFingerprint? {
+                if (json == null) return null
+                val count = json.optInt("count", 0).coerceAtLeast(0)
+                val updatedAt = if (!json.has("updatedAt") || json.isNull("updatedAt")) {
+                    null
+                } else {
+                    json.optString("updatedAt").takeIf { it.isNotBlank() }
+                }
+                return OverrideFingerprint(count, updatedAt)
+            }
         }
     }
 
@@ -252,9 +382,37 @@ class CloudControlImpl(
 
         val response = api.post("/v1/telemetry/handshake", body)
         if (!response.ok) return false
-        return runCatching {
-            val root = JSONObject(response.body)
-            val now = System.currentTimeMillis()
+        return applyConfigPayload(response.body)
+    }
+
+    /**
+     * revision 变化/单设备覆盖指纹变化后拉取完整配置。
+     *
+     * 走 `GET /v1/config`（不是握手，避免占用握手限流），与 6 小时兜底同步共用
+     * [applyConfigPayload] 和同一套缓存键；失败保持现状，由下一 tick 重试。
+     * 与 [syncNow] 共用 [mutex]，避免互相覆盖 snapshot。
+     */
+    private suspend fun refreshConfigFromServer(): Boolean = mutex.withLock {
+        if (!NetworkState.isOnline(appContext)) return@withLock false
+        val sn = URLEncoder.encode(deviceSn, "UTF-8")
+        val version = URLEncoder.encode(appVersion, "UTF-8")
+        val response = api.get("/v1/config?version=$version&channel=$channel&sn=$sn")
+        if (!response.ok) return@withLock false
+        val now = System.currentTimeMillis()
+        val applied = applyConfigPayload(response.body, now)
+        if (applied) lastConfigAt = now
+        applied
+    }
+
+    /**
+     * 应用一份完整配置响应（握手或 /v1/config）：更新 snapshot、缓存键，并同步单设备覆盖指纹。
+     *
+     * 调用方必须已持有 [mutex]（或处于同一串行路径），否则可能并发覆盖 snapshot。
+     * 响应里带 `deviceOverrides` 时（握手会有）顺手初始化/刷新指纹，供前台轮询比对。
+     */
+    private fun applyConfigPayload(body: String, now: Long = System.currentTimeMillis()): Boolean =
+        runCatching {
+            val root = JSONObject(body)
             val parsed = parseSnapshot(root, now)
             _snapshot.value = parsed.copy(
                 deviceSn = deviceSn,
@@ -269,9 +427,12 @@ class CloudControlImpl(
                 .putLong(KEY_NEXT_CONFIG, nextConfigAt)
                 .putInt(KEY_CONFIG_FAILURES, 0)
                 .apply()
+            // 契约约定 deviceOverrides 在响应顶层；兼容服务端放进 config 对象里的写法
+            val overridesJson = root.optJSONObject("deviceOverrides")
+                ?: root.optJSONObject("config")?.optJSONObject("deviceOverrides")
+            OverrideFingerprint.fromJson(overridesJson)?.let(::persistOverrideFingerprint)
             true
         }.getOrDefault(false)
-    }
 
     private suspend fun flushTelemetry(force: Boolean): Boolean {
         if (!settingsState.telemetryEnabled) {
@@ -512,12 +673,20 @@ class CloudControlImpl(
         val configInterval = sync?.optLong("configIntervalSeconds", 6 * 60 * 60) ?: (6 * 60 * 60)
         val flushInterval = sync?.optLong("telemetryFlushSeconds", 10 * 60) ?: (10 * 60)
         val batchMax = sync?.optInt("telemetryBatchMax", 200) ?: 200
+        // 前台 revision 轮询区间：旧配置/旧缓存里没有这两个字段时用默认 30/60 秒；
+        // 非法值由 CloudPolicy.revisionPollIntervalMillis 统一收敛
+        val pollMin = sync?.optLong("revisionPollMinSeconds", DEFAULT_REVISION_POLL_MIN_SECONDS)
+            ?: DEFAULT_REVISION_POLL_MIN_SECONDS
+        val pollMax = sync?.optLong("revisionPollMaxSeconds", DEFAULT_REVISION_POLL_MAX_SECONDS)
+            ?: DEFAULT_REVISION_POLL_MAX_SECONDS
         val nextAt = sync?.optString("nextConfigAt")?.let(::parseInstant) ?: (syncedAt + configInterval * 1000)
         val policy = CloudPolicy(
             configIntervalSeconds = configInterval,
             telemetryFlushSeconds = flushInterval,
             telemetryBatchMax = batchMax.coerceIn(20, 300),
             nextConfigAtMillis = maxOf(nextAt, prefs.getLong(KEY_NEXT_CONFIG, 0L)),
+            revisionPollMinSeconds = pollMin,
+            revisionPollMaxSeconds = pollMax,
         )
 
         val maintenance = config.optJSONObject("maintenance")
@@ -554,6 +723,14 @@ class CloudControlImpl(
         const val KEY_CONFIG_FAILURES = "config_failures"
         const val KEY_TELEMETRY_FAILURES = "telemetry_failures"
         const val KEY_DISMISSED = "dismissed_announcements"
+
+        /** 单设备覆盖指纹：count 缺省 -1 表示还没初始化过（首次握手前）。 */
+        const val KEY_OVERRIDE_COUNT = "override_count"
+        const val KEY_OVERRIDE_UPDATED_AT = "override_updated_at"
+        const val OVERRIDE_COUNT_UNINITIALIZED = -1
+
         const val MIN_FORCE_INTERVAL_MS = 30_000L
+        const val DEFAULT_REVISION_POLL_MIN_SECONDS = 30L
+        const val DEFAULT_REVISION_POLL_MAX_SECONDS = 60L
     }
 }

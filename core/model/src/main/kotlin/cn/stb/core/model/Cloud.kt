@@ -1,6 +1,7 @@
 package cn.stb.core.model
 
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.random.Random
 
 /**
  * 云端下发的单个工具状态。
@@ -42,7 +43,41 @@ data class CloudPolicy(
     val telemetryFlushSeconds: Long = 10 * 60,
     val telemetryBatchMax: Int = 200,
     val nextConfigAtMillis: Long = 0L,
-)
+    /** 前台轮询云端修订号的最小间隔（秒），由服务端 sync 对象下发，默认 30。 */
+    val revisionPollMinSeconds: Long = 30,
+    /** 前台轮询云端修订号的最大间隔（秒），由服务端 sync 对象下发，默认 60。 */
+    val revisionPollMaxSeconds: Long = 60,
+) {
+
+    /**
+     * 本轮轮询要等待的毫秒数：把 [revisionPollMinSeconds]/[revisionPollMaxSeconds] 收敛到
+     * [MIN_REVISION_POLL_SECONDS]..[MAX_REVISION_POLL_SECONDS] 后，在区间内随机取一个整秒。
+     *
+     * 服务端可能下发非法值（0、负数、max<min、超大值），这里统一兜底，保证客户端不会
+     * 因为配置错误变成高频轮询或长时间不检查。纯函数，方便单测。
+     */
+    fun revisionPollIntervalMillis(random: Random = Random.Default): Long {
+        val minSeconds = revisionPollMinSeconds
+            .coerceIn(MIN_REVISION_POLL_SECONDS, MAX_REVISION_POLL_SECONDS)
+        val maxSeconds = revisionPollMaxSeconds
+            .coerceIn(minSeconds, MAX_REVISION_POLL_SECONDS)
+        val seconds = if (maxSeconds <= minSeconds) {
+            minSeconds
+        } else {
+            // nextLong 的 until 是开区间，+1 让最大值也能取到
+            random.nextLong(minSeconds, maxSeconds + 1)
+        }
+        return seconds * 1_000L
+    }
+
+    companion object {
+        /** 轮询间隔下限：再快就失去「短轮询」的意义，且浪费服务端限流额度。 */
+        const val MIN_REVISION_POLL_SECONDS = 10L
+
+        /** 轮询间隔上限：超过 5 分钟已接近兜底同步，失去及时性。 */
+        const val MAX_REVISION_POLL_SECONDS = 300L
+    }
+}
 
 /**
  * 客户端看到的云端状态。
@@ -138,8 +173,14 @@ interface CloudControl {
      */
     fun recordCrash(signature: String, message: String, stack: String)
 
+    /**
+     * 进入前台：记录会话、启动前台修订号轮询（每 30–60 秒一次，仅前台）、触发一次节流同步。
+     */
     fun onForeground()
 
+    /**
+     * 退到后台：结束会话、立即停止修订号轮询并 flush 一次遥测；后台不再轮询配置。
+     */
     fun onBackground()
 
     /** 手动/启动同步；内部会按服务端下发的策略节流。返回是否成功完成一次网络同步。 */
