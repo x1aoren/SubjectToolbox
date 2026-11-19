@@ -300,13 +300,6 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.outline,
                         )
                     }
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "前台每 30–60 秒检查一次云端修订号与单设备开关指纹，发现变化立即拉取；" +
-                            "完整配置最多 6 小时兜底同步；遥测最多 10 分钟上报；没有网络时不发起请求。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
                 }
             }
 
@@ -316,7 +309,7 @@ fun SettingsScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text("匿名使用统计", style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                "记录打开过哪些工具、版本与会话时长；不含姓名或学号",
+                                "记录打开过哪些工具、版本与会话时长",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -326,12 +319,6 @@ fun SettingsScreen(
                             onCheckedChange = { viewModel.setTelemetryEnabled(it) },
                         )
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "关闭后会立即停止记录并清空本地待上报队列；云端配置仍会同步，用于接收工具开关。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
                 }
             }
 
