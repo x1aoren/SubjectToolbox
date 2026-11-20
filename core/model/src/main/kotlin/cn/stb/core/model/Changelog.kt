@@ -55,8 +55,8 @@ object Changelog {
         ReleaseNote(
             versionName = "1.1.0",
             versionCode = 2,
-            date = "2026-11-15",
-            headline = "函数编辑器大更新，新增汉语词典与英语语法",
+            date = "2026-11-20",
+            headline = "全年级公测 · 函数编辑器大更新，新增汉语词典与英语语法",
             changes = listOf(
                 ChangeItem(
                     ChangeKind.NEW,
@@ -129,10 +129,6 @@ object Changelog {
                 ChangeItem(
                     ChangeKind.FIX,
                     "修复英语词典只输入一个汉字查不到内容的问题（如「水」）；列表也不再卡在 60 条，生词本全量展示，搜索结果可以「加载更多」。",
-                ),
-                ChangeItem(
-                    ChangeKind.FIX,
-                    "修复远程公告只显示第一条、其他公告被忽略，以及点「知道了」后要重进主页才消失的问题。",
                 ),
             ),
         ),
