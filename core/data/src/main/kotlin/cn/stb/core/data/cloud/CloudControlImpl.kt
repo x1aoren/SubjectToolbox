@@ -102,6 +102,9 @@ class CloudControlImpl(
     /** 唯一的修订号轮询协程；重复 onForeground 不会叠加。 */
     private var pollJob: Job? = null
 
+    /** 前台遥测上报协程：每 20 秒看一眼本地队列，到点就把积压事件传上去。 */
+    private var flushJob: Job? = null
+
     private var sessionId: String? = null
     private var sessionStartedElapsed = 0L
     private var lastAttemptAt = 0L
@@ -139,6 +142,7 @@ class CloudControlImpl(
     override fun onForeground() {
         foreground = true
         startRevisionPolling()
+        startTelemetryTicker()
         if (sessionId == null) {
             val id = UUID.randomUUID().toString().take(8)
             sessionId = id
@@ -196,6 +200,34 @@ class CloudControlImpl(
         foreground = false
         pollJob?.cancel()
         pollJob = null
+        flushJob?.cancel()
+        flushJob = null
+    }
+
+    /**
+     * 前台遥测上报循环，和修订号轮询分开：轮询只管配置变更，上报只看本地队列。
+     *
+     * 之前只在切换前后台（或 6 小时兜底同步）时才有机会上报，用户一直开着应用时事件可能压到
+     * 一小时以后才出现在控制台。这里每 20 秒检查一次队列，「发不发」仍由服务端下发的
+     * telemetryFlushIntervalSeconds（默认 60 秒）节流，服务端单设备每小时 240 次额度足够。
+     */
+    private fun startTelemetryTicker() {
+        if (flushJob?.isActive == true) return
+        flushJob = scope.launch {
+            while (foreground && isActive) {
+                delay(TELEMETRY_TICK_MS)
+                if (!foreground || !isActive) break
+                runCatching { flushPendingTelemetry() }
+            }
+        }
+    }
+
+    /** 有积压、有网、且过了节流窗口才真正发请求；没积压时只是读一下本地队列。 */
+    private suspend fun flushPendingTelemetry() {
+        if (!foreground || !settingsState.telemetryEnabled) return
+        if (queue.size() == 0) return
+        if (!NetworkState.isOnline(appContext)) return
+        mutex.withLock { flushTelemetry(force = false) }
     }
 
     /** 一个轮询 tick：没加载过就先握手注册；已加载则比对修订号/覆盖指纹，有变化才拉全量。 */
@@ -673,7 +705,16 @@ class CloudControlImpl(
 
         val sync = config.optJSONObject("sync")
         val configInterval = sync?.optLong("configIntervalSeconds", 6 * 60 * 60) ?: (6 * 60 * 60)
-        val flushInterval = sync?.optLong("telemetryFlushSeconds", 10 * 60) ?: (10 * 60)
+        // 服务端字段名是 telemetryFlushIntervalSeconds，早期客户端读的是 telemetryFlushSeconds，
+        // 两种写法都认；兜底区间 15 秒–6 小时，服务端下发 0/负数/超大值时客户端也不会变成高频请求。
+        val flushInterval = when {
+            sync == null -> DEFAULT_TELEMETRY_FLUSH_SECONDS
+            sync.has("telemetryFlushIntervalSeconds") ->
+                sync.optLong("telemetryFlushIntervalSeconds", DEFAULT_TELEMETRY_FLUSH_SECONDS)
+            sync.has("telemetryFlushSeconds") ->
+                sync.optLong("telemetryFlushSeconds", DEFAULT_TELEMETRY_FLUSH_SECONDS)
+            else -> DEFAULT_TELEMETRY_FLUSH_SECONDS
+        }.coerceIn(MIN_TELEMETRY_FLUSH_SECONDS, MAX_TELEMETRY_FLUSH_SECONDS)
         val batchMax = sync?.optInt("telemetryBatchMax", 200) ?: 200
         // 前台 revision 轮询区间：旧配置/旧缓存里没有这两个字段时用默认 30/60 秒；
         // 非法值由 CloudPolicy.revisionPollIntervalMillis 统一收敛
@@ -734,5 +775,13 @@ class CloudControlImpl(
         const val MIN_FORCE_INTERVAL_MS = 30_000L
         const val DEFAULT_REVISION_POLL_MIN_SECONDS = 30L
         const val DEFAULT_REVISION_POLL_MAX_SECONDS = 60L
+
+        /** 服务端没下发 sync 对象时的兜底上报间隔（旧服务端行为）。 */
+        const val DEFAULT_TELEMETRY_FLUSH_SECONDS = 10 * 60L
+        const val MIN_TELEMETRY_FLUSH_SECONDS = 15L
+        const val MAX_TELEMETRY_FLUSH_SECONDS = 6 * 60 * 60L
+
+        /** 前台检查遥测队列的间隔：比 60 秒上报窗口小，避免整分钟错过。 */
+        const val TELEMETRY_TICK_MS = 20_000L
     }
 }
