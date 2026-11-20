@@ -4,6 +4,14 @@ import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 /**
  * 极小的 HTTP 客户端。
@@ -14,11 +22,16 @@ import java.net.URL
  * 默认地址可以是 HTTP；生产环境由服务端返回 301/302/307/308 跳到 HTTPS。
  * 这里手动处理重定向，避免 HttpURLConnection 对 POST 的默认行为（把 POST 变成 GET
  * 或丢掉请求体）。只允许 http/https，且禁止 HTTPS 降级到 HTTP。
+ *
+ * [allowInsecureTls] 是给「域名被按 SNI 拦截、临时改用 IP 直连」准备的逃生通道：
+ * 服务器在 IP 上出示的是自签证书，开启后跳过证书链与主机名校验。默认关闭，切回域名
+ * 必须关掉，否则等于让任何中间人都能冒充服务端。
  */
 class CloudApi(
     baseUrl: String,
     private val apiKey: String,
     private val userAgent: String,
+    private val allowInsecureTls: Boolean = false,
 ) {
     private val base = baseUrl.trimEnd('/')
 
@@ -51,6 +64,14 @@ class CloudApi(
                     if (body != null) {
                         doOutput = true
                         setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    }
+                }
+                // 临时 IP 直连：服务端是自签证书，跳过证书链与主机名校验（默认不启用）。
+                // 必须放在写 body / 读响应之前：POST 打开输出流时就会开始 TLS 握手。
+                if (allowInsecureTls) {
+                    (connection as? HttpsURLConnection)?.apply {
+                        sslSocketFactory = INSECURE_SSL_SOCKET_FACTORY
+                        hostnameVerifier = INSECURE_HOSTNAME_VERIFIER
                     }
                 }
                 if (body != null) {
@@ -94,5 +115,20 @@ class CloudApi(
         const val READ_TIMEOUT_MS = 8_000
         const val MAX_REDIRECTS = 5
         val REDIRECT_CODES = setOf(301, 302, 303, 307, 308)
+
+        /** 只在 [allowInsecureTls] 打开时使用：信任任意证书。 */
+        val INSECURE_SSL_SOCKET_FACTORY: SSLSocketFactory by lazy {
+            val trustAll = object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
+                override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
+                override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+            }
+            SSLContext.getInstance("TLS").apply {
+                init(null, arrayOf<TrustManager>(trustAll), SecureRandom())
+            }.socketFactory
+        }
+
+        /** 只在 [allowInsecureTls] 打开时使用：IP 直连时证书 CN 对不上，跳过主机名校验。 */
+        val INSECURE_HOSTNAME_VERIFIER = HostnameVerifier { _, _ -> true }
     }
 }

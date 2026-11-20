@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  默认请求地址是 HTTP；生产域名允许明文首跳，由服务端 301/302/307/308 跳到 HTTPS。
-  只对本机与 stb.mcobs.cn 放行 cleartext，不开启全局明文，避免误连其他地址。
+  生产地址已是 HTTPS（https://stb.mcobs.cn），正常请求不涉及明文。
+  这里只为本机调试与生产域名保留明文豁免：真机调试走 127.0.0.1，服务端若临时用
+  301/302/307/308 兜底跳转也不至于被系统拦掉。不开启全局明文，避免误连其他地址。
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />

@@ -92,18 +92,28 @@ release 已开启 R8 代码压缩 + 资源收缩；当前包体积主体是两�
 | 构建 | 地址 |
 | --- | --- |
 | debug | `http://127.0.0.1:8787`（真机调试先 `adb reverse tcp:8787 tcp:8787`；MuMu/Android 模拟器也可用 `10.0.2.2`） |
-| release | `http://stb.mcobs.cn`（默认；服务端用 301/302/307/308 跳到 HTTPS） |
+| release | `https://stb.mcobs.cn`（生产，直连 HTTPS；服务端仍保留 HTTP → HTTPS 跳转兜底） |
 
 可在 `local.properties` 覆盖（都已给默认值，不填也能构建）：
 
 ```properties
-# 可选：客户端上报密钥；后台关闭匿名上报后必须填
+# 客户端上报密钥；缺失时云端同步 / 遥测 / 反馈全部 401，构建阶段会警告
 stb.apiKey=stb_live_xxxxxxxx
 stb.debugApiBase=http://127.0.0.1:8787
-stb.releaseApiBase=http://stb.mcobs.cn   # 生产建议改成 https://stb.mcobs.cn 后重新打包
+stb.releaseApiBase=https://stb.mcobs.cn
 ```
 
-**HTTP → HTTPS**：客户端默认请求 HTTP，`CloudApi` 手动跟随 301/302/303/307/308，并保持 POST 方法与请求体（`HttpURLConnection` 默认会在 301/302 时把 POST 变成 GET，不能直接用）；禁止 HTTPS 降级到 HTTP。`network_security_config` 只对 `127.0.0.1`、`localhost`、`10.0.2.2` 和 `stb.mcobs.cn` 放行明文。生产建议直接把 `stb.releaseApiBase` 改成 `https://` 地址重新打包，并在反向代理把 HTTP 301/308 到 HTTPS；HTTP 首跳不加密，配置了 `stb.apiKey` 时首跳会明文携带密钥，只在学校可信网络使用。
+**HTTPS**：生产地址直连 `https://stb.mcobs.cn`，请求不再有明文首跳，`X-STB-Key` 全程走 TLS。
+`CloudApi` 仍保留手动跟随 301/302/303/307/308 的能力（服务端配置跳转时不会丢 POST 方法或请求体），
+并禁止 HTTPS 降级到 HTTP。`network_security_config` 只对 `127.0.0.1`、`localhost`、`10.0.2.2` 和 `stb.mcobs.cn` 放行明文，
+用于真机本地调试与临时跳转兜底，其余域名一律禁止明文。
+
+**临时 IP 直连（应急，禁止对外分发）**：生产域名若在部分网络被按 SNI 拦截（TLS 握手被 RST），
+可临时把 `stb.releaseApiBase` 改成 `https://<服务器 IP>`，并在 `local.properties` 里加
+`stb.allowInsecureTls=true` 后重新打包：IP 访问不带 SNI，服务器在 IP 上出示的是自签证书，
+客户端会跳过证书链与主机名校验（`CloudApi` 只在开关打开时生效，默认关闭）。
+代价是失去对中间人的防护、`X-STB-Key` 可被冒充服务端骗取，仅用于内测/排障；
+域名或备案问题解决后必须改回 `https://stb.mcobs.cn` 并删掉 `stb.allowInsecureTls`。
 
 **设备 SN**：依次尝试 `Build.getSerial()`、系统属性 `ro.serialno`、`Settings.Secure.ANDROID_ID`（前缀 `STB-AID-`）、
 首次随机生成并持久化。Android 10+ 普通应用读不到硬件序列号是系统限制；学校用 MDM 预置 SN 时可在

@@ -57,6 +57,7 @@ class CloudControlImpl(
     apiKey: String,
     private val channel: String,
     private val toolsProvider: () -> List<ToolDescriptor>,
+    allowInsecureTls: Boolean = false,
 ) : CloudControl {
 
     private val appContext = context.applicationContext
@@ -78,6 +79,7 @@ class CloudControlImpl(
         baseUrl = baseUrl,
         apiKey = apiKey,
         userAgent = "SubjectToolbox/$appVersion (Android ${Build.VERSION.RELEASE})",
+        allowInsecureTls = allowInsecureTls,
     )
 
     override val deviceSn: String = identity.sn

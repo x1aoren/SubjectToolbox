@@ -33,6 +33,8 @@ class StbApplication : Application() {
             baseUrl = BuildConfig.STB_API_BASE,
             apiKey = BuildConfig.STB_API_KEY,
             channel = if (BuildConfig.DEBUG) "beta" else "stable",
+            // 临时 IP 直连：服务器 IP 上是自签证书，构建时由 stb.allowInsecureTls 决定是否跳过校验
+            allowInsecureTls = BuildConfig.STB_ALLOW_INSECURE_TLS,
             toolsProvider = {
                 // 握手要上报「主工具 + 受管控条目」全量清单，后台工具清单同步才覆盖 100%
                 catalog.everyEntry.map { tool ->
