@@ -1,5 +1,7 @@
 package cn.stb.feature.settings
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,9 +47,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -121,14 +125,33 @@ fun SettingsScreen(
             // 「关于」放最前：一进设置就能看到软件信息与作者。
             item {
                 SettingsGroup(title = "关于") {
-                    Text("学科工具箱", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        text = "SubjectToolbox",
-                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(8.dp))
+                    // logo 在左、中英文名在右：logo 用白色圆角贴片（原图就是白底），
+                    // 深色模式下像一枚 App 图标，浅色模式靠描边和卡片区分开。
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(R.drawable.stb_logo),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(58.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                    shape = RoundedCornerShape(16.dp),
+                                ),
+                        )
+                        Spacer(Modifier.width(14.dp))
+                        Column {
+                            Text("学科工具箱", style = MaterialTheme.typography.titleLarge)
+                            Spacer(Modifier.height(3.dp))
+                            Text(
+                                text = "SubjectToolbox",
+                                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         text = "把语文、数学、英语、化学等学科的工具收进一个 App。",
                         style = MaterialTheme.typography.bodySmall,
