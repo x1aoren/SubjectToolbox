@@ -104,6 +104,10 @@ object Changelog {
                 ),
                 ChangeItem(
                     ChangeKind.IMPROVE,
+                    "主页「我的常用」首次启动不再预置古诗词、汉语词典与词典，改为空白，由用户自己点星标添加。",
+                ),
+                ChangeItem(
+                    ChangeKind.IMPROVE,
                     "函数编辑器整体翻新：显式 / 隐式手动切换、参数滑块可增删并单独设范围与步进、开方所见即所得、2x 这类隐式乘号直接认。",
                 ),
                 ChangeItem(

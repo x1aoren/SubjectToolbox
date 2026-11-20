@@ -70,7 +70,6 @@ class DictionaryToolProvider : ToolProvider {
         glyph = "词",
         icon = ToolIcon.DICTIONARY,
         keywords = listOf("英语", "单词", "词汇", "英汉", "生词本"),
-        defaultPinned = true,
     )
 
     @Composable

@@ -75,7 +75,9 @@ class StbApplication : Application() {
     }
 
     /**
-     * 首次启动把标了 defaultPinned 的工具放进「我的常用」，避免新用户打开就是一片空白。
+     * 首次启动把标了 defaultPinned 的工具放进「我的常用」。
+     * 目前没有任何工具声明 defaultPinned，所以新用户首次打开时「我的常用」是空的，
+     * 由他自己点星标添加；日后确实需要预置某个工具，标上 defaultPinned 即可。
      * 只播种一次：用户清空置顶后，不会在下次启动被重新填满。
      */
     private fun seedDefaultPins() {

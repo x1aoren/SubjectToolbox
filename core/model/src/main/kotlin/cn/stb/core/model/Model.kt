@@ -87,6 +87,7 @@ data class ToolSpec(
     val glyph: String,
     val icon: ToolIcon? = null,
     val keywords: List<String> = emptyList(),
+    /** 首次启动是否自动加入「我的常用」。当前没有工具声明它：新用户从空白常用开始，自己星标添加。 */
     val defaultPinned: Boolean = false,
     val kind: ToolKind = ToolKind.TOOL,
     val parentId: ToolId? = null,
