@@ -16,7 +16,7 @@
 | 学科 | 工具    | 能力                                                                                          |
 | -- | ----- | ------------------------------------------------------------------------------------------- |
 | 语文 | 古诗词   | **61 篇新课标必背**（含沁园春·长沙）、按册选择、目录-正文双栏（目录可收起）、注释与赏析、**背诵模式**（点句显示）                             |
-| 语文 | 汉语词典  | **现代汉语词典第 7 版 7 万词条**、精确/前缀/拼音/释义检索、繁体与异体写法跳转、拼音与词性排版、**本地生词本**                          |
+| 语文 | 汉语词典  | **现代汉语词典第 7 版 7 万词条**、精确/前缀/拼音/释义检索（释义只匹配义项主干，例句不算命中；相关结果单独收起）、繁体与异体写法跳转、拼音与词性排版、**本地生词本**                          |
 | 数学 | 函数编辑器 | **最多 6 条曲线同坐标系**、**显式 / 隐式方程手动切换**（圆、椭圆等如 `x^2+y^2=25`）、**每条曲线可单独设置定义域**、参数滑块可增删并设范围与步进、**开方所见即所得**、上标输入提示（输入指数时 x 右上角显示虚线框）、键盘按光标插入、报错栏固定占位、逐条配色与显隐、缩放平移 |
 | 英语 | 词典    | **ECDICT 77 万词条（含 36.6 万短语）**、精确/前缀/中文反查、音标·考试标签·词形变化·英文释义、**本地生词本**  |
 | 英语 | 语法    | **薄冰大学英语语法 49 篇**、24 类目录、标题 / 表格 / 例句**原生 Compose 排版**（非内嵌网页）、全文检索与命中高亮 |
@@ -205,7 +205,7 @@ feature/formula/          通用·公式大全
 app/src/main/assets/content/
 ├── manifest.json            内容版本清单
 ├── chinese/poems.json       古诗词（按册组织）
-├── chinese/zhdict.db        汉语词库（现代汉语词典第 7 版，70,113 条，15.2MB，首启复制到 databases/）
+├── chinese/zhdict.db        汉语词库（现代汉语词典第 7 版，70,113 条，23.6MB，含释义反查倒排表，首启复制到 databases/）
 ├── english/dict.db          预置词库（ECDICT 全量派生，86.1MB，首启复制到 databases/）
 ├── english/grammar.json     语法讲义（49 篇，24 类，构建期由 Markdown 转换）
 ├── chemistry/equations.json 方程式（508 条，构建期逐条校验配平）
@@ -215,7 +215,7 @@ app/src/main/assets/content/
 └── formula/                  公式库（formulas.json 281 条 + KaTeX 渲染页与本地字体）
 ```
 
-当前内置：**61 篇古诗文**（新课标必背 60 篇全部收录 + 沁园春·长沙，按统编版六册归类，含注释与赏析）、**现代汉语词典第 7 版 70,113 条**（繁体、异体与重定向别名共 4,686 条，15.2MB SQLite）、**ECDICT 77 万词条（含 36.6 万条短语，86.1MB SQLite，APK 内压缩约 40MB）**、**薄冰大学英语语法 50 篇专题**、**508 条方程式**（构建期逐条校验配平）、**118 元素周期表**、**281 条初高中数理化公式**（数学 143 · 物理 99 · 化学 39，逐条含变量说明与适用条件；基础数据整理自 HuiTurn/Formula，MIT License，补充条目参考 drhuang.com 公式大全）；「电子教材」在线访问人教社官网查看各科电子课本。
+当前内置：**61 篇古诗文**（新课标必背 60 篇全部收录 + 沁园春·长沙，按统编版六册归类，含注释与赏析）、**现代汉语词典第 7 版 70,113 条**（繁体、异体与重定向别名共 4,686 条，23.6MB SQLite，含 17.2 万个二元组 / 92 万条释义反查倒排记录）、**ECDICT 77 万词条（含 36.6 万条短语，86.1MB SQLite，APK 内压缩约 40MB）**、**薄冰大学英语语法 50 篇专题**、**508 条方程式**（构建期逐条校验配平）、**118 元素周期表**、**281 条初高中数理化公式**（数学 143 · 物理 99 · 化学 39，逐条含变量说明与适用条件；基础数据整理自 HuiTurn/Formula，MIT License，补充条目参考 drhuang.com 公式大全）；「电子教材」在线访问人教社官网查看各科电子课本。
 正式部署时替换为教研组校对/授权的内容即可，接口不变。
 
 词库与语法讲义由脚本生成，不要手改 assets：
@@ -228,6 +228,9 @@ python tools/dictionary/verify_dict_db.py
 # 数据源：https://github.com/pampas9000/ModernChineseDict 的 dict.mdx
 # 先 `mdict -x dict.mdx -d ./mdx` 解包，再指向解包出来的文本
 python tools/dictionary/build_zh_dict_db.py --source H:/tools/zhdict/mdx/dict.mdx.txt
+
+# 手上只有旧版 zhdict.db、没有 mdx 源时，原地补释义反查索引（definition_main + def_gram）
+python tools/dictionary/rebuild_zh_def_index.py --input app/src/main/assets/content/chinese/zhdict.db
 
 # 数据源：https://github.com/oldwestenglish/grammar 的 docs 目录（docsify 站点）
 python tools/grammar/build_grammar_json.py --source H:/tools/grammar/docs

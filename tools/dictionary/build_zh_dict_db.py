@@ -20,6 +20,11 @@
 @@@LINK= 重定向条目（约 4700 条繁体/异体索引）不单独占词条，
 而是写入 alias 表指向本体；正文里的繁体、异体、不推荐写法也一并进 alias，
 所以查「醜」「夥」都能落到简体条目上。
+
+释义反查不走 `LIKE '%词%'` 全表扫描：入库时额外算一列 definition_main
+（剥掉「：」后面的例句，只留义项主干），并为每个词条生成 CJK 二元组，
+写进 def_gram 倒排表（gram → 升序 delta-varint 编码的 entry id）。
+查询时按查询词的二元组取交集，再回表校验并排序，几毫秒内出结果。
 """
 import argparse
 import html
@@ -34,8 +39,49 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEFAULT_OUT = os.path.join(
     ROOT, "app", "src", "main", "assets", "content", "chinese", "zhdict.db"
 )
-DB_VERSION = 1
+DB_VERSION = 2
 BATCH = 2000
+
+# 义项主干：每个义项行截到第一个冒号之前，冒号后面是例句/例词（如「～了一口苹果」），
+# 不参与释义反查，否则搜「苹果」会命中「咬」「个」「蔫」这类只在例句里提到苹果的字。
+COLON_RE = re.compile(r"[：:]")
+CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+
+
+def definition_main_text(definition):
+    """取释义主干：逐行截断到第一个冒号之前。"""
+    lines = []
+    for line in definition.split("\n"):
+        cut = COLON_RE.search(line)
+        lines.append(line[: cut.start()] if cut else line)
+    return "\n".join(lines)
+
+
+def cjk_bigrams(text):
+    """只保留汉字相邻二字组；返回去重后的排序列表。"""
+    return sorted({
+        text[i:i + 2]
+        for i in range(len(text) - 1)
+        if CJK_RE.match(text[i]) and CJK_RE.match(text[i + 1])
+    })
+
+
+def encode_ids(ids):
+    """升序 id 列表 → delta-varint BLOB，倒排表每行只存一条。"""
+    out = bytearray()
+    previous = 0
+    for value in sorted(ids):
+        delta = value - previous
+        previous = value
+        while True:
+            chunk = delta & 0x7F
+            delta >>= 7
+            if delta:
+                out.append(chunk | 0x80)
+            else:
+                out.append(chunk)
+                break
+    return bytes(out)
 
 SUPERS = "¹²³⁴⁵⁶⁷⁸⁹⁰"
 SUPER_MAP = dict(zip(SUPERS, "1234567890"))
@@ -231,7 +277,8 @@ def build(source, out):
           pinyin_search TEXT NOT NULL DEFAULT '',
           traditional TEXT NOT NULL DEFAULT '',
           variants TEXT NOT NULL DEFAULT '',
-          definition TEXT NOT NULL DEFAULT ''
+          definition TEXT NOT NULL DEFAULT '',
+          definition_main TEXT NOT NULL DEFAULT ''
         )
     """)
     cur.execute("""
@@ -241,10 +288,13 @@ def build(source, out):
         )
     """)
     cur.execute("CREATE TABLE wordbook(key TEXT PRIMARY KEY, added_at INTEGER NOT NULL)")
+    # 释义反查倒排表：一个二元组一行，ids 是命中词条的升序 delta-varint。
+    cur.execute("CREATE TABLE def_gram(gram TEXT PRIMARY KEY, ids BLOB NOT NULL) WITHOUT ROWID")
 
     key_ids = {}
     used_keys = {}
     batch = []
+    gram_map = {}
     entry_id = 0
     for entry in entries:
         base = entry["word_key"] + "\u0001" + entry["pinyin_key"]
@@ -255,6 +305,10 @@ def build(source, out):
         entry_id += 1
         entry["id"] = entry_id
         key_ids.setdefault(entry["word_key"], []).append(entry_id)
+        main_text = definition_main_text(entry["definition"])
+        entry["definition_main"] = main_text
+        for gram in cjk_bigrams(main_text):
+            gram_map.setdefault(gram, []).append(entry_id)
         batch.append((
             key,
             entry["word"],
@@ -264,20 +318,26 @@ def build(source, out):
             entry["traditional"],
             entry["variants"],
             entry["definition"],
+            main_text,
         ))
         if len(batch) >= BATCH:
             cur.executemany(
                 "INSERT INTO entry(key,word,word_key,pinyin,pinyin_search,"
-                "traditional,variants,definition) VALUES(?,?,?,?,?,?,?,?)",
+                "traditional,variants,definition,definition_main) VALUES(?,?,?,?,?,?,?,?,?)",
                 batch,
             )
             batch.clear()
     if batch:
         cur.executemany(
             "INSERT INTO entry(key,word,word_key,pinyin,pinyin_search,"
-            "traditional,variants,definition) VALUES(?,?,?,?,?,?,?,?)",
+            "traditional,variants,definition,definition_main) VALUES(?,?,?,?,?,?,?,?,?)",
             batch,
         )
+
+    cur.executemany(
+        "INSERT INTO def_gram(gram,ids) VALUES(?,?)",
+        [(gram, encode_ids(ids)) for gram, ids in gram_map.items()],
+    )
 
     aliases = {}
 
@@ -321,6 +381,8 @@ def build(source, out):
     print(f"输出 {out}")
     print(f"收录 {len(entries)} 条（繁体 {traditional} 条 / 有拼音 {with_pinyin} 条）")
     print(f"别名 {len(aliases)} 条（mdx 重定向新录入 {redirect_hits} 条，链接表共 {len(links)} 条）")
+    print(f"释义反查：{len(gram_map)} 个二元组 / "
+          f"{sum(len(ids) for ids in gram_map.values())} 条倒排记录")
     print(f"体积 {size:.1f} MB，用时 {time.time() - t0:.1f}s")
     return 0
 

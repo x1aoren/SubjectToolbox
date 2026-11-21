@@ -53,6 +53,18 @@ object Changelog {
      */
     val releases: List<ReleaseNote> = listOf(
         ReleaseNote(
+            versionName = "1.1.1",
+            versionCode = 3,
+            date = "2026-11-21",
+            headline = "汉语词典搜索优化：例句不再算命中，释义相关结果单独收起",
+            changes = listOf(
+                ChangeItem(
+                    ChangeKind.IMPROVE,
+                    "释义检索只匹配义项主干，例句里出现该词不再算命中（搜「苹果」不会再冒出「咬」「个」「蔫」这类字条）；释义反查改用词库自带的二元组索引，结果单独成组、默认收起，不再和词条命中混在一起。",
+                ),
+            ),
+        ),
+        ReleaseNote(
             versionName = "1.1.0",
             versionCode = 2,
             date = "2026-11-20",

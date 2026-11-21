@@ -19,6 +19,18 @@ data class ChineseDictEntry(
 )
 
 /**
+ * 一次检索的结果。
+ *
+ * [entries] 是词条本身的命中（精确、别名、前缀、拼音），[related] 是释义主干里提到查询词的词条，
+ * 单独放在一组、由界面折叠展示——搜「苹果」时「咬」「个」「蔫」只是例句里出现过苹果，
+ * 不该和真正的词条混在一起占满列表。
+ */
+data class ChineseSearchResult(
+    val entries: List<ChineseDictEntry> = emptyList(),
+    val related: List<ChineseDictEntry> = emptyList(),
+)
+
+/**
  * 离线汉语词库。
  *
  * 数据来自 ModernChineseDict（https://github.com/pampas9000/ModernChineseDict）的
@@ -26,8 +38,11 @@ data class ChineseDictEntry(
  * 把解包后的 7 万条词条摊平成预置 SQLite，随包发布。繁体、异体和 @@@LINK 重定向
  * 都收进 alias 表，查「醜」也能落到「丑²」。
  *
- * 查询顺序和英语词典一致：精确 → 前缀 → 拼音 → 包含。word_key 去掉了区分同形条目的
- * 上标数字并建了索引，前缀范围扫描不扫全表；释义与拼音的模糊匹配放在 IO 线程 + 输入防抖。
+ * 查询顺序：精确 → 别名 → 前缀 → 拼音 → 释义反查。前四步都走索引；释义反查不再用
+ * `LIKE '%词%'` 扫全表，而是用构建期生成的 `def_gram` 倒排表（汉字二元组 → 词条 id），
+ * 取查询词各二元组的交集后回表校验，7 万条规模基本在 1–5ms。
+ * 释义反查只匹配 `definition_main`（去掉「：」后面的例句），所以「搜苹果出来一堆造句」
+ * 的情况不会再有；结果另作一组展示，不与词条命中混排。
  */
 class ChineseDictionaryRepository(private val context: Context) {
 
@@ -113,11 +128,13 @@ class ChineseDictionaryRepository(private val context: Context) {
         }
     }
 
-    fun search(rawQuery: String, savedOnly: Boolean = false, limit: Int = 60): List<ChineseDictEntry> {
-        val database = db ?: return emptyList()
+    fun search(rawQuery: String, savedOnly: Boolean = false, limit: Int = 60): ChineseSearchResult {
+        val database = db ?: return ChineseSearchResult()
         val query = rawQuery.trim()
         if (query.isEmpty()) {
-            return if (savedOnly) savedEntries() else browse(limit)
+            return ChineseSearchResult(
+                entries = if (savedOnly) savedEntries() else browse(limit),
+            )
         }
 
         val wordKey = query.filterNot { it.isWhitespace() }
@@ -177,24 +194,79 @@ class ChineseDictionaryRepository(private val context: Context) {
             }
         }
 
-        // 5. 兜底：词形或释义包含。单字查询前缀已覆盖，只有两个字符以上或含非 ASCII 时才扫。
-        if (out.size < limit && (query.length >= 2 || query.any { it.code > 0x7F })) {
+        val entries = out.values.take(limit)
+        // 5. 释义反查：只在词条命中不足一页时给补充结果，且单独成组、固定上限。
+        //    走 def_gram 倒排表，不再全表 LIKE；例句已从 definition_main 里剥掉。
+        val related = if (!savedOnly && entries.size < limit && wordKey.length >= 2) {
+            definitionMatches(database, wordKey, RELATED_LIMIT)
+        } else {
+            emptyList()
+        }
+
+        return ChineseSearchResult(entries = entries, related = related)
+    }
+
+    /**
+     * 释义主干里提到 [query] 的词条。
+     *
+     * 做法：把查询词切成汉字二元组，从 def_gram 取各自的倒排 id 列表求交集，
+     * 再按 400 个一批回表用 instr 校验（三个字以上的查询，二元组交集可能命中
+     * 相邻但不连续的文本，必须校验整串），最后按「词条越短越靠前、义项越多越靠前」排序。
+     */
+    private fun definitionMatches(
+        database: SQLiteDatabase,
+        query: String,
+        limit: Int,
+    ): List<ChineseDictEntry> {
+        if (!query.all { isCjk(it) }) return emptyList()
+        val grams = cjkBigrams(query)
+        if (grams.isEmpty()) return emptyList()
+
+        var candidates: Set<Int>? = null
+        for (gram in grams) {
+            val ids = runCatching {
+                database.rawQuery("SELECT ids FROM def_gram WHERE gram = ?", arrayOf(gram))
+                    .use { c -> if (c.moveToFirst()) decodeIds(c.getBlob(0)) else emptySet() }
+            }.getOrDefault(emptySet())
+            val next = candidates?.let { it intersect ids } ?: ids
+            if (next.isEmpty()) return emptyList()
+            candidates = next
+        }
+        val ids = candidates?.sorted() ?: return emptyList()
+
+        val ranked = ArrayList<RankedEntry>(minOf(ids.size, limit * 4))
+        for (chunk in ids.chunked(IN_CHUNK)) {
+            val marks = chunk.joinToString(",") { "?" }
+            val args = chunk.map { it.toString() } + query + limit.toString()
             runCatching {
-                val pattern = likePattern(query)
                 database.rawQuery(
                     """
-                    SELECT $ENTRY_COLUMNS FROM entry
-                    WHERE word_key LIKE ? ESCAPE '\' OR definition LIKE ? ESCAPE '\'
+                    SELECT id, key, word, pinyin, traditional, variants, definition,
+                           length(word_key), length(definition)
+                    FROM entry
+                    WHERE id IN ($marks) AND instr(definition_main, ?) > 0
                     ORDER BY length(word_key), length(definition) DESC, word_key
                     LIMIT ?
                     """.trimIndent(),
-                    arrayOf(pattern, pattern, (limit - out.size).toString()),
-                ).use { c -> c.collectInto(out) }
+                    args.toTypedArray(),
+                ).use { c ->
+                    while (c.moveToNext()) {
+                        ranked += RankedEntry(c.entry(), c.getInt(7), c.getInt(8))
+                    }
+                }
             }
         }
-
-        return out.values.take(limit)
+        return ranked
+            .sortedWith(compareBy({ it.wordKeyLength }, { -it.definitionLength }, { it.entry.key }))
+            .take(limit)
+            .map { it.entry }
     }
+
+    private data class RankedEntry(
+        val entry: ChineseDictEntry,
+        val wordKeyLength: Int,
+        val definitionLength: Int,
+    )
 
     /**
      * 空查询时的默认列表。
@@ -295,8 +367,40 @@ class ChineseDictionaryRepository(private val context: Context) {
         definition = getString(6) ?: "",
     )
 
-    private fun likePattern(raw: String): String =
-        "%" + raw.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    /** 只对汉字做二元组切分；含字母、数字或标点的查询不走释义反查。 */
+    private fun cjkBigrams(text: String): List<String> {
+        if (text.length < 2) return emptyList()
+        val out = LinkedHashSet<String>()
+        for (index in 0 until text.length - 1) {
+            val first = text[index]
+            val second = text[index + 1]
+            if (isCjk(first) && isCjk(second)) out += "$first$second"
+        }
+        return out.toList()
+    }
+
+    private fun isCjk(char: Char): Boolean =
+        char in '\u3400'..'\u4dbf' || char in '\u4e00'..'\u9fff' || char in '\uf900'..'\ufaff'
+
+    /** def_gram.ids 是升序 delta-varint，解出词条 id。 */
+    private fun decodeIds(blob: ByteArray): Set<Int> {
+        val ids = LinkedHashSet<Int>(blob.size / 2 + 1)
+        var value = 0
+        var shift = 0
+        var previous = 0
+        for (byte in blob) {
+            value = value or ((byte.toInt() and 0x7F) shl shift)
+            if (byte.toInt() and 0x80 != 0) {
+                shift += 7
+            } else {
+                previous += value
+                ids += previous
+                value = 0
+                shift = 0
+            }
+        }
+        return ids
+    }
 
     private fun normalizePinyin(raw: String): String {
         val text = raw.replace('ɡ', 'g').replace('ü', 'v').replace('Ü', 'V')
@@ -307,7 +411,15 @@ class ChineseDictionaryRepository(private val context: Context) {
     private companion object {
         const val TAG = "ChineseDictionaryRepo"
         const val DB_NAME = "zhdict.db"
-        const val ASSET_VERSION = "1"
+
+        /** 词库 schema 版本：2 起带 definition_main 与 def_gram 倒排表，旧包需要重新复制 assets。 */
+        const val ASSET_VERSION = "2"
         const val ENTRY_COLUMNS = "id, key, word, pinyin, traditional, variants, definition"
+
+        /** 释义反查最多给几条：再多也只是重复「某字释义里提过这个词」，没有查阅价值。 */
+        const val RELATED_LIMIT = 12
+
+        /** 回表校验时单条 SQL 的 id 数量上限，避开 SQLite 的变量个数限制。 */
+        const val IN_CHUNK = 400
     }
 }

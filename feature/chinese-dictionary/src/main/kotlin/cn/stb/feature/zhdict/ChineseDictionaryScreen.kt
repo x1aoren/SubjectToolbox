@@ -98,6 +98,9 @@ fun ChineseDictionaryScreen(onBack: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     var savedOnly by rememberSaveable { mutableStateOf(false) }
     var entries by remember { mutableStateOf<List<ChineseDictEntry>>(emptyList()) }
+    var related by remember { mutableStateOf<List<ChineseDictEntry>>(emptyList()) }
+    // 释义反查结果默认收起：它们只是「某个字的释义里提过这个词」，不该和词条命中抢位置。
+    var relatedOpen by remember(query) { mutableStateOf(false) }
     var selected by remember { mutableStateOf<ChineseDictEntry?>(null) }
     var savedKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
     var total by remember { mutableStateOf(0) }
@@ -107,23 +110,29 @@ fun ChineseDictionaryScreen(onBack: () -> Unit) {
 
     LaunchedEffect(query, savedOnly, limit) {
         loading = true
-        // 释义模糊匹配要扫 7 万条，防抖一下，避免每敲一个字都查一次。
+        // 释义反查走倒排索引，但拼音/前缀仍是全表范围扫描，防抖 300ms 避免每敲一个字都查一次。
         delay(300)
         val result = withContext(Dispatchers.IO) {
-            val list = when {
-                savedOnly && query.isBlank() -> repository.search("", savedOnly = true)
-                query.isBlank() -> repository.browse(limit)
+            val searched = when {
+                query.isBlank() -> ChineseSearchResult(
+                    entries = if (savedOnly) repository.search("", savedOnly = true).entries
+                    else repository.browse(limit),
+                )
                 else -> repository.search(query, savedOnly, limit)
             }
-            Triple(list, repository.savedKeys(), repository.totalCount())
+            Triple(searched, repository.savedKeys(), repository.totalCount())
         }
-        entries = result.first
+        entries = result.first.entries
+        related = result.first.related
         savedKeys = result.second
         total = result.third
+        // 没有词条命中时，释义相关就是唯一结果，直接展开；有词条命中则保持收起，避免抢位置。
+        if (entries.isEmpty() && related.isNotEmpty()) relatedOpen = true
         // 生词本不限条数；其余列表取满一页才露出「加载更多」。
         hasMore = !(savedOnly && query.isBlank()) && entries.size >= limit
-        if (selected == null || entries.none { it.key == selected?.key }) {
-            selected = entries.firstOrNull()
+        val visible = entries + related
+        if (selected == null || visible.none { it.key == selected?.key }) {
+            selected = entries.firstOrNull() ?: related.firstOrNull()
         }
         loading = false
     }
@@ -180,7 +189,9 @@ fun ChineseDictionaryScreen(onBack: () -> Unit) {
                     Text(
                         text = when {
                             loading -> "检索中…"
+                            entries.isEmpty() && related.isNotEmpty() -> "释义相关 ${related.size} 条"
                             hasMore -> "已显示 ${entries.size} 条"
+                            related.isNotEmpty() -> "命中 ${entries.size} 条 · 释义相关 ${related.size} 条"
                             else -> "命中 ${entries.size} 条"
                         },
                         style = MaterialTheme.typography.bodySmall,
@@ -194,7 +205,7 @@ fun ChineseDictionaryScreen(onBack: () -> Unit) {
 
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val wide = maxWidth >= 760.dp
-                if (entries.isEmpty() && !loading) {
+                if (entries.isEmpty() && related.isEmpty() && !loading) {
                     EmptyState(
                         glyph = "典",
                         title = if (savedOnly) "生词本还是空的" else "没有找到这个词",
@@ -209,10 +220,14 @@ fun ChineseDictionaryScreen(onBack: () -> Unit) {
                     Row(modifier = Modifier.fillMaxSize()) {
                         EntryList(
                             entries = entries,
+                            related = related,
+                            relatedOpen = relatedOpen,
+                            query = query.trim(),
                             selected = selected,
                             savedKeys = savedKeys,
                             hasMore = hasMore,
                             onLoadMore = { limit += PAGE_SIZE },
+                            onToggleRelated = { relatedOpen = !relatedOpen },
                             onSelect = { selected = it },
                             modifier = Modifier.width(320.dp).fillMaxHeight(),
                         )
@@ -235,10 +250,14 @@ fun ChineseDictionaryScreen(onBack: () -> Unit) {
                     if (selected == null) {
                         EntryList(
                             entries = entries,
+                            related = related,
+                            relatedOpen = relatedOpen,
+                            query = query.trim(),
                             selected = null,
                             savedKeys = savedKeys,
                             hasMore = hasMore,
                             onLoadMore = { limit += PAGE_SIZE },
+                            onToggleRelated = { relatedOpen = !relatedOpen },
                             onSelect = { selected = it },
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -269,10 +288,14 @@ fun ChineseDictionaryScreen(onBack: () -> Unit) {
 @Composable
 private fun EntryList(
     entries: List<ChineseDictEntry>,
+    related: List<ChineseDictEntry>,
+    relatedOpen: Boolean,
+    query: String,
     selected: ChineseDictEntry?,
     savedKeys: Set<String>,
     hasMore: Boolean,
     onLoadMore: () -> Unit,
+    onToggleRelated: () -> Unit,
     onSelect: (ChineseDictEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -282,61 +305,134 @@ private fun EntryList(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         items(entries, key = { it.key }) { entry ->
-            val active = entry.key == selected?.key
-            Surface(
-                onClick = { onSelect(entry) },
-                shape = RoundedCornerShape(12.dp),
-                color = if (active) ZhAccent.copy(alpha = 0.10f) else Color.Transparent,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Text(
-                                text = entry.word,
-                                style = MaterialTheme.typography.titleSmall.copy(fontFamily = FontFamily.Serif),
-                                color = if (active) ZhAccent else MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            if (entry.pinyin.isNotBlank()) {
-                                Spacer(Modifier.width(7.dp))
-                                Text(
-                                    text = entry.pinyin,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
-                        Text(
-                            text = entry.definition.lineSequence().firstOrNull { it.isNotBlank() } ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    if (entry.key in savedKeys) {
-                        Icon(
-                            Icons.Filled.Star,
-                            contentDescription = "已在生词本",
-                            tint = ZhAccent,
-                            modifier = Modifier.size(14.dp),
-                        )
-                    }
+            EntryRow(
+                entry = entry,
+                active = entry.key == selected?.key,
+                saved = entry.key in savedKeys,
+                onSelect = { onSelect(entry) },
+            )
+        }
+
+        // 释义反查单独成组、默认收起：这些条目只是释义主干里提过查询词，不是词条命中。
+        if (related.isNotEmpty()) {
+            item(key = "related-header") {
+                RelatedHeader(
+                    query = query,
+                    count = related.size,
+                    expanded = relatedOpen,
+                    onToggle = onToggleRelated,
+                )
+            }
+            if (relatedOpen) {
+                items(related, key = { "related:${it.key}" }) { entry ->
+                    EntryRow(
+                        entry = entry,
+                        active = entry.key == selected?.key,
+                        saved = entry.key in savedKeys,
+                        onSelect = { onSelect(entry) },
+                    )
                 }
             }
         }
+
         if (hasMore) {
             item {
                 TextButton(
                     onClick = onLoadMore,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("加载更多") }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RelatedHeader(
+    query: String,
+    count: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    Surface(
+        onClick = onToggle,
+        shape = RoundedCornerShape(10.dp),
+        color = ZhAccent.copy(alpha = 0.05f),
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "释义中提到「$query」的 $count 条",
+                style = MaterialTheme.typography.bodySmall,
+                color = ZhAccent.copy(alpha = 0.85f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(
+                onClick = onToggle,
+                contentPadding = PaddingValues(horizontal = 8.dp),
+            ) {
+                Text(if (expanded) "收起" else "展开", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EntryRow(
+    entry: ChineseDictEntry,
+    active: Boolean,
+    saved: Boolean,
+    onSelect: () -> Unit,
+) {
+    Surface(
+        onClick = onSelect,
+        shape = RoundedCornerShape(12.dp),
+        color = if (active) ZhAccent.copy(alpha = 0.10f) else Color.Transparent,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = entry.word,
+                        style = MaterialTheme.typography.titleSmall.copy(fontFamily = FontFamily.Serif),
+                        color = if (active) ZhAccent else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (entry.pinyin.isNotBlank()) {
+                        Spacer(Modifier.width(7.dp))
+                        Text(
+                            text = entry.pinyin,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Text(
+                    text = entry.definition.lineSequence().firstOrNull { it.isNotBlank() } ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (saved) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = "已在生词本",
+                    tint = ZhAccent,
+                    modifier = Modifier.size(14.dp),
+                )
             }
         }
     }

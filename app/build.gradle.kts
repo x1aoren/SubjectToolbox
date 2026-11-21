@@ -39,8 +39,8 @@ android {
         applicationId = "cn.stb.subjecttoolbox"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.1.1"
         buildConfigField("String", "STB_API_KEY", "\"$apiKey\"")
         // 是否跳过 HTTPS 证书校验（临时 IP 直连用），见上方 allowInsecureTls
         buildConfigField("boolean", "STB_ALLOW_INSECURE_TLS", allowInsecureTls.toString())
