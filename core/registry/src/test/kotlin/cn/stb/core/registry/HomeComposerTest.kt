@@ -123,4 +123,17 @@ class HomeComposerTest {
         assertTrue(content.isEmpty)
         assertFalse(content.totalVisible > 0)
     }
+
+    @Test
+    fun `云端停用的工具仍出现在分区与置顶中`() {
+        // 停用状态由 CloudSnapshot 单独表达，主页只负责置灰与弹窗，不再把工具从组装结果里剔除。
+        val settings = AppSettings(
+            home = HomePref(pinnedToolIds = listOf("chinese.poetry")),
+        )
+        val content = HomeComposer.compose(catalog, settings, emptyList())
+
+        assertEquals(listOf("chinese.poetry"), content.pinned.map { it.id.value })
+        assertTrue(content.sections.flatMap { it.tools }.any { it.id.value == "chinese.poetry" })
+        assertTrue(content.sections.flatMap { it.tools }.any { it.id.value == "math.function" })
+    }
 }

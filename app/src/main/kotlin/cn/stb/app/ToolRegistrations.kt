@@ -1,8 +1,12 @@
 package cn.stb.app
 
+import cn.stb.core.model.ManagedToolIds
 import cn.stb.core.model.Subject
 import cn.stb.core.model.SubjectIcon
 import cn.stb.core.model.SubjectId
+import cn.stb.core.model.ToolId
+import cn.stb.core.model.ToolKind
+import cn.stb.core.model.ToolSpec
 import cn.stb.core.registry.ToolCatalog
 import cn.stb.core.registry.ToolProvider
 import cn.stb.feature.biology.BiologyDiagramToolProvider
@@ -47,6 +51,45 @@ object ToolRegistrations {
         GeographyDiagramToolProvider(),
         TextbookToolProvider(),
         FormulaToolProvider(),
+    )
+
+    /**
+     * 受后台单独管控、但不对应独立工具页的条目。
+     *
+     * id / kind / parentId 必须与《管控扩展-设计契约》第 1 节以及后台目录完全一致：
+     * 它们不进入主页工具卡片（[ToolCatalog.allTools] 仍是 11 个主工具），
+     * 只参与云端握手/上报（[ToolCatalog.everyEntry]），由对应页面按固定 id 取停用状态。
+     */
+    val managedEntries: List<ToolSpec> = listOf(
+        ToolSpec(
+            id = ManagedToolIds.biologyCellDivision,
+            subjectId = SubjectId("biology"),
+            title = "细胞分裂交互图",
+            summary = "有丝分裂 / 减数分裂动画，染色体与 DNA 数目实时统计",
+            glyph = "裂",
+            keywords = listOf("生物", "细胞", "细胞分裂", "有丝分裂", "减数分裂"),
+            kind = ToolKind.DIAGRAM,
+            parentId = ToolId("biology.diagram"),
+        ),
+        ToolSpec(
+            id = ManagedToolIds.geographyEarthRotation,
+            subjectId = SubjectId("geography"),
+            title = "地球自转交互图",
+            summary = "自转方向、角速度与线速度随纬度变化",
+            glyph = "转",
+            keywords = listOf("地理", "地球", "自转", "昼夜交替"),
+            kind = ToolKind.DIAGRAM,
+            parentId = ToolId("geography.diagram"),
+        ),
+        ToolSpec(
+            id = ManagedToolIds.feedback,
+            subjectId = SubjectId("other"),
+            title = "意见反馈",
+            summary = "向学校反馈问题、建议与内容纠错",
+            glyph = "反",
+            keywords = listOf("反馈", "意见", "建议", "纠错"),
+            kind = ToolKind.FEATURE,
+        ),
     )
 }
 

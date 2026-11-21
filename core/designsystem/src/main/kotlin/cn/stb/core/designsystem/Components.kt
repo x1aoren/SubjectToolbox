@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -173,6 +174,13 @@ private fun ToolIcon.resId(): Int = when (this) {
     ToolIcon.GRAMMAR -> R.drawable.ic_tool_grammar
 }
 
+/**
+ * 主页工具卡片。
+ *
+ * [enabled] 为 false 表示云端停用了这个工具：整卡置灰（透明度 0.55）、标题改用弱化色、
+ * 标题右侧标「已停用」。卡片仍可点击——由调用方决定弹停用原因，而不是在这里静默失效；
+ * 星标也保持可点，用户可以先置顶，等后台恢复后自然生效。
+ */
 @Composable
 fun ToolCard(
     spec: ToolSpec,
@@ -181,6 +189,7 @@ fun ToolCard(
     onClick: () -> Unit,
     onTogglePin: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     Surface(
         onClick = onClick,
@@ -192,19 +201,33 @@ fun ToolCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .alpha(if (enabled) 1f else DISABLED_CARD_ALPHA)
                 .padding(start = 12.dp, end = 2.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ToolBadge(spec = spec, accent = accent, size = 40.dp)
             Spacer(Modifier.width(10.dp))
-            Text(
-                text = spec.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            Row(
                 modifier = Modifier.weight(1f),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = spec.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (!enabled) {
+                    Spacer(Modifier.width(8.dp))
+                    DisabledBadge()
+                }
+            }
             IconButton(onClick = onTogglePin) {
                 Icon(
                     imageVector = Icons.Filled.Star,
@@ -216,6 +239,9 @@ fun ToolCard(
         }
     }
 }
+
+/** 云端停用的卡片统一透明度，主页与示意图画廊共用同一观感。 */
+internal const val DISABLED_CARD_ALPHA = 0.55f
 
 @Composable
 fun SectionHeader(

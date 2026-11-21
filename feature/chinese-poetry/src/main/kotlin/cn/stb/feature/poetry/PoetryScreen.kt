@@ -79,7 +79,6 @@ class PoetryToolProvider : ToolProvider {
         glyph = "诗",
         icon = ToolIcon.SCROLL,
         keywords = listOf("古诗", "词", "背诵", "文言文", "教材"),
-        defaultPinned = true,
     )
 
     @Composable

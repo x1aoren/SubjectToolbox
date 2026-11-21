@@ -32,6 +32,32 @@ enum class ToolIcon {
 }
 
 /**
+ * 工具条目的类型。
+ *
+ * [TOOL] 是主页上的常规工具（[ToolCatalogView.allTools]）；
+ * [DIAGRAM] 是工具内部的子条目（如生物交互示意图里的细胞分裂）；
+ * [FEATURE] 是主页上的功能入口（如意见反馈）。
+ * 后两类只参与云端管控，不作为独立工具卡片出现在主页。
+ */
+enum class ToolKind { TOOL, DIAGRAM, FEATURE }
+
+/**
+ * 固定 ID：受后台「工具开关 / 单设备开关」单独管控、但不对应独立工具页的条目。
+ *
+ * 三端（Android / 后台服务 / 控制台）必须完全一致，因此集中在这里，禁止各模块硬编码字符串。
+ */
+object ManagedToolIds {
+    const val BIOLOGY_CELL_DIVISION = "biology.diagram.cell-division"
+    const val GEOGRAPHY_EARTH_ROTATION = "geography.diagram.earth-rotation"
+    const val FEEDBACK = "other.feedback"
+
+    /** 字符串常量的强类型形式，供 [ToolSpec] 与本地路由使用。 */
+    val biologyCellDivision = ToolId(BIOLOGY_CELL_DIVISION)
+    val geographyEarthRotation = ToolId(GEOGRAPHY_EARTH_ROTATION)
+    val feedback = ToolId(FEEDBACK)
+}
+
+/**
  * 一个学科。
  *
  * [short] 是单字缩写，图标化之后不再用于展示，保留给无障碍描述与图标缺失时的降级。
@@ -49,6 +75,9 @@ data class Subject(
 /**
  * 工具元数据。这是主页、设置页、搜索、导航认识一个工具的全部信息。
  * [id] 是持久化主键，一经发布不可更改。
+ *
+ * [kind] 与 [parentId] 描述条目在工具树里的位置：常规工具是 [ToolKind.TOOL]、
+ * 无父级；交互示意图子项、功能入口由后台单独管控，[ToolCatalogView.everyEntry] 会带上它们。
  */
 data class ToolSpec(
     val id: ToolId,
@@ -58,7 +87,10 @@ data class ToolSpec(
     val glyph: String,
     val icon: ToolIcon? = null,
     val keywords: List<String> = emptyList(),
+    /** 首次启动是否自动加入「我的常用」。当前没有工具声明它：新用户从空白常用开始，自己星标添加。 */
     val defaultPinned: Boolean = false,
+    val kind: ToolKind = ToolKind.TOOL,
+    val parentId: ToolId? = null,
 )
 
 /* ------------------------------------------------------------------
@@ -132,9 +164,22 @@ data class HomeContent(
 
 interface ToolCatalogView {
     val subjects: List<Subject>
+
+    /** 主工具：主页卡片、显示管理、设置计数只认这一份（不含子工具与功能入口）。 */
     val allTools: List<ToolSpec>
+
+    /** 受后台单独管控、但不在主页工具卡片里展示的条目（示意图子项、功能入口）。 */
+    val managedEntries: List<ToolSpec> get() = emptyList()
+
+    /** 主工具 + 受管控条目；握手/上报用这份全量清单。 */
+    val everyEntry: List<ToolSpec> get() = allTools + managedEntries
+
     fun findTool(id: ToolId): ToolSpec?
+
     fun toolsOf(subjectId: SubjectId): List<ToolSpec>
+
+    /** 在主工具与受管控条目里找；[findTool] 仍然只查主工具。 */
+    fun findEntry(id: ToolId): ToolSpec? = everyEntry.firstOrNull { it.id == id }
 }
 
 interface SettingsRepository {

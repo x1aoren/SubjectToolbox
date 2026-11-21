@@ -17,14 +17,15 @@ class HomeViewModel : ViewModel() {
     /**
      * null 表示「配置还没读出来」，与「所有工具都被隐藏」是两回事。
      * 不区分这两者，首帧就会闪一下空态提示。
+     *
+     * 只依赖本地配置与最近使用：云端停用不再影响主页组装（停用工具照常显示、置灰、点击弹原因），
+     * 所以这里不需要听云端快照。
      */
     val content: StateFlow<HomeContent?> = combine(
         AppGraph.settings.settings,
         AppGraph.usage.recents,
-        AppGraph.cloud.snapshot,
-    ) { settings, recents, cloud ->
-        val disabled = cloud.tools.filterValues { !it.enabled }.keys
-        HomeComposer.compose(AppGraph.catalog, settings, recents, disabled)
+    ) { settings, recents ->
+        HomeComposer.compose(AppGraph.catalog, settings, recents)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

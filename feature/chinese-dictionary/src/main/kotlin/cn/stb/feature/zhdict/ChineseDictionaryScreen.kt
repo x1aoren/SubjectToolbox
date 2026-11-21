@@ -76,7 +76,6 @@ class ChineseDictionaryToolProvider : ToolProvider {
         glyph = "典",
         icon = ToolIcon.DICTIONARY,
         keywords = listOf("语文", "字典", "词典", "汉语", "汉字", "拼音", "生词本"),
-        defaultPinned = true,
     )
 
     @Composable

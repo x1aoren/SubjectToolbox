@@ -19,6 +19,11 @@ import java.util.UUID
  *
  * 学校如果用 MDM 预置真实 SN，后续可以在这里接入 RestrictionsManager；
  * 现在不再向任何第三方发送原始 Android ID。
+ *
+ * 注意：SN 存在 SharedPreferences `stb_device_identity` 里，该文件已在
+ * `app/src/main/res/xml/backup_rules.xml`（Android 11 及以下）与
+ * `data_extraction_rules.xml`（Android 12+）中排除出系统云备份和换机直传，
+ * 避免恢复/迁移到新设备后两台设备同 SN（后台以 SN 为主键，会串号）。
  */
 class DeviceIdentity(context: Context) {
 

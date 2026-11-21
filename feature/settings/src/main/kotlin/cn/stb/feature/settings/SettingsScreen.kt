@@ -1,5 +1,7 @@
 package cn.stb.feature.settings
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,9 +47,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -121,14 +125,33 @@ fun SettingsScreen(
             // 「关于」放最前：一进设置就能看到软件信息与作者。
             item {
                 SettingsGroup(title = "关于") {
-                    Text("学科工具箱", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        text = "SubjectToolbox",
-                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(8.dp))
+                    // logo 在左、中英文名在右：logo 用白色圆角贴片（原图就是白底），
+                    // 深色模式下像一枚 App 图标，浅色模式靠描边和卡片区分开。
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(R.drawable.stb_logo),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(58.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                    shape = RoundedCornerShape(16.dp),
+                                ),
+                        )
+                        Spacer(Modifier.width(14.dp))
+                        Column {
+                            Text("学科工具箱", style = MaterialTheme.typography.titleLarge)
+                            Spacer(Modifier.height(3.dp))
+                            Text(
+                                text = "SubjectToolbox",
+                                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.5.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         text = "把语文、数学、英语、化学等学科的工具收进一个 App。",
                         style = MaterialTheme.typography.bodySmall,
@@ -279,23 +302,27 @@ fun SettingsScreen(
                         )
                     }
                     Spacer(Modifier.height(10.dp))
-                    val enabledTools = cloud.tools.values.count { it.enabled }
-                    val disabledTools = cloud.tools.values.count { !it.enabled }
+                    // 只统计主工具：子工具（示意图子项）与功能入口不参与主页工具计数，
+                    // 否则后台托管 3 个条目后这里会凭空多出 3 个「工具」。
+                    val mainToolIds = catalog.allTools.map { it.id.value }.toSet()
+                    val enabledTools = cloud.tools.count { (id, state) -> id in mainToolIds && state.enabled }
+                    val disabledTools = cloud.tools.count { (id, state) -> id in mainToolIds && !state.enabled }
                     Text(
-                        text = if (cloud.tools.isEmpty()) {
-                            "还没有从云端取到工具开关。"
-                        } else {
-                            "可用工具 $enabledTools 个，单独停用 $disabledTools 个。"
+                        text = when {
+                            cloud.tools.isEmpty() -> "还没有从云端取到工具开关。"
+                            else -> "可用工具 $enabledTools 个，停用 $disabledTools 个。"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "配置最多 6 小时同步一次，遥测最多 10 分钟上报一次；没有网络时不会发起请求。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
+                    if (disabledTools > 0) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "停用的工具在主页仍会显示（置灰），点击可查看停用原因。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
                 }
             }
 
@@ -305,7 +332,7 @@ fun SettingsScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text("匿名使用统计", style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                "记录打开过哪些工具、版本与会话时长；不含姓名或学号",
+                                "记录打开过哪些工具、版本与会话时长",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -315,12 +342,6 @@ fun SettingsScreen(
                             onCheckedChange = { viewModel.setTelemetryEnabled(it) },
                         )
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "关闭后会立即停止记录并清空本地待上报队列；云端配置仍会同步，用于接收工具开关。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
                 }
             }
 

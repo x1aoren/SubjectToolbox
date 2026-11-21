@@ -44,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -56,6 +57,9 @@ import kotlin.math.roundToInt
 /**
  * 一张交互图。内容本体放在 assets 里的离线 HTML，
  * 列表只保存标题、摘要和搜索词，方便以后继续往里加图。
+ *
+ * [managedId] 是后台「工具开关」里的固定 id（见 `ManagedToolIds`）；
+ * 填了它，这张卡片就跟随云端单设备/全局停用状态显示置灰与原因弹窗。
  */
 data class DiagramEntry(
     val id: String,
@@ -65,6 +69,7 @@ data class DiagramEntry(
     val assetPath: String,
     val tag: String = "",
     val keywords: List<String> = emptyList(),
+    val managedId: String = "",
 ) {
     fun matches(query: String): Boolean {
         val key = query.trim().lowercase()
@@ -79,6 +84,10 @@ data class DiagramEntry(
 /**
  * 交互示意图的索引页：顶部搜索，下面是可点的图卡。
  * 生物、地理共用这一套，后续加图只需要往各自清单里补一条 [DiagramEntry]。
+ *
+ * [disabledReasonFor] / [disabledSourceFor] 按 [DiagramEntry.managedId] 取云端停用状态：
+ * 返回非 null 即视为停用，卡片置灰 + 「已停用」徽章，点击弹原因而不是打开 HTML。
+ * 用回调而不是直接传 CloudSnapshot，避免 designsystem 依赖云端实现细节。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,9 +99,12 @@ fun DiagramGalleryScreen(
     searchHint: String,
     onOpen: (DiagramEntry) -> Unit,
     onBack: () -> Unit,
+    disabledReasonFor: (String) -> String? = { null },
+    disabledSourceFor: (String) -> String? = { null },
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val shown = remember(entries, query) { entries.filter { it.matches(query) } }
+    var disabledNotice by remember { mutableStateOf<DisabledDiagramNotice?>(null) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -145,10 +157,23 @@ fun DiagramGalleryScreen(
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 shown.forEach { entry ->
+                    // 停用只影响「能否打开」：卡片照常显示、照常参与搜索，点击改为弹原因。
+                    val reason = if (entry.managedId.isBlank()) null else disabledReasonFor(entry.managedId)
                     DiagramCard(
                         entry = entry,
                         accent = accent,
-                        onClick = { onOpen(entry) },
+                        enabled = reason == null,
+                        onClick = {
+                            if (reason == null) {
+                                onOpen(entry)
+                            } else {
+                                disabledNotice = DisabledDiagramNotice(
+                                    title = entry.title,
+                                    reason = reason,
+                                    source = disabledSourceFor(entry.managedId),
+                                )
+                            }
+                        },
                     )
                 }
             }
@@ -164,12 +189,29 @@ fun DiagramGalleryScreen(
             Spacer(Modifier.height(16.dp))
         }
     }
+
+    disabledNotice?.let { notice ->
+        ToolDisabledDialog(
+            title = notice.title,
+            reason = notice.reason,
+            source = notice.source,
+            onDismiss = { disabledNotice = null },
+        )
+    }
 }
+
+/** 示意图停用弹窗的一次性状态，避免把三个字段拆成三个 remember。 */
+private data class DisabledDiagramNotice(
+    val title: String,
+    val reason: String,
+    val source: String?,
+)
 
 @Composable
 private fun DiagramCard(
     entry: DiagramEntry,
     accent: Color,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     Surface(
@@ -181,6 +223,7 @@ private fun DiagramCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .alpha(if (enabled) 1f else DISABLED_CARD_ALPHA)
                 .padding(start = 14.dp, end = 10.dp, top = 14.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -191,13 +234,21 @@ private fun DiagramCard(
                     Text(
                         text = entry.title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = if (enabled) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     if (entry.tag.isNotEmpty()) {
                         Spacer(Modifier.width(8.dp))
                         EntryTag(text = entry.tag, accent = accent)
+                    }
+                    if (!enabled) {
+                        Spacer(Modifier.width(8.dp))
+                        DisabledBadge()
                     }
                 }
                 Spacer(Modifier.height(3.dp))

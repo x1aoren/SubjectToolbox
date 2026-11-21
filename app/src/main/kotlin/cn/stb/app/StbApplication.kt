@@ -24,6 +24,7 @@ class StbApplication : Application() {
         val catalog = ToolCatalog(
             providers = ToolRegistrations.tools,
             subjectList = ToolRegistrations.subjects,
+            managedEntries = ToolRegistrations.managedEntries,
         )
 
         val cloud = CloudControlImpl(
@@ -32,8 +33,11 @@ class StbApplication : Application() {
             baseUrl = BuildConfig.STB_API_BASE,
             apiKey = BuildConfig.STB_API_KEY,
             channel = if (BuildConfig.DEBUG) "beta" else "stable",
+            // 临时 IP 直连：服务器 IP 上是自签证书，构建时由 stb.allowInsecureTls 决定是否跳过校验
+            allowInsecureTls = BuildConfig.STB_ALLOW_INSECURE_TLS,
             toolsProvider = {
-                catalog.allTools.map { tool ->
+                // 握手要上报「主工具 + 受管控条目」全量清单，后台工具清单同步才覆盖 100%
+                catalog.everyEntry.map { tool ->
                     ToolDescriptor(tool.id.value, tool.title, tool.subjectId.value)
                 }
             },
@@ -71,7 +75,9 @@ class StbApplication : Application() {
     }
 
     /**
-     * 首次启动把标了 defaultPinned 的工具放进「我的常用」，避免新用户打开就是一片空白。
+     * 首次启动把标了 defaultPinned 的工具放进「我的常用」。
+     * 目前没有任何工具声明 defaultPinned，所以新用户首次打开时「我的常用」是空的，
+     * 由他自己点星标添加；日后确实需要预置某个工具，标上 defaultPinned 即可。
      * 只播种一次：用户清空置顶后，不会在下次启动被重新填满。
      */
     private fun seedDefaultPins() {

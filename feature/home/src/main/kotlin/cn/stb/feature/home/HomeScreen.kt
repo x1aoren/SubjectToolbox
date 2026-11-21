@@ -42,10 +42,12 @@ import cn.stb.core.designsystem.EmptyState
 import cn.stb.core.designsystem.SearchField
 import cn.stb.core.designsystem.SectionHeader
 import cn.stb.core.designsystem.ToolCard
+import cn.stb.core.designsystem.ToolDisabledDialog
 import cn.stb.core.model.AppGraph
 import cn.stb.core.model.CloudAnnouncement
 import cn.stb.core.model.HomeContent
 import cn.stb.core.model.HomeSection
+import cn.stb.core.model.ManagedToolIds
 import cn.stb.core.model.ToolId
 import cn.stb.core.model.ToolSpec
 
@@ -197,6 +199,34 @@ fun HomeScreen(
     val shown = remember(content, query) { content.filtered(query) }
     val catalog = AppGraph.catalog
 
+    // 被云端停用的工具不再从主页消失：置灰 + 「已停用」徽章，点击弹出停用原因。
+    // 所有入口（置顶/学科分区/最近使用/搜索结果/右上角反馈）共用同一套判定与弹窗。
+    var disabledNotice by remember { mutableStateOf<DisabledToolNotice?>(null) }
+
+    fun isToolEnabled(tool: ToolSpec): Boolean = cloud.tools[tool.id.value]?.enabled != false
+
+    fun openTool(tool: ToolSpec) {
+        if (isToolEnabled(tool)) {
+            onOpenTool(tool.id)
+        } else {
+            disabledNotice = DisabledToolNotice(
+                title = tool.title,
+                reason = cloud.disabledReasonFor(tool.id.value),
+                source = cloud.disabledSourceFor(tool.id.value),
+            )
+        }
+    }
+
+    val feedbackDisabled = cloud.isToolDisabled(ManagedToolIds.FEEDBACK)
+    val feedbackTitle = catalog.findEntry(ManagedToolIds.feedback)?.title ?: "意见反馈"
+
+    // 顶栏小字里的「N 个已停用」只统计当前实际展示的主工具，避免把子工具算进去
+    val shownDisabledCount = remember(shown, cloud) {
+        (shown.pinned + shown.sections.flatMap { it.tools } + shown.recents)
+            .distinctBy { it.id.value }
+            .count { cloud.tools[it.id.value]?.enabled == false }
+    }
+
     // 置顶/最近卡片与学科栏同宽：三栏布局下每栏 = (窗口宽 - 左右内边距 - 两个间隔)/3
     val windowWidth = LocalConfiguration.current.screenWidthDp.dp
     val cardWidth = ((windowWidth - 56.dp - 36.dp) / 3).coerceAtLeast(240.dp)
@@ -217,16 +247,36 @@ fun HomeScreen(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "${catalog.subjects.size} 个学科 · ${content.totalVisible} 个工具",
+                        text = buildString {
+                            append("${catalog.subjects.size} 个学科 · ${content.totalVisible} 个工具")
+                            if (shownDisabledCount > 0) append("（其中 $shownDisabledCount 个已停用）")
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = onOpenFeedback) {
+                // 意见反馈入口始终显示：被云端停用时点击弹原因，而不是把入口藏起来
+                IconButton(
+                    onClick = {
+                        if (feedbackDisabled) {
+                            disabledNotice = DisabledToolNotice(
+                                title = feedbackTitle,
+                                reason = cloud.disabledReasonFor(ManagedToolIds.FEEDBACK),
+                                source = cloud.disabledSourceFor(ManagedToolIds.FEEDBACK),
+                            )
+                        } else {
+                            onOpenFeedback()
+                        }
+                    },
+                ) {
                     Icon(
                         Icons.Filled.Email,
                         contentDescription = "意见反馈",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (feedbackDisabled) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
                 }
                 IconButton(onClick = onOpenSettings) {
@@ -288,7 +338,8 @@ fun HomeScreen(
                         ToolRow(
                             tool = tool,
                             viewModel = viewModel,
-                            onOpenTool = onOpenTool,
+                            enabled = isToolEnabled(tool),
+                            onClick = { openTool(tool) },
                             isPinned = true,
                             modifier = Modifier.width(cardWidth),
                         )
@@ -310,7 +361,8 @@ fun HomeScreen(
                             SubjectBlock(
                                 section = section,
                                 viewModel = viewModel,
-                                onOpenTool = onOpenTool,
+                                isToolEnabled = { isToolEnabled(it) },
+                                onOpen = { openTool(it) },
                                 pinnedIds = pinnedIds,
                                 modifier = Modifier.weight(1f),
                             )
@@ -339,7 +391,8 @@ fun HomeScreen(
                         ToolRow(
                             tool = tool,
                             viewModel = viewModel,
-                            onOpenTool = onOpenTool,
+                            enabled = isToolEnabled(tool),
+                            onClick = { openTool(tool) },
                             isPinned = content.pinned.any { it.id == tool.id },
                             dimmed = true,
                             modifier = Modifier.width(cardWidth),
@@ -370,13 +423,30 @@ fun HomeScreen(
                 .padding(end = 28.dp, bottom = 20.dp),
         )
     }
+
+    disabledNotice?.let { notice ->
+        ToolDisabledDialog(
+            title = notice.title,
+            reason = notice.reason,
+            source = notice.source,
+            onDismiss = { disabledNotice = null },
+        )
+    }
 }
+
+/** 一次停用提示：标题 + 原因 + 来源；主页所有入口（工具卡片、反馈图标）共用。 */
+private data class DisabledToolNotice(
+    val title: String,
+    val reason: String,
+    val source: String?,
+)
 
 @Composable
 private fun SubjectBlock(
     section: HomeSection,
     viewModel: HomeViewModel,
-    onOpenTool: (ToolId) -> Unit,
+    isToolEnabled: (ToolSpec) -> Boolean,
+    onOpen: (ToolSpec) -> Unit,
     pinnedIds: Set<ToolId>,
     modifier: Modifier = Modifier,
 ) {
@@ -391,7 +461,8 @@ private fun SubjectBlock(
             ToolRow(
                 tool = tool,
                 viewModel = viewModel,
-                onOpenTool = onOpenTool,
+                enabled = isToolEnabled(tool),
+                onClick = { onOpen(tool) },
                 isPinned = tool.id in pinnedIds,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -403,7 +474,8 @@ private fun SubjectBlock(
 private fun ToolRow(
     tool: ToolSpec,
     viewModel: HomeViewModel,
-    onOpenTool: (ToolId) -> Unit,
+    enabled: Boolean,
+    onClick: () -> Unit,
     isPinned: Boolean,
     modifier: Modifier = Modifier,
     dimmed: Boolean = false,
@@ -414,7 +486,8 @@ private fun ToolRow(
         spec = tool,
         accent = if (dimmed) accent.copy(alpha = 0.75f) else accent,
         pinned = isPinned,
-        onClick = { onOpenTool(tool.id) },
+        enabled = enabled,
+        onClick = onClick,
         onTogglePin = { viewModel.togglePin(tool.id) },
         modifier = modifier,
     )
