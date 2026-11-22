@@ -38,8 +38,16 @@ internal data class Domain(val start: Double? = null, val end: Double? = null) {
     internal fun contains(x: Double): Boolean =
         (start == null || x >= start) && (end == null || x <= end)
 
+    /**
+     * 定义域与可视窗口 [outerStart, outerEnd] 的交集，也就是真正要采样的 x 区间。
+     *
+     * 必须求交而不是直接拿定义域端点：拖动图像把视野移出定义域之后，
+     * 若仍按定义域（例如 [0,10]）整段采样，算出来的点全落在视野左侧，
+     * 映射成像素就是负坐标，曲线会画到绘图区外面去（盖上编辑面板）。
+     * 交集为空时返回 lo > hi，调用方据此跳过采样、不画这条曲线。
+     */
     internal fun xRange(outerStart: Double, outerEnd: Double): Pair<Double, Double> =
-        (start ?: outerStart) to (end ?: outerEnd)
+        maxOf(start ?: outerStart, outerStart) to minOf(end ?: outerEnd, outerEnd)
 }
 
 /** 一条曲线：表达式 + 颜色 + 是否显示 + 模式 + 定义域。 */

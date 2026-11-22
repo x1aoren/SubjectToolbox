@@ -50,7 +50,7 @@ class ChangelogTest {
         assertEquals("1.1.1", current.versionName)
         assertEquals(3, current.versionCode)
         assertEquals("2026-11-21", current.date)
-        assertEquals("汉语词典搜索优化：例句不再算命中，释义相关结果单独收起", current.headline)
+        assertEquals("汉语词典搜索优化，修复设置定义域后曲线跑出绘图区", current.headline)
         assertEquals("1.1.1", Changelog.currentVersionName())
 
         val oldest = Changelog.releases.last()
@@ -98,17 +98,24 @@ class ChangelogTest {
     }
 
     @Test
-    fun `1_1_1 合并为一条优化条目`() {
+    fun `1_1_1 包含词典优化与函数定义域修复`() {
         val changes = Changelog.current().changes
-        assertEquals(1, changes.size)
-        assertEquals(ChangeKind.IMPROVE, changes.single().kind)
+        assertEquals(2, changes.size)
+
+        val improve = changes.single { it.kind == ChangeKind.IMPROVE }
         assertTrue(
             "应说明例句不再算命中",
-            changes.single().text.contains("例句"),
+            improve.text.contains("例句"),
         )
         assertTrue(
             "应说明释义相关结果单独收起",
-            changes.single().text.contains("收起"),
+            improve.text.contains("收起"),
+        )
+
+        val fix = changes.single { it.kind == ChangeKind.FIX }
+        assertTrue(
+            "应说明是设置定义域后拖动引发的问题",
+            fix.text.contains("定义域") && fix.text.contains("拖动"),
         )
         assertTrue(changes.all { it.text.isNotBlank() })
     }

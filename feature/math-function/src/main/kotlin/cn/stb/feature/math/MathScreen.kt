@@ -74,6 +74,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
@@ -1235,6 +1236,9 @@ private fun PlotPane(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(12.dp)
+                // 画布自己裁剪：曲线超出 y 范围（tan、1/x 这类）时坐标会跑到画布外，
+                // 不裁剪就会盖上顶部标题栏、编辑面板（分屏、平板布局里尤其明显）。
+                .clipToBounds()
                 .onSizeChanged { size ->
                     if (size.width > 0) onAspect(size.height.toFloat() / size.width.toFloat())
                 }
@@ -1343,7 +1347,8 @@ private fun PlotPane(
  *
  * 显式函数按 x 采样，能正确处理渐近线；带等号的方程走 marching squares 提等值线。
  * 解析失败的曲线直接跳过——学生正打到一半的表达式不该让整张图消失。
- * 每条曲线的定义域在采样前裁剪，所以「只在某段画」不需要额外的遮罩。
+ * 每条曲线只在「定义域 ∩ 当前 x 窗口」里采样：定义域落在视野之外时一个点都不算，
+ * 否则会得到一串画布外的坐标，曲线跑到绘图区外面去。
  */
 internal fun composePlot(
     curves: List<PlotFn>,

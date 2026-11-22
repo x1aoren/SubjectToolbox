@@ -136,6 +136,81 @@ class PlotComposerTest {
     }
 
     @Test
+    fun `视野移到定义域外时不再采样`() {
+        // 定义域 [0,10]，视野 [20,40]：交集为空，连一个点都不该算出来。
+        // 之前直接拿定义域端点采样，点全落在视野左侧，会被画到绘图区外面。
+        val result = plot(
+            listOf(PlotFn(1, "sin(x)", 1L, domain = Domain(0.0, 10.0))),
+            xCenter = 30.0,
+            xSpan = 20.0,
+        )
+
+        assertTrue(
+            "视野与定义域不相交时应当没有采样点",
+            result!!.series.first().segments.isEmpty(),
+        )
+    }
+
+    @Test
+    fun `单边定义域落在视野外时不再采样`() {
+        // 只设了左端点 x ≥ 0，视野拖到 [-40,-20]，同样是空交集
+        val result = plot(
+            listOf(PlotFn(1, "sin(x)", 1L, domain = Domain(0.0, null))),
+            xCenter = -30.0,
+            xSpan = 20.0,
+        )
+
+        assertTrue(result!!.series.first().segments.isEmpty())
+    }
+
+    @Test
+    fun `定义域与视野部分重叠时只采样重叠段`() {
+        // 定义域 [0,10]，视野 [5,25]：只画 [5,10]
+        val result = plot(
+            listOf(PlotFn(1, "x", 1L, domain = Domain(0.0, 10.0))),
+            xCenter = 15.0,
+            xSpan = 20.0,
+        )
+
+        val points = result!!.series.first().segments.flatten()
+        assertTrue(points.isNotEmpty())
+        assertTrue("采样点不应越过定义域", points.all { it.first in 0.0..10.0 })
+        assertTrue("采样点不应落在视野外", points.all { it.first in 5.0..25.0 })
+        assertEquals(5.0, points.minOf { it.first }, 1e-9)
+        assertEquals(10.0, points.maxOf { it.first }, 1e-9)
+    }
+
+    @Test
+    fun `定义域的采样点永远不超出视野`() {
+        // 无论怎么平移，采样范围都必须同时属于定义域和视野——
+        // 坐标落在视野外就意味着曲线被画到了绘图区外面。
+        val fn = PlotFn(1, "sin(x)", 1L, domain = Domain(-2.0, 3.0))
+        for (center in listOf(-30.0, -2.5, 0.0, 0.5, 3.0, 12.0)) {
+            val result = plot(listOf(fn), xCenter = center, xSpan = 8.0)
+            val xMin = center - 4.0 - 1e-9
+            val xMax = center + 4.0 + 1e-9
+            val points = result!!.series.first().segments.flatten()
+            assertTrue(
+                "center=$center 时出现了视野外的采样点：${points.filter { it.first !in xMin..xMax }.take(3)}",
+                points.all { it.first in xMin..xMax && it.first in -2.0 - 1e-9..3.0 + 1e-9 },
+            )
+        }
+    }
+
+    @Test
+    fun `视野在定义域外时隐式方程也不生成线段`() {
+        val result = plot(
+            listOf(
+                PlotFn(1, "x^2+y^2=25", 1L, mode = FnMode.IMPLICIT, domain = Domain(0.0, 10.0)),
+            ),
+            xCenter = 40.0,
+            xSpan = 20.0,
+        )
+
+        assertTrue(result!!.series.first().segments.isEmpty())
+    }
+
+    @Test
     fun `定义域也会裁剪隐式方程的网格`() {
         val full = plot(listOf(PlotFn(1, "x^2+y^2=25", 1L, mode = FnMode.IMPLICIT)), xSpan = 20.0)
         val half = plot(

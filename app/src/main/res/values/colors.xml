@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!--
+      与 stblogo 插图的底色一致（不是纯白，带一点点冷调）。
+      前景图是满版出血的，正常情况下这层看不到；个别启动器做视差缩放时会露出边缘，
+      取同色才不会出现白色边框。
+    -->
+    <color name="ic_launcher_background">#FBFAFE</color>
 </resources>
